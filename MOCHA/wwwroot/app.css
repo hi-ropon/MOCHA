@@ -118,6 +118,11 @@ h1:focus {
     justify-content: center;
 }
 
+.session-menu-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
 .session-menu-btn:hover {
     background: rgba(255, 215, 0, 0.2);
     color: #111111;
