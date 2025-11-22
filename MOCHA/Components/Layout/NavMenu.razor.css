@@ -66,6 +66,11 @@
     transition: all 0.2s;
 }
 
+.agent-gear-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
 .agent-gear-btn:hover {
     background: rgba(255, 255, 255, 0.15);
 }
