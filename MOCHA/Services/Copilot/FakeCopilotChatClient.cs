@@ -47,6 +47,10 @@ public sealed class FakeCopilotChatClient : ICopilotChatClient
         }
 
         var text = latest.Content;
+        // まずは受信確認のメッセージを返す
+        yield return ChatStreamEvent.FromMessage(
+            new ChatMessage(ChatRole.Assistant, $"(fake) 了解: {text}"));
+
         if (text.Contains("read", StringComparison.OrdinalIgnoreCase) ||
             text.Contains("D100", StringComparison.OrdinalIgnoreCase))
         {

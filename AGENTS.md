@@ -1,5 +1,11 @@
 # Repository Guidelines
 
+## ルール
+- 日本語でやりとりすること
+- 勝手にgitでコミットしないこと。コミットするときは毎回私の許可を確認すること。
+- DDDを採用すること
+- TDDを採用すること
+
 ## プロジェクト構成
 - `BlazorApp1/`: Blazor Server (.NET 8) 本体。コンポーネント、サービス、スタイルを格納。
 - `BlazorApp1/Components/`: Razor UI（ページ、レイアウト、ルート）。
