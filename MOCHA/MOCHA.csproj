@@ -8,7 +8,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="Microsoft.Agents.CopilotStudio.Client" Version="1.2.41" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Identity.Web" Version="4.1.0" />
+    <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="4.1.0" />
+    <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.1.0" />
   </ItemGroup>
 
 </Project>

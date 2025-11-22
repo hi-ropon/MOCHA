@@ -1,4 +1,7 @@
 ﻿@page "/"
+@attribute [Authorize]
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
 @using MOCHA.Models.Chat
 @using MOCHA.Services.Copilot
@@ -69,6 +72,8 @@
 </div>
 
 @code {
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
     private readonly List<ChatMessage> Messages = new();
     private string Input = string.Empty;
     private string? Status;
@@ -78,8 +83,7 @@
     private ElementReference MessageList;
     private IDisposable? _copilotOptionsSubscription;
     private IDisposable? _plcOptionsSubscription;
-
-    private readonly UserContext _user = new("demo-user", "Demo User");
+    private UserContext? _user;
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input);
     private bool StopDisabled => !IsSending;
@@ -95,11 +99,14 @@
     private const bool IsDebug = false;
 #endif
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        _user = await ResolveUserAsync();
+
+        await HistoryState.LoadAsync(_user.UserId);
         if (!HistoryState.Summaries.Any())
         {
-            HistoryState.SeedDemo();
+            await HistoryState.SeedDemoAsync(_user.UserId);
         }
 
         SeedInitialMessage();
@@ -124,7 +131,7 @@
         Status = null;
 
         ConversationId ??= Guid.NewGuid().ToString("N");
-        HistoryState.Upsert(ConversationId, text);
+        var user = _user ?? new UserContext("anonymous", "Anonymous");
 
         var userMessage = new ChatMessage(ChatRole.User, text);
         Messages.Add(userMessage);
@@ -132,7 +139,7 @@
 
         try
         {
-            await foreach (var ev in Orchestrator.HandleUserMessageAsync(_user, ConversationId, text, _cts.Token))
+            await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, _cts.Token))
             {
                 switch (ev.Type)
                 {
@@ -141,7 +148,7 @@
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
-                        HistoryState.Upsert(ConversationId, text);
+                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text);
                         Status = $"ツール実行中: {ev.ActionRequest.ActionName}";
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
@@ -227,6 +234,20 @@
                (!string.IsNullOrWhiteSpace(options.DirectConnectUrl) ||
                 !string.IsNullOrWhiteSpace(options.EnvironmentId)) &&
                !string.IsNullOrWhiteSpace(options.SchemaName);
+    }
+
+    private async Task<UserContext> ResolveUserAsync()
+    {
+        var authState = await AuthenticationStateTask;
+        var principal = authState.User;
+        var objectId = principal.FindFirst("oid")?.Value
+                       ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                       ?? principal.Identity?.Name
+                       ?? "anonymous";
+        var displayName = principal.Identity?.Name
+                          ?? principal.FindFirst("name")?.Value
+                          ?? "ユーザー";
+        return new UserContext(objectId, displayName);
     }
 
     public void Dispose()

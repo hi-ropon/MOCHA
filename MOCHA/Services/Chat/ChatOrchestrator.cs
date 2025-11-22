@@ -14,11 +14,19 @@ public sealed class ChatOrchestrator : IChatOrchestrator
 {
     private readonly ICopilotChatClient _copilot;
     private readonly IPlcGatewayClient _plcGateway;
+    private readonly IChatRepository _chatRepository;
+    private readonly ConversationHistoryState _history;
 
-    public ChatOrchestrator(ICopilotChatClient copilot, IPlcGatewayClient plcGateway)
+    public ChatOrchestrator(
+        ICopilotChatClient copilot,
+        IPlcGatewayClient plcGateway,
+        IChatRepository chatRepository,
+        ConversationHistoryState history)
     {
         _copilot = copilot;
         _plcGateway = plcGateway;
+        _chatRepository = chatRepository;
+        _history = history;
     }
 
     public async IAsyncEnumerable<ChatStreamEvent> HandleUserMessageAsync(
@@ -27,7 +35,14 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         string text,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var turn = new ChatTurn(conversationId, new List<ChatMessage>
+        var convId = string.IsNullOrWhiteSpace(conversationId)
+            ? Guid.NewGuid().ToString("N")
+            : conversationId;
+
+        await _history.UpsertAsync(user.UserId, convId, text, cancellationToken);
+        await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text), cancellationToken);
+
+        var turn = new ChatTurn(convId, new List<ChatMessage>
         {
             new(ChatRole.User, text)
         });
@@ -37,9 +52,11 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         {
             if (ev.Type == ChatStreamEventType.ActionRequest && ev.ActionRequest is not null)
             {
+                var actionRequest = ev.ActionRequest with { ConversationId = convId };
+
                 yield return ev; // UI に「ツール実行開始」を通知
 
-                var actionResult = await ExecuteActionAsync(ev.ActionRequest, cancellationToken);
+                var actionResult = await ExecuteActionAsync(actionRequest, cancellationToken);
 
                 yield return new ChatStreamEvent(
                     ChatStreamEventType.ToolResult,
@@ -53,19 +70,27 @@ public sealed class ChatOrchestrator : IChatOrchestrator
 
                 // ツール結果の簡易表示
                 yield return ChatStreamEvent.FromMessage(
-                    new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), cancellationToken));
 
                 // Copilot Studio に渡したことを示すフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
-                    new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), cancellationToken));
 
                 // Copilot Studio が最終回答した想定のフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
-                    new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)), cancellationToken));
             }
             else
             {
-                yield return ev;
+                if (ev.Message is not null)
+                {
+                    yield return ChatStreamEvent.FromMessage(
+                        await SaveMessageAsync(user, convId, ev.Message, cancellationToken));
+                }
+                else
+                {
+                    yield return ev;
+                }
             }
         }
     }
@@ -258,5 +283,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
 
         var err = error ?? "unknown error";
         return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
+    }
+
+    private async Task<ChatMessage> SaveMessageAsync(UserContext user, string conversationId, ChatMessage message, CancellationToken cancellationToken)
+    {
+        await _chatRepository.AddMessageAsync(user.UserId, conversationId, message, cancellationToken);
+        await _history.UpsertAsync(user.UserId, conversationId, message.Content, cancellationToken);
+        return message;
     }
 }

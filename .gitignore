@@ -10,6 +10,7 @@
 *.user
 *.rsuser
 *.sln.docstates
+chat.db*
 
 # Logs / coverage / test artifacts
 *.log

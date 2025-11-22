@@ -2,14 +2,19 @@ using MOCHA.Models.Chat;
 
 namespace MOCHA.Services.Chat;
 
-/// <summary>
-/// 会話履歴の簡易ステート。現在はインメモリで保持し、UI間で共有する。
-/// 実際の永続化層（SQLiteなど）と置き換え可能。
-/// </summary>
 public class ConversationHistoryState
 {
+    private readonly IChatRepository _repository;
     private readonly List<ConversationSummary> _summaries = new();
     private readonly object _lock = new();
+    private string? _currentUserId;
+
+    public ConversationHistoryState(IChatRepository repository)
+    {
+        _repository = repository;
+    }
+
+    public event Action? Changed;
 
     public IReadOnlyList<ConversationSummary> Summaries
     {
@@ -22,10 +27,29 @@ public class ConversationHistoryState
         }
     }
 
-    public void Upsert(string id, string title)
+    public async Task LoadAsync(string userId, CancellationToken cancellationToken = default)
     {
+        var items = await _repository.GetSummariesAsync(userId, cancellationToken);
         lock (_lock)
         {
+            _currentUserId = userId;
+            _summaries.Clear();
+            _summaries.AddRange(items);
+        }
+        Changed?.Invoke();
+    }
+
+    public async Task UpsertAsync(string userId, string id, string title, CancellationToken cancellationToken = default)
+    {
+        await _repository.UpsertConversationAsync(userId, id, title, cancellationToken);
+        lock (_lock)
+        {
+            if (_currentUserId != userId)
+            {
+                _currentUserId = userId;
+                _summaries.Clear();
+            }
+
             var existing = _summaries.FirstOrDefault(x => x.Id == id);
             var trimmed = title.Length > 30 ? title[..30] + "…" : title;
             if (existing is null)
@@ -38,11 +62,17 @@ public class ConversationHistoryState
                 existing.UpdatedAt = DateTimeOffset.UtcNow;
             }
         }
+        Changed?.Invoke();
     }
 
-    public void SeedDemo()
+    public async Task SeedDemoAsync(string userId, CancellationToken cancellationToken = default)
     {
-        Upsert("demo-1", "デモ会話 A");
-        Upsert("demo-2", "デモ会話 B");
+        if (Summaries.Any())
+        {
+            return;
+        }
+
+        await UpsertAsync(userId, "demo-1", "デモ会話 A", cancellationToken);
+        await UpsertAsync(userId, "demo-2", "デモ会話 B", cancellationToken);
     }
 }

@@ -1,6 +1,9 @@
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Components.Authorization
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inherits LayoutComponentBase
+@implements IDisposable
 
 <div class="sidebar-container @(IsCollapsed ? "collapsed" : string.Empty)">
     <div class="sidebar-header">
@@ -34,9 +37,9 @@
     </div>
 
     <div class="user-info">
-        <div class="user-avatar">U</div>
+        <div class="user-avatar">@userInitial</div>
         <div>
-            <div class="user-name">ユーザー</div>
+            <div class="user-name">@userName</div>
         </div>
     </div>
 </div>
@@ -45,10 +48,54 @@
     [Parameter] public bool IsCollapsed { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
 
+    [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+
+    private string userName = "ユーザー";
+    private string userInitial = "U";
+    private string? _userId;
+    private bool _loaded;
+
+    protected override async Task OnInitializedAsync()
+    {
+        HistoryState.Changed += OnHistoryChanged;
+        await EnsureHistoryAsync();
+    }
+
     private Task ToggleAsync() => OnToggle.InvokeAsync();
 
     private void StartNewChat()
     {
         NavigationManager.NavigateTo("/", forceLoad: true);
+    }
+
+    private async Task EnsureHistoryAsync()
+    {
+        if (_loaded)
+        {
+            return;
+        }
+
+        var authState = await AuthenticationStateTask;
+        var principal = authState.User;
+        _userId = principal.FindFirst("oid")?.Value
+                  ?? principal.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                  ?? principal.Identity?.Name
+                  ?? "anonymous";
+        userName = principal.Identity?.Name
+                   ?? principal.FindFirst("name")?.Value
+                   ?? "ユーザー";
+        userInitial = string.IsNullOrWhiteSpace(userName)
+            ? "U"
+            : userName[..1].ToUpperInvariant();
+
+        await HistoryState.LoadAsync(_userId);
+        _loaded = true;
+    }
+
+    private void OnHistoryChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose()
+    {
+        HistoryState.Changed -= OnHistoryChanged;
     }
 }
