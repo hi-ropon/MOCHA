@@ -180,8 +180,16 @@ h1:focus {
 .from-user {
     align-self: flex-end;
     background: linear-gradient(135deg, #ffd700, #ffba08);
-    color: #121212;
+    color: #111111;
     border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.from-user .content {
+    color: #111111;
+}
+
+.from-user .meta {
+    color: #3d3d3d;
 }
 
 .from-assistant {
