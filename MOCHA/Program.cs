@@ -45,6 +45,7 @@ builder.Services.AddDbContext<ChatDbContext>(options =>
     var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Data Source=chat.db";
     options.UseSqlite(connectionString);
 });
+builder.Services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
 
 // Add services to the container.
 builder.Services.AddRazorComponents()

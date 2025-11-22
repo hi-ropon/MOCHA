@@ -3,7 +3,7 @@ using MOCHA.Services.Chat;
 
 namespace MOCHA.Data;
 
-public class ChatDbContext : DbContext
+public class ChatDbContext : DbContext, IChatDbContext
 {
     public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options)
     {

@@ -6,9 +6,9 @@ namespace MOCHA.Services.Chat;
 
 public class ChatRepository : IChatRepository
 {
-    private readonly ChatDbContext _dbContext;
+    private readonly IChatDbContext _dbContext;
 
-    public ChatRepository(ChatDbContext dbContext)
+    public ChatRepository(IChatDbContext dbContext)
     {
         _dbContext = dbContext;
     }
