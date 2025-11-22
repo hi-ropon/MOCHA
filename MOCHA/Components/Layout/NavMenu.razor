@@ -3,9 +3,11 @@
 
 <div class="sidebar-container @(IsCollapsed ? "collapsed" : string.Empty)">
     <div class="sidebar-header">
-        <div class="sidebar-title">Chat</div>
+        <div class="sidebar-title">
+            <img src="icon.png" alt="Chat" class="sidebar-title-icon" />
+            <span class="sr-only">Chat</span>
+        </div>
         <button class="new-chat-btn">New Chat</button>
-        <NavLink class="nav-home" href="" Match="NavLinkMatch.All">Home</NavLink>
         <button class="sidebar-toggle" type="button" @onclick="ToggleAsync" title="サイドバー切替">
             @(IsCollapsed ? "›" : "‹")
         </button>

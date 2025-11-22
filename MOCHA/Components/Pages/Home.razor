@@ -38,17 +38,17 @@
                 }
             </div>
 
-            <div class="composer">
-                <div class="composer-inner">
-                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
-                              @bind="Input"
-                              @bind:event="oninput"
-                              @onkeydown="HandleKeyDown"
-                              rows="3"></textarea>
-                    <div class="input-actions">
-                        <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
-                            &#9632;
-                        </button>
+                <div class="composer">
+                    <div class="composer-inner">
+                        <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                                  @bind="Input"
+                                  @bind:event="oninput"
+                                  @onkeydown="HandleKeyDown"
+                                  rows="1"></textarea>
+                        <div class="input-actions">
+                            <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
+                                &#9632;
+                            </button>
                         <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
                             &#10148;
                         </button>
