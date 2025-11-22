@@ -47,8 +47,21 @@ public sealed class ChatOrchestrator : IChatOrchestrator
 
                 await _copilot.SubmitActionResultAsync(actionResult, cancellationToken);
 
+                var device = ReadString(actionResult.Payload, "device") ?? "D";
+                var addr = ReadInt(actionResult.Payload, "addr") ?? 0;
+                var values = ReadValues(actionResult.Payload, "values");
+
+                // ツール結果の簡易表示
                 yield return ChatStreamEvent.FromMessage(
-                    new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult)));
+                    new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)));
+
+                // Copilot Studio に渡したことを示すフェイクメッセージ
+                yield return ChatStreamEvent.FromMessage(
+                    new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)));
+
+                // Copilot Studio が最終回答した想定のフェイクメッセージ
+                yield return ChatStreamEvent.FromMessage(
+                    new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)));
             }
             else
             {
@@ -188,12 +201,8 @@ public sealed class ChatOrchestrator : IChatOrchestrator
             .ToList();
     }
 
-    private static string BuildActionResultText(CopilotActionResult result)
+    private static string BuildActionResultText(CopilotActionResult result, string device, int addr, List<int> values)
     {
-        var device = ReadString(result.Payload, "device") ?? "D";
-        var addr = ReadInt(result.Payload, "addr") ?? 0;
-        var values = ReadValues(result.Payload, "values");
-
         if (result.Success)
         {
             var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
@@ -227,5 +236,27 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         }
 
         return new List<int>();
+    }
+
+    private static string BuildActionSubmitText(string device, int addr, List<int> values)
+    {
+        var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
+        return $"(fake) Copilot Studio に送信: {device}{addr} -> [{valuesText}]";
+    }
+
+    private static string BuildCopilotReplyText(string device, int addr, List<int> values, bool success, string? error)
+    {
+        if (success && values.Any())
+        {
+            return $"(fake Copilot) {device}{addr} は {string.Join(", ", values)} でした。";
+        }
+
+        if (success)
+        {
+            return $"(fake Copilot) {device}{addr} の値は空でした。";
+        }
+
+        var err = error ?? "unknown error";
+        return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
     }
 }

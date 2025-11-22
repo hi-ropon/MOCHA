@@ -31,6 +31,16 @@ public class FakeChatFlowTests
             e.Message?.Role == ChatRole.Assistant &&
             e.Message.Content.Contains("D100") &&
             e.Message.Content.Contains("42"));
+        Assert.Contains(events, e =>
+            e.Type == ChatStreamEventType.Message &&
+            e.Message?.Role == ChatRole.Assistant &&
+            e.Message.Content.Contains("Copilot Studio") &&
+            e.Message.Content.Contains("D100"));
+        Assert.Contains(events, e =>
+            e.Type == ChatStreamEventType.Message &&
+            e.Message?.Role == ChatRole.Assistant &&
+            e.Message.Content.Contains("fake Copilot") &&
+            e.Message.Content.Contains("D100"));
         Assert.Contains(events, e => e.Type == ChatStreamEventType.Completed);
     }
 
