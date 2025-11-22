@@ -14,6 +14,25 @@ a, .btn-link {
     color: #ffd700;
 }
 
+/* グローバルスクロールバーを暗めのグレーに統一 */
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.04);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(120, 130, 140, 0.35);
+    border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(120, 130, 140, 0.45);
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
@@ -182,6 +201,7 @@ h1:focus {
     background: linear-gradient(135deg, #ffd700, #ffba08);
     color: #111111;
     border: 1px solid rgba(255, 215, 0, 0.5);
+    margin-right: 10px;
 }
 
 .from-user .content {
@@ -227,16 +247,36 @@ h1:focus {
     flex: 1;
     width: 100%;
     padding: 0.55rem 0.75rem;
+    scrollbar-gutter: stable;
     border-radius: 12px;
     border: 1px solid rgba(255, 255, 255, 0.12);
     background: rgba(255, 255, 255, 0.06);
     color: #f5f7fb;
-    height: 42px;
-    min-height: 42px;
-    max-height: 42px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 120px;
     resize: none;
     overflow-y: auto;
     line-height: 1.4;
+}
+
+.chat-input::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-input::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+    margin: 4px 8px 4px 0; /* 右余白を増やしバーを左に寄せる */
+}
+
+.chat-input::-webkit-scrollbar-thumb {
+    background: rgba(140, 150, 160, 0.5);
+    border-radius: 8px;
+}
+
+.chat-input::-webkit-scrollbar-thumb:hover {
+    background: rgba(140, 150, 160, 0.65);
 }
 
 .chat-input:focus {
@@ -251,8 +291,8 @@ h1:focus {
 }
 
 .icon-btn {
-    width: 42px;
-    height: 42px;
+    width: 48px;
+    height: 48px;
     border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.14);
     background: rgba(255, 255, 255, 0.12);
