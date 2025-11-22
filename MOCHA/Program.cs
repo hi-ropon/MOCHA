@@ -9,7 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
-builder.Services.AddScoped<ICopilotChatClient, FakeCopilotChatClient>();
+builder.Services.Configure<CopilotStudioOptions>(builder.Configuration.GetSection("Copilot"));
+builder.Services.AddHttpClient("CopilotStudio");
+builder.Services.AddScoped<ICopilotChatClient, CopilotStudioChatClient>();
 builder.Services.AddScoped<IPlcGatewayClient, FakePlcGatewayClient>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
