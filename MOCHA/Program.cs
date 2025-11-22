@@ -5,7 +5,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using MOCHA.Components;
 using MOCHA.Data;
+using MOCHA.Models.Auth;
 using MOCHA.Services.Chat;
+using MOCHA.Services.Auth;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 
@@ -78,6 +80,7 @@ builder.Services.AddScoped<IPlcGatewayClient>(sp =>
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
+builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
 
 var app = builder.Build();
 
