@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
@@ -10,10 +11,12 @@ using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
+using MOCHA.Factories;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var azureAdEnabled = builder.Configuration.GetValue<bool>("AzureAd:Enabled");
+var fakeAuthOptions = builder.Configuration.GetSection("FakeAuth").Get<FakeAuthOptions>() ?? new FakeAuthOptions();
 
 if (azureAdEnabled)
 {
@@ -27,14 +30,32 @@ if (azureAdEnabled)
 }
 else
 {
-    builder.Services.AddAuthorization(options =>
+    if (fakeAuthOptions.Enabled)
     {
-        var allowAnonymous = new AuthorizationPolicyBuilder()
-            .RequireAssertion(_ => true)
-            .Build();
-        options.DefaultPolicy = allowAnonymous;
-        options.FallbackPolicy = allowAnonymous;
-    });
+        builder.Services.AddAuthentication(FakeAuthHandler.Scheme)
+            .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.Scheme, _ => { });
+
+        builder.Services.AddAuthorization(options =>
+        {
+            var authenticatedOnly = new AuthorizationPolicyBuilder()
+                .AddAuthenticationSchemes(FakeAuthHandler.Scheme)
+                .RequireAuthenticatedUser()
+                .Build();
+            options.DefaultPolicy = authenticatedOnly;
+            options.FallbackPolicy = authenticatedOnly;
+        });
+    }
+    else
+    {
+        builder.Services.AddAuthorization(options =>
+        {
+            var allowAnonymous = new AuthorizationPolicyBuilder()
+                .RequireAssertion(_ => true)
+                .Build();
+            options.DefaultPolicy = allowAnonymous;
+            options.FallbackPolicy = allowAnonymous;
+        });
+    }
 }
 
 builder.Services.AddCascadingAuthenticationState();
@@ -82,14 +103,16 @@ builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
 builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
+builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("FakeAuth"));
 builder.Services.AddScoped<RoleBootstrapper>();
+builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
 
 var app = builder.Build();
 
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
-    db.Database.EnsureCreated();
+    var initializer = scope.ServiceProvider.GetRequiredService<IDatabaseInitializer>();
+    await initializer.InitializeAsync();
     var bootstrapper = scope.ServiceProvider.GetRequiredService<RoleBootstrapper>();
     bootstrapper.EnsureAdminRolesAsync().GetAwaiter().GetResult();
 }
