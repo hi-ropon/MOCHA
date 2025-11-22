@@ -1,3 +1,4 @@
+@inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inherits LayoutComponentBase
 
@@ -7,7 +8,7 @@
             <img src="icon.png" alt="Chat" class="sidebar-title-icon" />
             <span class="sr-only">Chat</span>
         </div>
-        <button class="new-chat-btn">New Chat</button>
+        <button class="new-chat-btn" @onclick="StartNewChat">New Chat</button>
         <button class="sidebar-toggle" type="button" @onclick="ToggleAsync" title="サイドバー切替">
             @(IsCollapsed ? "›" : "‹")
         </button>
@@ -45,4 +46,9 @@
     [Parameter] public EventCallback OnToggle { get; set; }
 
     private Task ToggleAsync() => OnToggle.InvokeAsync();
+
+    private void StartNewChat()
+    {
+        NavigationManager.NavigateTo("/", forceLoad: true);
+    }
 }
