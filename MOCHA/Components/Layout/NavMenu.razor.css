@@ -7,7 +7,7 @@
 }
 
 .sidebar-header {
-    padding: 20px 16px;
+    padding: 20px 12px 20px 10px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     flex-shrink: 0;
     position: relative;
@@ -18,11 +18,12 @@
     align-items: center;
     margin-bottom: 16px;
     height: 32px;
+    margin-left: -4px;
 }
 
 .sidebar-title-icon {
-    width: 32px;
-    height: 32px;
+    width: 72px;
+    height: 72px;
     object-fit: contain;
     display: block;
 }
