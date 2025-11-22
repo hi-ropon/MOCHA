@@ -2,57 +2,108 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IUserRoleProvider RoleProvider
 
-<h1>ロール管理</h1>
+<div class="role-page">
+    <h1 class="page-title">ロール管理</h1>
 
-@if (!isAdmin)
-{
-    <p>管理者ロールを持つユーザーのみ利用できます。</p>
-    if (!string.IsNullOrWhiteSpace(statusMessage))
+    @if (!isAdmin)
     {
-        <p>@statusMessage</p>
-    }
-}
-else
-{
-    <div class="role-settings">
-        <label>
-            ユーザーID（oid / email など）:
-            <input @bind="targetUserId" placeholder="例: 00000000-0000-0000-0000-000000000000" />
-        </label>
-        <div class="role-actions">
-            <button @onclick="LoadRolesAsync">現在のロールを読み込み</button>
-            <button @onclick="SaveRolesAsync">保存</button>
-        </div>
-
-        <div class="role-list">
-            @foreach (var role in availableRoles)
+        <div class="card warning">
+            <h3>アクセス権限が不足しています</h3>
+            <p>管理者ロールを持つユーザーのみ利用できます。</p>
+            @if (!string.IsNullOrWhiteSpace(statusMessage))
             {
-                <label class="role-item">
-                    <input type="checkbox"
-                           checked="@selectedRoles.Contains(role.Id)"
-                           @onchange="args => ToggleRole(role.Id, args.Value)" />
-                    <span class="role-name">@role.Label</span>
-                </label>
+                <p class="muted">@statusMessage</p>
             }
+        </div>
+    }
+    else
+    {
+        <div class="role-grid">
+            <section class="card">
+                <header class="card-header">
+                    <div>
+                        <p class="eyebrow">ターゲットユーザー</p>
+                        <h3>付与/削除対象</h3>
+                    </div>
+                    <span class="chip info">現在: @currentUserId</span>
+                </header>
+                <div class="field">
+                    <label>ユーザーID（oid / email など）</label>
+                    <input @bind="targetUserId"
+                           placeholder="例: 00000000-0000-0000-0000-000000000000"
+                           class="input" />
+                    <p class="hint">Azure AD の oid / ユーザープリンシパル名など、ロール付与のキーとなるID</p>
+                </div>
+                <div class="actions">
+                    <button class="btn ghost" @onclick="LoadRolesAsync" disabled="@isLoading">
+                        @(isLoading ? "読み込み中…" : "現在のロールを読み込み")
+                    </button>
+                    <button class="btn primary" @onclick="SaveRolesAsync" disabled="@isSaving">
+                        @(isSaving ? "保存中…" : "変更を保存")
+                    </button>
+                </div>
+                <div class="current-roles">
+                    <p class="eyebrow">現在選択中のロール</p>
+                    <div class="chip-row">
+                        @if (selectedRoles.Count == 0)
+                        {
+                            <span class="muted">ロールが選択されていません</span>
+                        }
+                        else
+                        {
+                            @foreach (var role in selectedRoles)
+                            {
+                                <span class="chip subtle">@role</span>
+                            }
+                        }
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <header class="card-header">
+                    <div>
+                        <p class="eyebrow">ロール一覧</p>
+                        <h3>チェックして付与/削除</h3>
+                    </div>
+                </header>
+                <div class="role-list">
+                    @foreach (var role in availableRoles)
+                    {
+                        <label class="role-item">
+                            <div class="role-main">
+                                <input type="checkbox"
+                                       checked="@selectedRoles.Contains(role.Id)"
+                                       @onchange="args => ToggleRole(role.Id, args.Value)" />
+                                <div class="role-text">
+                                    <span class="role-name">@role.Label</span>
+                                    <span class="role-desc">@role.Description</span>
+                                </div>
+                            </div>
+                            <span class="chip subtle">@role.Id</span>
+                        </label>
+                    }
+                </div>
+            </section>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(statusMessage))
         {
-            <p>@statusMessage</p>
+            <div class="status @statusKind">@statusMessage</div>
         }
-    </div>
-}
+    }
+</div>
 
 @code {
     private readonly List<UserRoleOption> availableRoles =
     [
-        new(UserRoleId.Predefined.Administrator.Value, "Administrator"),
-        new(UserRoleId.Predefined.Developer.Value, "Developer"),
-        new(UserRoleId.Predefined.Operator.Value, "Operator"),
-        new(UserRoleId.Predefined.Development.Value, "Development"),
-        new(UserRoleId.Predefined.MechanicalDesign.Value, "MechanicalDesign"),
-        new(UserRoleId.Predefined.ElectricalDesign.Value, "ElectricalDesign"),
-        new(UserRoleId.Predefined.Manufacturing.Value, "Manufacturing"),
+        new(UserRoleId.Predefined.Administrator.Value, "Administrator", "システム全体の管理者。付与/削除や設定変更が可能。"),
+        new(UserRoleId.Predefined.Developer.Value, "Developer", "開発者向けの拡張権限。"),
+        new(UserRoleId.Predefined.Operator.Value, "Operator", "運用担当向けの限定権限。"),
+        new(UserRoleId.Predefined.Development.Value, "Development", "開発部門のメンバー。"),
+        new(UserRoleId.Predefined.MechanicalDesign.Value, "MechanicalDesign", "メカ設計担当。"),
+        new(UserRoleId.Predefined.ElectricalDesign.Value, "ElectricalDesign", "エレキ設計担当。"),
+        new(UserRoleId.Predefined.Manufacturing.Value, "Manufacturing", "製造担当。"),
     ];
 
     private string? currentUserId;
@@ -60,6 +111,9 @@ else
     private HashSet<string> selectedRoles = new(StringComparer.OrdinalIgnoreCase);
     private string statusMessage = string.Empty;
     private bool isAdmin;
+    private bool isLoading;
+    private bool isSaving;
+    private string statusKind = "info";
 
     protected override async Task OnInitializedAsync()
     {
@@ -82,12 +136,14 @@ else
 
     private async Task LoadRolesAsync()
     {
-        statusMessage = string.Empty;
+        ResetStatus();
+        isLoading = true;
         selectedRoles = new(StringComparer.OrdinalIgnoreCase);
 
         if (string.IsNullOrWhiteSpace(targetUserId))
         {
-            statusMessage = "ユーザーIDを入力してください。";
+            SetStatus("ユーザーIDを入力してください。", "warn");
+            isLoading = false;
             return;
         }
 
@@ -97,16 +153,19 @@ else
             selectedRoles.Add(role.Value);
         }
 
-        statusMessage = "ロールを読み込みました。";
+        SetStatus("ロールを読み込みました。", "info");
+        isLoading = false;
     }
 
     private async Task SaveRolesAsync()
     {
-        statusMessage = string.Empty;
+        ResetStatus();
+        isSaving = true;
 
         if (string.IsNullOrWhiteSpace(targetUserId))
         {
-            statusMessage = "ユーザーIDを入力してください。";
+            SetStatus("ユーザーIDを入力してください。", "warn");
+            isSaving = false;
             return;
         }
 
@@ -130,7 +189,8 @@ else
             }
         }
 
-        statusMessage = "保存しました。";
+        SetStatus("保存しました。", "success");
+        isSaving = false;
     }
 
     private void ToggleRole(string roleId, object? value)
@@ -146,5 +206,17 @@ else
         }
     }
 
-    private sealed record UserRoleOption(string Id, string Label);
+    private void ResetStatus()
+    {
+        statusMessage = string.Empty;
+        statusKind = "info";
+    }
+
+    private void SetStatus(string message, string kind)
+    {
+        statusMessage = message;
+        statusKind = kind;
+    }
+
+    private sealed record UserRoleOption(string Id, string Label, string Description);
 }
