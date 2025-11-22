@@ -18,12 +18,11 @@
     align-items: center;
     margin-bottom: 16px;
     height: 32px;
-    margin-left: -4px;
 }
 
 .sidebar-title-icon {
-    width: 72px;
-    height: 72px;
+    width: 36px;
+    height: 36px;
     object-fit: contain;
     display: block;
 }
