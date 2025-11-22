@@ -81,6 +81,8 @@ builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
+builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
+builder.Services.AddScoped<RoleBootstrapper>();
 
 var app = builder.Build();
 
@@ -88,6 +90,8 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ChatDbContext>();
     db.Database.EnsureCreated();
+    var bootstrapper = scope.ServiceProvider.GetRequiredService<RoleBootstrapper>();
+    bootstrapper.EnsureAdminRolesAsync().GetAwaiter().GetResult();
 }
 
 // Configure the HTTP request pipeline.

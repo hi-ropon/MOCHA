@@ -1,0 +1,150 @@
+@page "/settings/roles"
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IUserRoleProvider RoleProvider
+
+<h1>ロール管理</h1>
+
+@if (!isAdmin)
+{
+    <p>管理者ロールを持つユーザーのみ利用できます。</p>
+    if (!string.IsNullOrWhiteSpace(statusMessage))
+    {
+        <p>@statusMessage</p>
+    }
+}
+else
+{
+    <div class="role-settings">
+        <label>
+            ユーザーID（oid / email など）:
+            <input @bind="targetUserId" placeholder="例: 00000000-0000-0000-0000-000000000000" />
+        </label>
+        <div class="role-actions">
+            <button @onclick="LoadRolesAsync">現在のロールを読み込み</button>
+            <button @onclick="SaveRolesAsync">保存</button>
+        </div>
+
+        <div class="role-list">
+            @foreach (var role in availableRoles)
+            {
+                <label class="role-item">
+                    <input type="checkbox"
+                           checked="@selectedRoles.Contains(role.Id)"
+                           @onchange="args => ToggleRole(role.Id, args.Value)" />
+                    <span class="role-name">@role.Label</span>
+                </label>
+            }
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(statusMessage))
+        {
+            <p>@statusMessage</p>
+        }
+    </div>
+}
+
+@code {
+    private readonly List<UserRoleOption> availableRoles =
+    [
+        new(UserRoleId.Predefined.Administrator.Value, "Administrator"),
+        new(UserRoleId.Predefined.Developer.Value, "Developer"),
+        new(UserRoleId.Predefined.Operator.Value, "Operator"),
+        new(UserRoleId.Predefined.Development.Value, "Development"),
+        new(UserRoleId.Predefined.MechanicalDesign.Value, "MechanicalDesign"),
+        new(UserRoleId.Predefined.ElectricalDesign.Value, "ElectricalDesign"),
+        new(UserRoleId.Predefined.Manufacturing.Value, "Manufacturing"),
+    ];
+
+    private string? currentUserId;
+    private string targetUserId = string.Empty;
+    private HashSet<string> selectedRoles = new(StringComparer.OrdinalIgnoreCase);
+    private string statusMessage = string.Empty;
+    private bool isAdmin;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var state = await AuthStateProvider.GetAuthenticationStateAsync();
+        currentUserId = state.User.GetUserObjectId();
+
+        if (currentUserId is null)
+        {
+            statusMessage = "ユーザー情報が取得できませんでした。";
+            isAdmin = false;
+            return;
+        }
+
+        isAdmin = await RoleProvider.IsInRoleAsync(currentUserId, UserRoleId.Predefined.Administrator.Value);
+        if (!isAdmin)
+        {
+            statusMessage = "管理者ではありません。";
+        }
+    }
+
+    private async Task LoadRolesAsync()
+    {
+        statusMessage = string.Empty;
+        selectedRoles = new(StringComparer.OrdinalIgnoreCase);
+
+        if (string.IsNullOrWhiteSpace(targetUserId))
+        {
+            statusMessage = "ユーザーIDを入力してください。";
+            return;
+        }
+
+        var roles = await RoleProvider.GetRolesAsync(targetUserId.Trim());
+        foreach (var role in roles)
+        {
+            selectedRoles.Add(role.Value);
+        }
+
+        statusMessage = "ロールを読み込みました。";
+    }
+
+    private async Task SaveRolesAsync()
+    {
+        statusMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(targetUserId))
+        {
+            statusMessage = "ユーザーIDを入力してください。";
+            return;
+        }
+
+        var normalizedTarget = targetUserId.Trim();
+        var current = await RoleProvider.GetRolesAsync(normalizedTarget);
+        var currentSet = new HashSet<string>(current.Select(r => r.Value), StringComparer.OrdinalIgnoreCase);
+
+        foreach (var roleId in selectedRoles)
+        {
+            if (!currentSet.Contains(roleId))
+            {
+                await RoleProvider.AssignAsync(normalizedTarget, UserRoleId.From(roleId));
+            }
+        }
+
+        foreach (var roleId in currentSet)
+        {
+            if (!selectedRoles.Contains(roleId))
+            {
+                await RoleProvider.RemoveAsync(normalizedTarget, UserRoleId.From(roleId));
+            }
+        }
+
+        statusMessage = "保存しました。";
+    }
+
+    private void ToggleRole(string roleId, object? value)
+    {
+        var isChecked = value as bool? ?? false;
+        if (isChecked)
+        {
+            selectedRoles.Add(roleId);
+        }
+        else
+        {
+            selectedRoles.Remove(roleId);
+        }
+    }
+
+    private sealed record UserRoleOption(string Id, string Label);
+}

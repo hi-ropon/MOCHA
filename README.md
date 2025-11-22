@@ -62,3 +62,15 @@
 ## 挙動メモ
 - New Chat で初期画面へ戻る。履歴はユーザーごとに SQLite に保存され、サイドバーに表示。
 - ツール実行（PLC 読み取り）はフェイク/実クライアントを切替可能。ツール結果後にフェイクの応答を返し、Copilot 側のフェイク応答も表示する。
+
+## ロール管理
+- ロール種別: Administrator / Developer / Operator（将来拡張: Development, MechanicalDesign, ElectricalDesign, Manufacturing）
+- 保存先: アプリDB（`UserRoles` テーブル）。`IUserRoleProvider` を介して付与/削除。
+- 初期Admin付与: `RoleBootstrap:AdminUserIds` に OID を配列で設定し、起動時に自動付与（Idempotent）。付与後は設定を消す運用を推奨。
+- 管理UI: `/settings/roles` でユーザーID（oid/email 等）を入力し、ロールをチェックして保存（Adminのみ利用可）。
+- 管理API（Adminのみ）:
+  - `GET /api/roles/{userId}`: ロール一覧
+  - `POST /api/roles/assign` (body: `{ userId, role }`): 付与
+  - `DELETE /api/roles/{userId}/{role}`: 削除
+  - いずれもログインユーザーが Administrator でない場合は `403 Forbid`
+- 開発時のヒント: AzureAd を無効にしたローカル環境では認証なしでアクセス可能。`RoleBootstrap:AdminUserIds` に開発用IDを入れておくと `/settings/roles` に入れる。
