@@ -7,6 +7,7 @@ using Microsoft.Identity.Web;
 using MOCHA.Components;
 using MOCHA.Data;
 using MOCHA.Models.Auth;
+using MOCHA.Services.Agents;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Copilot;
@@ -101,6 +102,8 @@ builder.Services.AddScoped<IPlcGatewayClient>(sp =>
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
+builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();
+builder.Services.AddScoped<DeviceAgentState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
 builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
 builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("FakeAuth"));

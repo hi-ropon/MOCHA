@@ -1,4 +1,3 @@
-using System.Data.Common;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -18,36 +17,7 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
-        try
-        {
-            // マイグレーションを適用。初回はDB/テーブルを作成し、以降は差分を反映。
-            await _db.Database.MigrateAsync(cancellationToken);
-        }
-        catch (SqliteException)
-        {
-            // 旧DBで __EFMigrationsHistory が無い/壊れている場合のフォールバックとして、最低限のテーブルを確保する。
-            await EnsureTablesAsync(cancellationToken);
-            return;
-        }
-
-        // マイグレーションが通っても、既存DBにテーブルが無い場合のフォールバック
-        if (!await HasConversationTableAsync(cancellationToken))
-        {
-            await EnsureTablesAsync(cancellationToken);
-        }
-    }
-
-    private async Task<bool> HasConversationTableAsync(CancellationToken cancellationToken)
-    {
-        const string existsSql = """
-            SELECT name FROM sqlite_master WHERE type='table' AND name='Conversations';
-        """;
-
-        await using var connection = new SqliteConnection(_db.Database.GetConnectionString());
-        await connection.OpenAsync(cancellationToken);
-        await using var command = new SqliteCommand(existsSql, connection);
-        var result = await command.ExecuteScalarAsync(cancellationToken);
-        return result is not null;
+        await EnsureTablesAsync(cancellationToken);
     }
 
     private async Task EnsureTablesAsync(CancellationToken cancellationToken)
@@ -57,9 +27,11 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 Id TEXT NOT NULL CONSTRAINT PK_Conversations PRIMARY KEY,
                 UserObjectId TEXT NOT NULL,
                 Title TEXT NOT NULL,
+                AgentNumber TEXT NULL,
                 UpdatedAt TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_UpdatedAt ON Conversations(UserObjectId, UpdatedAt);
+            CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
 
             CREATE TABLE IF NOT EXISTS Messages(
                 Id INTEGER NOT NULL CONSTRAINT PK_Messages PRIMARY KEY AUTOINCREMENT,
@@ -80,8 +52,49 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 CreatedAt TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_UserRoles_UserId_Role ON UserRoles(UserId, Role);
+
+            CREATE TABLE IF NOT EXISTS DeviceAgents(
+                Id INTEGER NOT NULL CONSTRAINT PK_DeviceAgents PRIMARY KEY AUTOINCREMENT,
+                UserObjectId TEXT NOT NULL,
+                Number TEXT NOT NULL,
+                Name TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgents_UserObjectId_Number ON DeviceAgents(UserObjectId, Number);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+        await EnsureAgentColumnAsync(cancellationToken);
+    }
+
+    private async Task EnsureAgentColumnAsync(CancellationToken cancellationToken)
+    {
+        const string pragmaSql = "PRAGMA table_info(Conversations);";
+        var hasAgentColumn = false;
+
+        await using (var connection = new SqliteConnection(_db.Database.GetConnectionString()))
+        {
+            await connection.OpenAsync(cancellationToken);
+            await using var command = new SqliteCommand(pragmaSql, connection);
+            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "AgentNumber", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasAgentColumn = true;
+                    break;
+                }
+            }
+        }
+
+        if (!hasAgentColumn)
+        {
+            const string alterSql = """
+                ALTER TABLE Conversations ADD COLUMN AgentNumber TEXT NULL;
+                CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
+            """;
+            await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+        }
     }
 }

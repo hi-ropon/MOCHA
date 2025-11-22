@@ -33,14 +33,15 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         UserContext user,
         string? conversationId,
         string text,
+        string? agentNumber,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var convId = string.IsNullOrWhiteSpace(conversationId)
             ? Guid.NewGuid().ToString("N")
             : conversationId;
 
-        await _history.UpsertAsync(user.UserId, convId, text, cancellationToken);
-        await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text), cancellationToken);
+        await _history.UpsertAsync(user.UserId, convId, text, agentNumber, cancellationToken);
+        await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text), agentNumber, cancellationToken);
 
         var turn = new ChatTurn(convId, new List<ChatMessage>
         {
@@ -70,22 +71,22 @@ public sealed class ChatOrchestrator : IChatOrchestrator
 
                 // ツール結果の簡易表示
                 yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), cancellationToken));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), agentNumber, cancellationToken));
 
                 // Copilot Studio に渡したことを示すフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), cancellationToken));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), agentNumber, cancellationToken));
 
                 // Copilot Studio が最終回答した想定のフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)), cancellationToken));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)), agentNumber, cancellationToken));
             }
             else
             {
                 if (ev.Message is not null)
                 {
                     yield return ChatStreamEvent.FromMessage(
-                        await SaveMessageAsync(user, convId, ev.Message, cancellationToken));
+                        await SaveMessageAsync(user, convId, ev.Message, agentNumber, cancellationToken));
                 }
                 else
                 {
@@ -285,10 +286,10 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
     }
 
-    private async Task<ChatMessage> SaveMessageAsync(UserContext user, string conversationId, ChatMessage message, CancellationToken cancellationToken)
+    private async Task<ChatMessage> SaveMessageAsync(UserContext user, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken)
     {
-        await _chatRepository.AddMessageAsync(user.UserId, conversationId, message, cancellationToken);
-        await _history.UpsertAsync(user.UserId, conversationId, message.Content, cancellationToken);
+        await _chatRepository.AddMessageAsync(user.UserId, conversationId, message, agentNumber, cancellationToken);
+        await _history.UpsertAsync(user.UserId, conversationId, message.Content, agentNumber, cancellationToken);
         return message;
     }
 }

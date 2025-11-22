@@ -10,6 +10,7 @@
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+@inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject IOptionsMonitor<CopilotStudioOptions> CopilotOptions
 @inject IOptionsMonitor<PlcGatewayOptions> PlcOptions
 @implements IDisposable
@@ -79,6 +80,7 @@
     private string? Status;
     private bool IsSending;
     private string? ConversationId;
+    private string? _activeAgentNumber;
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
     private IDisposable? _copilotOptionsSubscription;
@@ -86,8 +88,9 @@
     private UserContext? _user;
     private string? _loadedConversationId;
 
-    private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input);
+    private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
+    private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
     private bool CopilotLive => IsCopilotConfigured(CopilotOptions.CurrentValue);
     private bool GatewayLive => PlcOptions.CurrentValue.Enabled;
     private string CopilotDotClass => $"dot {(CopilotLive ? "dot-on" : "dot-off")}";
@@ -104,10 +107,17 @@
     {
         _user = await ResolveUserAsync();
 
-        await HistoryState.LoadAsync(_user.UserId);
+        await AgentState.LoadAsync(_user.UserId);
+        _activeAgentNumber = AgentState.SelectedAgentNumber;
+        await HistoryState.LoadAsync(_user.UserId, AgentState.SelectedAgentNumber);
+        if (!HasAgentSelected)
+        {
+            Status = "装置エージェントを選択してください";
+        }
 
         _copilotOptionsSubscription = CopilotOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
+        AgentState.Changed += OnAgentStateChanged;
     }
 
     protected override async Task OnParametersSetAsync()
@@ -138,6 +148,13 @@
             return;
         }
 
+        var agentNumber = AgentState.SelectedAgentNumber;
+        if (string.IsNullOrWhiteSpace(agentNumber))
+        {
+            Status = "装置エージェントを選択してください";
+            return;
+        }
+
         CancelStream();
         _cts = new CancellationTokenSource();
 
@@ -147,6 +164,7 @@
         Status = null;
 
         ConversationId ??= Guid.NewGuid().ToString("N");
+        _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
         var userMessage = new ChatMessage(ChatRole.User, text);
@@ -155,7 +173,7 @@
 
         try
         {
-            await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, _cts.Token))
+            await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
             {
                 switch (ev.Type)
                 {
@@ -164,7 +182,7 @@
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
-                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text);
+                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber);
                         Status = $"ツール実行中: {ev.ActionRequest.ActionName}";
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
@@ -215,6 +233,26 @@
         }
     }
 
+    private void OnAgentStateChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            var selected = AgentState.SelectedAgentNumber;
+            if (!string.Equals(_activeAgentNumber, selected, StringComparison.Ordinal))
+            {
+                ResetConversation();
+                _activeAgentNumber = selected;
+            }
+
+            if (string.IsNullOrWhiteSpace(selected))
+            {
+                Status = "装置エージェントを選択してください";
+            }
+
+            StateHasChanged();
+        });
+    }
+
     private void CancelStream()
     {
         if (_cts is { IsCancellationRequested: false })
@@ -232,6 +270,7 @@
     {
         CancelStream();
         ConversationId = null;
+        _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
         Status = null;
         Input = string.Empty;
@@ -242,12 +281,13 @@
     {
         CancelStream();
         ConversationId = conversationId;
+        _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
         Status = null;
         Input = string.Empty;
 
         var user = _user ?? await ResolveUserAsync();
-        var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId);
+        var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
         Messages.AddRange(historyMessages);
 
         if (!Messages.Any())
@@ -291,6 +331,7 @@
         _copilotOptionsSubscription?.Dispose();
         _plcOptionsSubscription?.Dispose();
         _cts?.Dispose();
+        AgentState.Changed -= OnAgentStateChanged;
     }
 
 }

@@ -3,6 +3,7 @@
 @using MOCHA.Models.Chat
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+@inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
 @implements IDisposable
@@ -15,6 +16,60 @@
             @(IsCollapsed ? "›" : "‹")
         </button>
     </div>
+
+    <div class="agent-section">
+        <div class="agent-label">装置エージェント</div>
+        <div class="agent-select-row">
+            <select class="agent-select" value="@selectedAgentNumber" @onchange="OnAgentChanged">
+                <option value="">選択してください</option>
+                @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
+                {
+                    <option value="@agent.Number">@agent.Number - @agent.Name</option>
+                }
+            </select>
+            <button type="button" class="agent-gear-btn" title="エージェント設定" @onclick="ToggleSettings">
+                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.5" fill="none" />
+                    <path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l1.9-1.5a.7.7 0 0 0 .2-.8l-1.8-3.1a.7.7 0 0 0-.8-.3l-2.2.9a8.4 8.4 0 0 0-2.6-1.5l-.3-2.3a.7.7 0 0 0-.7-.6h-3.6a.7.7 0 0 0-.7.6L8.8 3.9a8.4 8.4 0 0 0-2.6 1.5l-2.2-.9a.7.7 0 0 0-.8.3L1.4 8a.7.7 0 0 0 .2.8l1.9 1.5a7.9 7.9 0 0 0 0 3l-1.9 1.5a.7.7 0 0 0-.2.8l1.8 3.1c.2.3.5.4.8.3l2.2-.9a8.4 8.4 0 0 0 2.6 1.5l.3 2.3c0 .3.3.6.7.6h3.6c.4 0 .7-.3.7-.6l.3-2.3a8.4 8.4 0 0 0 2.6-1.5l2.2.9c.3.1.6 0 .8-.3l1.8-3.1a.7.7 0 0 0-.2-.8l-1.9-1.5Z" stroke="currentColor" stroke-width="1.5" fill="none" />
+                </svg>
+            </button>
+        </div>
+        <div class="agent-note">
+            @if (!string.IsNullOrWhiteSpace(selectedAgentName))
+            {
+                <span>@selectedAgentName</span>
+            }
+            else
+            {
+                <span class="agent-warning">未選択</span>
+            }
+        </div>
+    </div>
+
+    @if (_settingsOpen)
+    {
+        <div class="agent-settings">
+            <div class="field">
+                <label for="agent-number">番号</label>
+                <input id="agent-number"
+                       class="agent-input"
+                       @bind="agentNumberInput"
+                       placeholder="例: A-01" />
+            </div>
+            <div class="field">
+                <label for="agent-name">名前</label>
+                <input id="agent-name"
+                       class="agent-input"
+                       @bind="agentNameInput"
+                       placeholder="装置名など" />
+            </div>
+            <button class="new-chat-btn save-agent-btn"
+                    @onclick="RegisterAgentAsync"
+                    disabled="@(_isRegistering || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))">
+                登録
+            </button>
+        </div>
+    }
 
     <div class="sessions-list">
         @if (HistoryState.Summaries.Any())
@@ -64,10 +119,17 @@
     private string userInitial = "U";
     private string? _userId;
     private bool _loaded;
+    private bool _settingsOpen;
+    private string selectedAgentNumber = string.Empty;
+    private string selectedAgentName = string.Empty;
+    private string agentNumberInput = string.Empty;
+    private string agentNameInput = string.Empty;
+    private bool _isRegistering;
 
     protected override async Task OnInitializedAsync()
     {
         HistoryState.Changed += OnHistoryChanged;
+        AgentState.Changed += OnAgentStateChanged;
         await EnsureHistoryAsync();
     }
 
@@ -98,7 +160,10 @@
             ? "U"
             : userName[..1].ToUpperInvariant();
 
-        await HistoryState.LoadAsync(_userId);
+        await AgentState.LoadAsync(_userId);
+        selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
+        selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+        await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
         _loaded = true;
     }
 
@@ -108,6 +173,60 @@
     {
         var uri = NavigationManager.GetUriWithQueryParameter("c", conversationId);
         NavigationManager.NavigateTo(uri, forceLoad: true);
+    }
+
+    private async Task OnAgentChanged(ChangeEventArgs e)
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var number = e.Value?.ToString();
+        number = string.IsNullOrWhiteSpace(number) ? null : number;
+        AgentState.Select(number);
+        selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
+        selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+    }
+
+    private void OnAgentStateChanged()
+    {
+        _ = InvokeAsync(async () =>
+        {
+            selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
+            selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+            if (_userId is not null)
+            {
+                await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
+            }
+            StateHasChanged();
+        });
+    }
+
+    private void ToggleSettings()
+    {
+        _settingsOpen = !_settingsOpen;
+    }
+
+    private async Task RegisterAgentAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))
+        {
+            return;
+        }
+
+        _isRegistering = true;
+        try
+        {
+            await AgentState.AddOrUpdateAsync(_userId, agentNumberInput.Trim(), agentNameInput.Trim());
+            agentNumberInput = string.Empty;
+            agentNameInput = string.Empty;
+            _settingsOpen = false;
+        }
+        finally
+        {
+            _isRegistering = false;
+        }
     }
 
     private async Task ConfirmDeleteAsync(ConversationSummary summary)
@@ -131,7 +250,7 @@
             return;
         }
 
-        await HistoryState.DeleteAsync(_userId, summary.Id);
+        await HistoryState.DeleteAsync(_userId, summary.Id, AgentState.SelectedAgentNumber);
 
         if (NavigationManager.Uri.Contains($"c={summary.Id}", StringComparison.Ordinal))
         {
@@ -142,5 +261,6 @@
     public void Dispose()
     {
         HistoryState.Changed -= OnHistoryChanged;
+        AgentState.Changed -= OnAgentStateChanged;
     }
 }

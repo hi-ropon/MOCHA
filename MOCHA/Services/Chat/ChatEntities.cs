@@ -5,6 +5,7 @@ public class ChatConversationEntity
     public string Id { get; set; } = default!;
     public string UserObjectId { get; set; } = default!;
     public string Title { get; set; } = string.Empty;
+    public string? AgentNumber { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
     public List<ChatMessageEntity> Messages { get; set; } = new();

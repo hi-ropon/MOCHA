@@ -20,6 +20,99 @@
     height: 32px;
 }
 
+.agent-section {
+    padding: 12px 12px 0 12px;
+    color: #dbe8ef;
+}
+
+.agent-label {
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #94a5b1;
+    margin-bottom: 6px;
+}
+
+.agent-select-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.agent-select {
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #e8f0f3;
+    padding: 10px;
+    font-size: 14px;
+}
+
+.agent-select:focus {
+    outline: 1px solid #37d0c0;
+}
+
+.agent-gear-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.08);
+    color: #e8f0f3;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.agent-gear-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.agent-note {
+    font-size: 12px;
+    color: #9bb6c3;
+    margin: 8px 2px 0;
+}
+
+.agent-warning {
+    color: #f2a365;
+}
+
+.agent-settings {
+    padding: 12px 12px 4px 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.agent-settings .field {
+    display: grid;
+    gap: 4px;
+}
+
+.agent-settings label {
+    font-size: 12px;
+    color: #9bb6c3;
+}
+
+.agent-input {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #e8f0f3;
+    padding: 8px 10px;
+}
+
+.agent-input:focus {
+    outline: 1px solid #37d0c0;
+}
+
+.save-agent-btn {
+    justify-content: center;
+}
+
 .sr-only {
     position: absolute;
     width: 1px;
@@ -80,6 +173,8 @@
 
 .sidebar-container.collapsed .sidebar-title,
 .sidebar-container.collapsed .new-chat-btn,
+.sidebar-container.collapsed .agent-section,
+.sidebar-container.collapsed .agent-settings,
 .sidebar-container.collapsed .sessions-list,
 .sidebar-container.collapsed .user-info {
     display: none;

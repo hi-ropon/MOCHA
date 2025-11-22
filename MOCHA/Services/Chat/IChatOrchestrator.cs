@@ -8,5 +8,6 @@ public interface IChatOrchestrator
         UserContext user,
         string? conversationId,
         string text,
+        string? agentNumber,
         CancellationToken cancellationToken = default);
 }
