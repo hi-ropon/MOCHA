@@ -20,13 +20,6 @@
     height: 32px;
 }
 
-.sidebar-title-icon {
-    width: 36px;
-    height: 36px;
-    object-fit: contain;
-    display: block;
-}
-
 .sr-only {
     position: absolute;
     width: 1px;

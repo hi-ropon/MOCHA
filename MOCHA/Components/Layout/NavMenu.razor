@@ -9,10 +9,7 @@
 
 <div class="sidebar-container @(IsCollapsed ? "collapsed" : string.Empty)">
     <div class="sidebar-header">
-        <div class="sidebar-title">
-            <img src="icon.png" alt="Chat" class="sidebar-title-icon" />
-            <span class="sr-only">Chat</span>
-        </div>
+        <div class="sidebar-title" aria-label="Chat"></div>
         <button class="new-chat-btn" @onclick="StartNewChat">New Chat</button>
         <button class="sidebar-toggle" type="button" @onclick="ToggleAsync" title="サイドバー切替">
             @(IsCollapsed ? "›" : "‹")
