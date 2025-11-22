@@ -101,6 +101,20 @@ public class ChatRepository : IChatRepository
             .ToList();
     }
 
+    public async Task DeleteConversationAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
+    {
+        var existing = await _dbContext.Conversations
+            .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
+
+        if (existing is null)
+        {
+            return;
+        }
+
+        _dbContext.Conversations.Remove(existing);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+    }
+
     private static ChatRole ParseRole(string role)
     {
         return Enum.TryParse<ChatRole>(role, ignoreCase: true, out var parsed)

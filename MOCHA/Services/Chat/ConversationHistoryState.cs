@@ -64,4 +64,19 @@ public class ConversationHistoryState
         }
         Changed?.Invoke();
     }
+
+    public async Task DeleteAsync(string userId, string id, CancellationToken cancellationToken = default)
+    {
+        await _repository.DeleteConversationAsync(userId, id, cancellationToken);
+        lock (_lock)
+        {
+            if (_currentUserId != userId)
+            {
+                return;
+            }
+
+            _summaries.RemoveAll(x => x.Id == id);
+        }
+        Changed?.Invoke();
+    }
 }

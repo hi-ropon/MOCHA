@@ -1,7 +1,9 @@
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using MOCHA.Models.Chat
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+@inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
 @implements IDisposable
 
@@ -27,6 +29,13 @@
                         <div class="history-title">@item.Title</div>
                         <div class="history-time">@item.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
                     </div>
+                    <button type="button"
+                            class="session-menu-btn"
+                            title="履歴を削除"
+                            @onclick:stopPropagation="true"
+                            @onclick="() => ConfirmDeleteAsync(item)">
+                        &#8942;
+                    </button>
                 </div>
             }
         }
@@ -98,6 +107,35 @@
     {
         var uri = NavigationManager.GetUriWithQueryParameter("c", conversationId);
         NavigationManager.NavigateTo(uri, forceLoad: true);
+    }
+
+    private async Task ConfirmDeleteAsync(ConversationSummary summary)
+    {
+        if (!_loaded)
+        {
+            await EnsureHistoryAsync();
+        }
+
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var confirmed = await JsRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"「{summary.Title}」を削除しますか？");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        await HistoryState.DeleteAsync(_userId, summary.Id);
+
+        if (NavigationManager.Uri.Contains($"c={summary.Id}", StringComparison.Ordinal))
+        {
+            NavigationManager.NavigateTo("/", forceLoad: true);
+        }
     }
 
     public void Dispose()

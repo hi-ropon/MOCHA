@@ -83,6 +83,29 @@ public class FakeChatFlowTests
         Assert.Contains(saved, m => m.Role == ChatRole.Assistant);
     }
 
+    [Fact]
+    public async Task 履歴削除するとサマリとメッセージが消える()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var user = new UserContext("test-user", "Test User");
+        var conversationId = "conv-del";
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, conversationId, "削除テスト"))
+        {
+        }
+
+        await history.LoadAsync(user.UserId);
+        Assert.Contains(history.Summaries, s => s.Id == conversationId);
+
+        await history.DeleteAsync(user.UserId, conversationId);
+
+        Assert.DoesNotContain(history.Summaries, s => s.Id == conversationId);
+        var messages = await repo.GetMessagesAsync(user.UserId, conversationId);
+        Assert.Empty(messages);
+    }
+
     private sealed class InMemoryChatRepository : IChatRepository
     {
         private readonly List<ConversationEntry> _conversations = new();
@@ -142,6 +165,17 @@ public class FakeChatFlowTests
                         .Select(x => x.Message)
                         .ToList());
             }
+        }
+
+        public Task DeleteConversationAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                _conversations.RemoveAll(c => c.UserId == userObjectId && c.Summary.Id == conversationId);
+                _messages.RemoveAll(m => m.UserId == userObjectId && m.ConversationId == conversationId);
+            }
+
+            return Task.CompletedTask;
         }
 
         private sealed record ConversationEntry(string UserId, ConversationSummary Summary);
