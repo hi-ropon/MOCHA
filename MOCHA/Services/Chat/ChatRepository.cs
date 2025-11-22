@@ -87,15 +87,16 @@ public class ChatRepository : IChatRepository
     {
         var list = await _dbContext.Messages
             .Where(x => x.UserObjectId == userObjectId && x.ConversationId == conversationId)
-            .OrderBy(x => x.CreatedAt)
             .Select(x => new
             {
                 x.Role,
-                x.Content
+                x.Content,
+                x.CreatedAt
             })
             .ToListAsync(cancellationToken);
 
         return list
+            .OrderBy(x => x.CreatedAt)
             .Select(x => new ChatMessage(ParseRole(x.Role), x.Content))
             .ToList();
     }
