@@ -9,4 +9,6 @@ public interface IChatRepository
     Task UpsertConversationAsync(string userObjectId, string conversationId, string title, CancellationToken cancellationToken = default);
 
     Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, CancellationToken cancellationToken = default);
+
+    Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default);
 }

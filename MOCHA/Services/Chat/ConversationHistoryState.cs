@@ -64,15 +64,4 @@ public class ConversationHistoryState
         }
         Changed?.Invoke();
     }
-
-    public async Task SeedDemoAsync(string userId, CancellationToken cancellationToken = default)
-    {
-        if (Summaries.Any())
-        {
-            return;
-        }
-
-        await UpsertAsync(userId, "demo-1", "デモ会話 A", cancellationToken);
-        await UpsertAsync(userId, "demo-2", "デモ会話 B", cancellationToken);
-    }
 }

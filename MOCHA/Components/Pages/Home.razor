@@ -1,11 +1,13 @@
 ﻿@page "/"
 @attribute [Authorize]
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
 @using MOCHA.Models.Chat
 @using MOCHA.Services.Copilot
 @using MOCHA.Services.Plc
+@inject MOCHA.Services.Chat.IChatRepository ChatRepository
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject IOptionsMonitor<CopilotStudioOptions> CopilotOptions
@@ -73,6 +75,7 @@
 
 @code {
     [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
+    [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
     private readonly List<ChatMessage> Messages = new();
     private string Input = string.Empty;
@@ -84,6 +87,7 @@
     private IDisposable? _copilotOptionsSubscription;
     private IDisposable? _plcOptionsSubscription;
     private UserContext? _user;
+    private string? _loadedConversationId;
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input);
     private bool StopDisabled => !IsSending;
@@ -104,15 +108,30 @@
         _user = await ResolveUserAsync();
 
         await HistoryState.LoadAsync(_user.UserId);
-        if (!HistoryState.Summaries.Any())
-        {
-            await HistoryState.SeedDemoAsync(_user.UserId);
-        }
-
-        SeedInitialMessage();
 
         _copilotOptionsSubscription = CopilotOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.Equals(ConversationIdParam, _loadedConversationId, StringComparison.Ordinal))
+        {
+            _loadedConversationId = ConversationIdParam;
+            if (string.IsNullOrWhiteSpace(ConversationIdParam))
+            {
+                ResetConversation();
+            }
+            else
+            {
+                await LoadConversationAsync(ConversationIdParam);
+            }
+        }
+
+        if (!Messages.Any())
+        {
+            SeedInitialMessage();
+        }
     }
 
     private async Task SendAsync()
@@ -220,6 +239,26 @@
         Status = null;
         Input = string.Empty;
         SeedInitialMessage();
+    }
+
+    private async Task LoadConversationAsync(string conversationId)
+    {
+        CancelStream();
+        ConversationId = conversationId;
+        Messages.Clear();
+        Status = null;
+        Input = string.Empty;
+
+        var user = _user ?? await ResolveUserAsync();
+        var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId);
+        Messages.AddRange(historyMessages);
+
+        if (!Messages.Any())
+        {
+            SeedInitialMessage();
+        }
+
+        await InvokeAsync(StateHasChanged);
     }
 
     private async Task ScrollToBottom()

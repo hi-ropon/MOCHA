@@ -82,4 +82,28 @@ public class ChatRepository : IChatRepository
 
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
+
+    public async Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
+    {
+        var list = await _dbContext.Messages
+            .Where(x => x.UserObjectId == userObjectId && x.ConversationId == conversationId)
+            .OrderBy(x => x.CreatedAt)
+            .Select(x => new
+            {
+                x.Role,
+                x.Content
+            })
+            .ToListAsync(cancellationToken);
+
+        return list
+            .Select(x => new ChatMessage(ParseRole(x.Role), x.Content))
+            .ToList();
+    }
+
+    private static ChatRole ParseRole(string role)
+    {
+        return Enum.TryParse<ChatRole>(role, ignoreCase: true, out var parsed)
+            ? parsed
+            : ChatRole.Assistant;
+    }
 }

@@ -22,7 +22,7 @@
         {
             @foreach (var item in HistoryState.Summaries.OrderByDescending(h => h.UpdatedAt))
             {
-                <div class="session-item">
+                <div class="session-item" @onclick="() => OpenConversation(item.Id)">
                     <div class="session-content">
                         <div class="history-title">@item.Title</div>
                         <div class="history-time">@item.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
@@ -93,6 +93,12 @@
     }
 
     private void OnHistoryChanged() => InvokeAsync(StateHasChanged);
+
+    private void OpenConversation(string conversationId)
+    {
+        var uri = NavigationManager.GetUriWithQueryParameter("c", conversationId);
+        NavigationManager.NavigateTo(uri, forceLoad: true);
+    }
 
     public void Dispose()
     {

@@ -106,5 +106,13 @@ public class FakeChatFlowTests
             }
             return Task.CompletedTask;
         }
+
+        public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                return Task.FromResult<IReadOnlyList<ChatMessage>>(_messages.ToList());
+            }
+        }
     }
 }
