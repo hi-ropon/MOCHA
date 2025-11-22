@@ -148,6 +148,12 @@ h1:focus {
     box-shadow: 0 0 12px rgba(36, 193, 154, 0.7);
 }
 
+.dot-off {
+    background: #5f6a70;
+    box-shadow: none;
+    opacity: 0.7;
+}
+
 .chat-body {
     display: flex;
     flex-direction: column;

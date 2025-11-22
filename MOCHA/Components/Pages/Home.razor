@@ -1,23 +1,32 @@
 ﻿@page "/"
+@using Microsoft.Extensions.Options
 @using MOCHA.Models.Chat
+@using MOCHA.Services.Copilot
+@using MOCHA.Services.Plc
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+@inject IOptionsMonitor<CopilotStudioOptions> CopilotOptions
+@inject IOptionsMonitor<PlcGatewayOptions> PlcOptions
+@implements IDisposable
 
 <PageTitle>Chat</PageTitle>
 
 <div class="chat-shell">
-    <header class="chat-header glass-card">
-        <div>
-            <div class="env-badge">DEV</div>
-            <div class="status-line">
-                <span class="dot dot-on"></span> Copilot (fake)
-                <span class="dot dot-on"></span> Gateway (fake)
+    @if (IsDebug)
+    {
+        <header class="chat-header glass-card">
+            <div>
+                <div class="env-badge">DEV</div>
+                <div class="status-line">
+                    <span class="@CopilotDotClass"></span> @CopilotStatusLabel
+                    <span class="@GatewayDotClass"></span> @GatewayStatusLabel
+                </div>
             </div>
-        </div>
-        <div class="actions">
-            <button class="btn btn-sm btn-outline-light" @onclick="ResetConversation">Reset</button>
-        </div>
-    </header>
+            <div class="actions">
+                <button class="btn btn-sm btn-outline-light" @onclick="ResetConversation">Reset</button>
+            </div>
+        </header>
+    }
 
     <div class="chat-body">
         <main class="chat-main glass-card">
@@ -67,11 +76,24 @@
     private string? ConversationId;
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
+    private IDisposable? _copilotOptionsSubscription;
+    private IDisposable? _plcOptionsSubscription;
 
     private readonly UserContext _user = new("demo-user", "Demo User");
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input);
     private bool StopDisabled => !IsSending;
+    private bool CopilotLive => IsCopilotConfigured(CopilotOptions.CurrentValue);
+    private bool GatewayLive => PlcOptions.CurrentValue.Enabled;
+    private string CopilotDotClass => $"dot {(CopilotLive ? "dot-on" : "dot-off")}";
+    private string GatewayDotClass => $"dot {(GatewayLive ? "dot-on" : "dot-off")}";
+    private string CopilotStatusLabel => CopilotLive ? "Copilot" : "Copilot (fake)";
+    private string GatewayStatusLabel => GatewayLive ? "Gateway" : "Gateway (fake)";
+#if DEBUG
+    private const bool IsDebug = true;
+#else
+    private const bool IsDebug = false;
+#endif
 
     protected override void OnInitialized()
     {
@@ -80,7 +102,10 @@
             HistoryState.SeedDemo();
         }
 
-        Messages.Add(new ChatMessage(ChatRole.Assistant, "こんにちは、何をお手伝いしましょうか？"));
+        SeedInitialMessage();
+
+        _copilotOptionsSubscription = CopilotOptions.OnChange(_ => InvokeAsync(StateHasChanged));
+        _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
     }
 
     private async Task SendAsync()
@@ -175,6 +200,11 @@
         }
     }
 
+    private void SeedInitialMessage()
+    {
+        Messages.Add(new ChatMessage(ChatRole.Assistant, "こんにちは、何をお手伝いしましょうか？"));
+    }
+
     private void ResetConversation()
     {
         CancelStream();
@@ -182,13 +212,28 @@
         Messages.Clear();
         Status = null;
         Input = string.Empty;
-        OnInitialized();
+        SeedInitialMessage();
     }
 
     private async Task ScrollToBottom()
     {
         // Placeholder for future JS interop to auto-scroll.
         await Task.CompletedTask;
+    }
+
+    private static bool IsCopilotConfigured(CopilotStudioOptions options)
+    {
+        return options.Enabled &&
+               (!string.IsNullOrWhiteSpace(options.DirectConnectUrl) ||
+                !string.IsNullOrWhiteSpace(options.EnvironmentId)) &&
+               !string.IsNullOrWhiteSpace(options.SchemaName);
+    }
+
+    public void Dispose()
+    {
+        _copilotOptionsSubscription?.Dispose();
+        _plcOptionsSubscription?.Dispose();
+        _cts?.Dispose();
     }
 
 }

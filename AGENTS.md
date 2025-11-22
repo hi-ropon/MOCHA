@@ -29,7 +29,7 @@
 
 ## テスト方針
 - フレームワーク: xUnit。対象コードと同じ名前空間構成で `Tests/` に追加。
-- 命名: `メソッド_状態_期待結果`（例 `HandleUserMessage_WithPlcAction_CallsGateway`）。
+- 命名: `メソッド_状態_期待結果`。テストメソッド名は日本語にすること
 - カバレッジ: ユーザーメッセージフロー、Copilot ツール要求、キャンセル経路などチャットオーケストレーションの分岐を重点。
 - 依存: `ICopilotChatClient`, `IPlcGatewayClient` はフェイク/モックで決定論的に。
 
