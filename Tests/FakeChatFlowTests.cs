@@ -62,10 +62,31 @@ public class FakeChatFlowTests
         return new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
     }
 
+    [Fact]
+    public async Task チャット送信すると履歴にメッセージが保存される()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var user = new UserContext("test-user", "Test User");
+        var conversationId = "conv-1";
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, conversationId, "こんにちは"))
+        {
+            // consume
+        }
+
+        var saved = await repo.GetMessagesAsync(user.UserId, conversationId);
+
+        Assert.True(saved.Count >= 2, "ユーザーとアシスタントのメッセージが保存されていること");
+        Assert.Contains(saved, m => m.Role == ChatRole.User && m.Content.Contains("こんにちは"));
+        Assert.Contains(saved, m => m.Role == ChatRole.Assistant);
+    }
+
     private sealed class InMemoryChatRepository : IChatRepository
     {
-        private readonly List<ConversationSummary> _conversations = new();
-        private readonly List<ChatMessage> _messages = new();
+        private readonly List<ConversationEntry> _conversations = new();
+        private readonly List<MessageEntry> _messages = new();
         private readonly object _lock = new();
 
         public Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, CancellationToken cancellationToken = default)
@@ -74,6 +95,8 @@ public class FakeChatFlowTests
             {
                 return Task.FromResult<IReadOnlyList<ConversationSummary>>(
                     _conversations
+                        .Where(c => c.UserId == userObjectId)
+                        .Select(c => c.Summary)
                         .OrderByDescending(c => c.UpdatedAt)
                         .ToList());
             }
@@ -84,15 +107,17 @@ public class FakeChatFlowTests
             lock (_lock)
             {
                 var trimmed = title.Length > 30 ? title[..30] + "…" : title;
-                var existing = _conversations.FirstOrDefault(c => c.Id == conversationId);
+                var existing = _conversations.FirstOrDefault(c => c.UserId == userObjectId && c.Summary.Id == conversationId);
                 if (existing is null)
                 {
-                    _conversations.Add(new ConversationSummary(conversationId, trimmed, DateTimeOffset.UtcNow));
+                    _conversations.Add(new ConversationEntry(
+                        userObjectId,
+                        new ConversationSummary(conversationId, trimmed, DateTimeOffset.UtcNow)));
                 }
                 else
                 {
-                    existing.Title = trimmed;
-                    existing.UpdatedAt = DateTimeOffset.UtcNow;
+                    existing.Summary.Title = trimmed;
+                    existing.Summary.UpdatedAt = DateTimeOffset.UtcNow;
                 }
             }
             return Task.CompletedTask;
@@ -102,7 +127,7 @@ public class FakeChatFlowTests
         {
             lock (_lock)
             {
-                _messages.Add(message);
+                _messages.Add(new MessageEntry(userObjectId, conversationId, message));
             }
             return Task.CompletedTask;
         }
@@ -111,8 +136,15 @@ public class FakeChatFlowTests
         {
             lock (_lock)
             {
-                return Task.FromResult<IReadOnlyList<ChatMessage>>(_messages.ToList());
+                return Task.FromResult<IReadOnlyList<ChatMessage>>(
+                    _messages
+                        .Where(x => x.UserId == userObjectId && x.ConversationId == conversationId)
+                        .Select(x => x.Message)
+                        .ToList());
             }
         }
+
+        private sealed record ConversationEntry(string UserId, ConversationSummary Summary);
+        private sealed record MessageEntry(string UserId, string ConversationId, ChatMessage Message);
     }
 }

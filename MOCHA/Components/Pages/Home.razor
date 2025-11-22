@@ -39,9 +39,6 @@
                 @foreach (var message in Messages)
                 {
                     <div class="@GetBubbleClass(message.Role)">
-                        <div class="meta">
-                            @message.Role.ToString()
-                        </div>
                         <div class="content">@message.Content</div>
                     </div>
                 }
