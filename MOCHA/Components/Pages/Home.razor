@@ -1,0 +1,194 @@
+﻿@page "/"
+@using MOCHA.Models.Chat
+@inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
+@inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+
+<PageTitle>Chat</PageTitle>
+
+<div class="chat-shell">
+    <header class="chat-header glass-card">
+        <div>
+            <div class="env-badge">DEV</div>
+            <div class="status-line">
+                <span class="dot dot-on"></span> Copilot (fake)
+                <span class="dot dot-on"></span> Gateway (fake)
+            </div>
+        </div>
+        <div class="actions">
+            <button class="btn btn-sm btn-outline-light" @onclick="ResetConversation">Reset</button>
+        </div>
+    </header>
+
+    <div class="chat-body">
+        <main class="chat-main glass-card">
+            <div class="messages" @ref="MessageList">
+                @foreach (var message in Messages)
+                {
+                    <div class="@GetBubbleClass(message.Role)">
+                        <div class="meta">
+                            @message.Role.ToString()
+                        </div>
+                        <div class="content">@message.Content</div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(Status))
+                {
+                    <div class="status-line">@Status</div>
+                }
+            </div>
+
+            <div class="composer">
+                <div class="composer-inner">
+                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                              @bind="Input"
+                              @bind:event="oninput"
+                              @onkeydown="HandleKeyDown"
+                              rows="3"></textarea>
+                    <div class="input-actions">
+                        <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
+                            &#9632;
+                        </button>
+                        <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
+                            &#10148;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+@code {
+    private readonly List<ChatMessage> Messages = new();
+    private string Input = string.Empty;
+    private string? Status;
+    private bool IsSending;
+    private string? ConversationId;
+    private CancellationTokenSource? _cts;
+    private ElementReference MessageList;
+
+    private readonly UserContext _user = new("demo-user", "Demo User");
+
+    private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input);
+    private bool StopDisabled => !IsSending;
+
+    protected override void OnInitialized()
+    {
+        if (!HistoryState.Summaries.Any())
+        {
+            HistoryState.SeedDemo();
+        }
+
+        Messages.Add(new ChatMessage(ChatRole.Assistant, "こんにちは、どのPLCを読み取りますか？ (フェイク環境)"));
+    }
+
+    private async Task SendAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Input))
+        {
+            return;
+        }
+
+        CancelStream();
+        _cts = new CancellationTokenSource();
+
+        var text = Input.Trim();
+        Input = string.Empty;
+        IsSending = true;
+        Status = null;
+
+        ConversationId ??= Guid.NewGuid().ToString("N");
+        HistoryState.Upsert(ConversationId, text);
+
+        var userMessage = new ChatMessage(ChatRole.User, text);
+        Messages.Add(userMessage);
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            await foreach (var ev in Orchestrator.HandleUserMessageAsync(_user, ConversationId, text, _cts.Token))
+            {
+                switch (ev.Type)
+                {
+                    case ChatStreamEventType.Message when ev.Message is not null:
+                        Messages.Add(ev.Message);
+                        break;
+                    case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
+                        ConversationId ??= ev.ActionRequest.ConversationId;
+                        HistoryState.Upsert(ConversationId, text);
+                        Status = $"ツール実行中: {ev.ActionRequest.ActionName}";
+                        break;
+                    case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
+                        ConversationId ??= ev.ActionResult.ConversationId;
+                        var payloadJson = System.Text.Json.JsonSerializer.Serialize(ev.ActionResult.Payload);
+                        Messages.Add(new ChatMessage(ChatRole.Tool, $"{ev.ActionResult.ActionName}: {payloadJson}"));
+                        Status = null;
+                        break;
+                    case ChatStreamEventType.Completed:
+                        Status = null;
+                        break;
+                    case ChatStreamEventType.Error:
+                        Status = ev.Error;
+                        break;
+                }
+
+                await ScrollToBottom();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            Status = "キャンセルしました";
+        }
+        finally
+        {
+            IsSending = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static string GetBubbleClass(ChatRole role)
+    {
+        return role switch
+        {
+            ChatRole.User => "bubble from-user",
+            ChatRole.Assistant => "bubble from-assistant",
+            ChatRole.Tool => "bubble from-tool",
+            _ => "bubble"
+        };
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.CtrlKey && e.Key == "Enter")
+        {
+            await SendAsync();
+        }
+    }
+
+    private void CancelStream()
+    {
+        if (_cts is { IsCancellationRequested: false })
+        {
+            _cts.Cancel();
+        }
+    }
+
+    private void ResetConversation()
+    {
+        CancelStream();
+        ConversationId = null;
+        Messages.Clear();
+        Status = null;
+        Input = string.Empty;
+        OnInitialized();
+    }
+
+    private async Task ScrollToBottom()
+    {
+        // Placeholder for future JS interop to auto-scroll.
+        await Task.CompletedTask;
+    }
+
+}

@@ -1,0 +1,28 @@
+# Build outputs
+[Bb]in/
+[Oo]bj/
+
+# IDE
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.rsuser
+*.sln.docstates
+
+# Logs / coverage / test artifacts
+*.log
+TestResult*/
+coverage*/
+
+# Packages / caches
+*.nupkg
+*.snupkg
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
+
+sample/

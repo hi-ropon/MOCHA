@@ -1,0 +1,46 @@
+@inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
+@inherits LayoutComponentBase
+
+<div class="sidebar-container @(IsCollapsed ? "collapsed" : string.Empty)">
+    <div class="sidebar-header">
+        <div class="sidebar-title">Chat</div>
+        <button class="new-chat-btn">New Chat</button>
+        <NavLink class="nav-home" href="" Match="NavLinkMatch.All">Home</NavLink>
+        <button class="sidebar-toggle" type="button" @onclick="ToggleAsync" title="サイドバー切替">
+            @(IsCollapsed ? "›" : "‹")
+        </button>
+    </div>
+
+    <div class="sessions-list">
+        @if (HistoryState.Summaries.Any())
+        {
+            @foreach (var item in HistoryState.Summaries.OrderByDescending(h => h.UpdatedAt))
+            {
+                <div class="session-item">
+                    <div class="session-content">
+                        <div class="history-title">@item.Title</div>
+                        <div class="history-time">@item.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="history-empty">履歴がありません</div>
+        }
+    </div>
+
+    <div class="user-info">
+        <div class="user-avatar">U</div>
+        <div>
+            <div class="user-name">ユーザー</div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public bool IsCollapsed { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+
+    private Task ToggleAsync() => OnToggle.InvokeAsync();
+}
