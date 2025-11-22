@@ -46,6 +46,9 @@ public sealed class ChatOrchestrator : IChatOrchestrator
                     ActionResult: actionResult);
 
                 await _copilot.SubmitActionResultAsync(actionResult, cancellationToken);
+
+                yield return ChatStreamEvent.FromMessage(
+                    new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult)));
             }
             else
             {
@@ -183,5 +186,46 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         return asString
             .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
+    }
+
+    private static string BuildActionResultText(CopilotActionResult result)
+    {
+        var device = ReadString(result.Payload, "device") ?? "D";
+        var addr = ReadInt(result.Payload, "addr") ?? 0;
+        var values = ReadValues(result.Payload, "values");
+
+        if (result.Success)
+        {
+            var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
+            return $"(fake) {device}{addr} の読み取り結果: {valuesText}";
+        }
+
+        var error = result.Error ?? "unknown error";
+        return $"(fake) {device}{addr} の読み取りに失敗しました: {error}";
+    }
+
+    private static List<int> ReadValues(IReadOnlyDictionary<string, object?> dict, string key)
+    {
+        if (!dict.TryGetValue(key, out var value) || value is null) return new List<int>();
+
+        if (value is IEnumerable<int> enumerable)
+        {
+            return enumerable.ToList();
+        }
+
+        if (value is JsonElement json && json.ValueKind == JsonValueKind.Array)
+        {
+            var list = new List<int>();
+            foreach (var item in json.EnumerateArray())
+            {
+                if (item.ValueKind == JsonValueKind.Number && item.TryGetInt32(out var n))
+                {
+                    list.Add(n);
+                }
+            }
+            return list;
+        }
+
+        return new List<int>();
     }
 }

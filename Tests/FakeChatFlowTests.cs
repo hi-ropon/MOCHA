@@ -9,7 +9,7 @@ namespace MOCHA.Tests;
 public class FakeChatFlowTests
 {
     [Fact]
-    public async Task HandleUserMessage_WithPlainText_EmitsAssistantMessage()
+    public async Task プレーンテキストならアシスタント応答が返る()
     {
         var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient());
         var events = await CollectAsync(orchestrator, "こんにちは");
@@ -19,13 +19,18 @@ public class FakeChatFlowTests
     }
 
     [Fact]
-    public async Task HandleUserMessage_WithReadKeyword_EmitsToolFlow()
+    public async Task 読み取りキーワードならツール経由で値を返す()
     {
         var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient());
         var events = await CollectAsync(orchestrator, "Please read D100");
 
         Assert.Contains(events, e => e.Type == ChatStreamEventType.ActionRequest);
         Assert.Contains(events, e => e.Type == ChatStreamEventType.ToolResult);
+        Assert.Contains(events, e =>
+            e.Type == ChatStreamEventType.Message &&
+            e.Message?.Role == ChatRole.Assistant &&
+            e.Message.Content.Contains("D100") &&
+            e.Message.Content.Contains("42"));
         Assert.Contains(events, e => e.Type == ChatStreamEventType.Completed);
     }
 
