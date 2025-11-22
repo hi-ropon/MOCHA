@@ -95,6 +95,33 @@ public class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
+    /// 指定されたエージェントを削除する。存在しない場合は何もしない。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="number">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    public async Task DeleteAsync(string userId, string number, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var entity = await _dbContext.DeviceAgents
+                .FirstOrDefaultAsync(x => x.UserObjectId == userId && x.Number == number, cancellationToken);
+
+            if (entity is null)
+            {
+                return;
+            }
+
+            _dbContext.DeviceAgents.Remove(entity);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        {
+            await EnsureTableAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// データベースに DeviceAgents テーブルとユニークインデックスを作成する。
     /// </summary>
     /// <param name="cancellationToken">キャンセル通知。</param>

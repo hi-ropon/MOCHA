@@ -100,6 +100,40 @@ public class DeviceAgentState
     }
 
     /// <summary>
+    /// エージェントを削除し、選択状態を適切に更新する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="number">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    public async Task RemoveAsync(string userId, string number, CancellationToken cancellationToken = default)
+    {
+        await _repository.DeleteAsync(userId, number, cancellationToken);
+        lock (_lock)
+        {
+            if (_currentUserId != userId)
+            {
+                _currentUserId = userId;
+                _agents.Clear();
+                SelectedAgentNumber = null;
+                Changed?.Invoke();
+                return;
+            }
+
+            var removed = _agents.RemoveAll(a => a.Number == number) > 0;
+            if (!removed)
+            {
+                return;
+            }
+
+            if (SelectedAgentNumber == number)
+            {
+                SelectedAgentNumber = _agents.FirstOrDefault()?.Number;
+            }
+        }
+        Changed?.Invoke();
+    }
+
+    /// <summary>
     /// 指定番号のエージェントを選択する。存在しない番号は無視する。
     /// </summary>
     /// <param name="number">エージェント番号。</param>

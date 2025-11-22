@@ -24,4 +24,12 @@ public interface IDeviceAgentRepository
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>保存したエージェント。</returns>
     Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 指定したユーザーのエージェントを削除する。存在しない場合は何もしない。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="number">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    Task DeleteAsync(string userId, string number, CancellationToken cancellationToken = default);
 }

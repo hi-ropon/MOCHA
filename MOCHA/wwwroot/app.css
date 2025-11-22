@@ -128,6 +128,83 @@ h1:focus {
     color: #111111;
     box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
 }
+.agent-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.agent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    margin-top: 0.6rem;
+}
+
+.agent-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.7rem;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
+    transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+
+.agent-row:hover {
+    border-color: rgba(255, 215, 0, 0.4);
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.agent-row-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+}
+
+.agent-row-number {
+    font-weight: 600;
+    color: #f5f7fb;
+}
+
+.agent-row-name {
+    font-size: 0.85rem;
+    color: #9bb6c3;
+    word-break: break-all;
+}
+
+.agent-delete-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5f7fb;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.agent-delete-btn svg {
+    width: 15px;
+    height: 15px;
+}
+
+.agent-delete-btn:hover {
+    background: rgba(255, 87, 87, 0.22);
+    color: #fff;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.18);
+}
+
+.agent-list-empty {
+    color: #9bb6c3;
+    font-size: 0.9rem;
+    padding: 0.35rem 0;
+}
 
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
