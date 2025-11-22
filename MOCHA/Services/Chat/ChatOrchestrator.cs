@@ -17,6 +17,13 @@ public sealed class ChatOrchestrator : IChatOrchestrator
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
 
+    /// <summary>
+    /// 依存するクライアントと状態管理を受け取って初期化する。
+    /// </summary>
+    /// <param name="copilot">Copilot クライアント。</param>
+    /// <param name="plcGateway">PLC Gateway クライアント。</param>
+    /// <param name="chatRepository">チャットリポジトリ。</param>
+    /// <param name="history">会話履歴状態。</param>
     public ChatOrchestrator(
         ICopilotChatClient copilot,
         IPlcGatewayClient plcGateway,
@@ -29,6 +36,15 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         _history = history;
     }
 
+    /// <summary>
+    /// ユーザーの発話を Copilot に送り、ツール要求や応答をストリームで返す。
+    /// </summary>
+    /// <param name="user">ユーザー情報。</param>
+    /// <param name="conversationId">既存の会話ID。未指定なら新規を生成。</param>
+    /// <param name="text">発話内容。</param>
+    /// <param name="agentNumber">装置エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>発生するチャットイベントの列。</returns>
     public async IAsyncEnumerable<ChatStreamEvent> HandleUserMessageAsync(
         UserContext user,
         string? conversationId,
@@ -96,6 +112,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         }
     }
 
+    /// <summary>
+    /// アクション名に応じて適切な処理を実行する。
+    /// </summary>
+    /// <param name="request">アクション要求。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>アクション結果。</returns>
     private async Task<CopilotActionResult> ExecuteActionAsync(CopilotActionRequest request, CancellationToken cancellationToken)
     {
         switch (request.ActionName)
@@ -114,6 +136,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         }
     }
 
+    /// <summary>
+    /// 単一デバイス読み取りアクションを実行し、結果ペイロードを構築する。
+    /// </summary>
+    /// <param name="request">アクション要求。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>アクション結果。</returns>
     private async Task<CopilotActionResult> HandleReadDeviceAsync(CopilotActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
@@ -142,6 +170,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
             result.Error);
     }
 
+    /// <summary>
+    /// 複数デバイスの一括読み取りアクションを実行する。
+    /// </summary>
+    /// <param name="request">アクション要求。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>アクション結果。</returns>
     private async Task<CopilotActionResult> HandleBatchReadAsync(CopilotActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
@@ -172,6 +206,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
             result.Error);
     }
 
+    /// <summary>
+    /// ペイロードから文字列値を取り出す。
+    /// </summary>
+    /// <param name="dict">ペイロード辞書。</param>
+    /// <param name="key">抽出するキー。</param>
+    /// <returns>取得した文字列。存在しない場合は null。</returns>
     private static string? ReadString(IReadOnlyDictionary<string, object?> dict, string key)
     {
         if (!dict.TryGetValue(key, out var value) || value is null) return null;
@@ -182,6 +222,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         };
     }
 
+    /// <summary>
+    /// ペイロードから整数値を取り出す。
+    /// </summary>
+    /// <param name="dict">ペイロード辞書。</param>
+    /// <param name="key">抽出するキー。</param>
+    /// <returns>取得した整数。存在しない場合は null。</returns>
     private static int? ReadInt(IReadOnlyDictionary<string, object?> dict, string key)
     {
         if (!dict.TryGetValue(key, out var value) || value is null) return null;
@@ -194,6 +240,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         };
     }
 
+    /// <summary>
+    /// ペイロードから文字列リストを取り出す。
+    /// </summary>
+    /// <param name="dict">ペイロード辞書。</param>
+    /// <param name="key">抽出するキー。</param>
+    /// <returns>取得した文字列リスト。存在しない場合は null。</returns>
     private static List<string>? ReadStringList(IReadOnlyDictionary<string, object?> dict, string key)
     {
         if (!dict.TryGetValue(key, out var value) || value is null) return null;
@@ -227,6 +279,14 @@ public sealed class ChatOrchestrator : IChatOrchestrator
             .ToList();
     }
 
+    /// <summary>
+    /// 読み取り結果を UI 向けの文面に整形する。
+    /// </summary>
+    /// <param name="result">アクション結果。</param>
+    /// <param name="device">デバイス種別。</param>
+    /// <param name="addr">アドレス。</param>
+    /// <param name="values">取得値。</param>
+    /// <returns>表示用メッセージ。</returns>
     private static string BuildActionResultText(CopilotActionResult result, string device, int addr, List<int> values)
     {
         if (result.Success)
@@ -239,6 +299,12 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         return $"(fake) {device}{addr} の読み取りに失敗しました: {error}";
     }
 
+    /// <summary>
+    /// ペイロードから整数リストを取り出す。型が合わない場合は空リストを返す。
+    /// </summary>
+    /// <param name="dict">ペイロード辞書。</param>
+    /// <param name="key">抽出するキー。</param>
+    /// <returns>取得した整数リスト。</returns>
     private static List<int> ReadValues(IReadOnlyDictionary<string, object?> dict, string key)
     {
         if (!dict.TryGetValue(key, out var value) || value is null) return new List<int>();
@@ -264,12 +330,28 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         return new List<int>();
     }
 
+    /// <summary>
+    /// Copilot Studio へ送信した旨の簡易メッセージを生成する。
+    /// </summary>
+    /// <param name="device">デバイス種別。</param>
+    /// <param name="addr">アドレス。</param>
+    /// <param name="values">送信値。</param>
+    /// <returns>表示用メッセージ。</returns>
     private static string BuildActionSubmitText(string device, int addr, List<int> values)
     {
         var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
         return $"(fake) Copilot Studio に送信: {device}{addr} -> [{valuesText}]";
     }
 
+    /// <summary>
+    /// Copilot から返ってきたと想定したメッセージを生成する。
+    /// </summary>
+    /// <param name="device">デバイス種別。</param>
+    /// <param name="addr">アドレス。</param>
+    /// <param name="values">取得値。</param>
+    /// <param name="success">成功フラグ。</param>
+    /// <param name="error">エラー内容。</param>
+    /// <returns>表示用メッセージ。</returns>
     private static string BuildCopilotReplyText(string device, int addr, List<int> values, bool success, string? error)
     {
         if (success && values.Any())
@@ -286,6 +368,15 @@ public sealed class ChatOrchestrator : IChatOrchestrator
         return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
     }
 
+    /// <summary>
+    /// メッセージをリポジトリと履歴状態に保存する。
+    /// </summary>
+    /// <param name="user">ユーザー情報。</param>
+    /// <param name="conversationId">会話ID。</param>
+    /// <param name="message">保存するメッセージ。</param>
+    /// <param name="agentNumber">装置エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>保存したメッセージ。</returns>
     private async Task<ChatMessage> SaveMessageAsync(UserContext user, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken)
     {
         await _chatRepository.AddMessageAsync(user.UserId, conversationId, message, agentNumber, cancellationToken);

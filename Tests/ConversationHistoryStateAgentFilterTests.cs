@@ -4,8 +4,14 @@ using Xunit;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// ConversationHistoryState のエージェント別フィルタリングを検証するテスト。
+/// </summary>
 public class ConversationHistoryStateAgentFilterTests
 {
+    /// <summary>
+    /// 選択したエージェントの履歴のみ読み込まれることを確認する。
+    /// </summary>
     [Fact]
     public async Task 選択したエージェントのみ履歴を読み込む()
     {
@@ -28,11 +34,17 @@ public class ConversationHistoryStateAgentFilterTests
         Assert.Equal("c2", state.Summaries[0].Id);
     }
 
+    /// <summary>
+    /// エージェント番号でフィルタリングするテスト用のインメモリリポジトリ。
+    /// </summary>
     private sealed class InMemoryChatRepositoryWithAgent : IChatRepository
     {
         private readonly List<ConversationSummary> _summaries = new();
         private readonly object _lock = new();
 
+        /// <summary>
+        /// ユーザーとエージェントで絞り込んだ会話一覧を返す。
+        /// </summary>
         public Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -46,6 +58,9 @@ public class ConversationHistoryStateAgentFilterTests
             }
         }
 
+        /// <summary>
+        /// 会話を追加または更新する。
+        /// </summary>
         public Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -66,16 +81,25 @@ public class ConversationHistoryStateAgentFilterTests
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// メッセージ追加を会話の更新として扱う。
+        /// </summary>
         public Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
         {
             return UpsertConversationAsync(userObjectId, conversationId, message.Content, agentNumber, cancellationToken);
         }
 
+        /// <summary>
+        /// テスト用のため空のメッセージ一覧を返す。
+        /// </summary>
         public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<ChatMessage>>(Array.Empty<ChatMessage>());
         }
 
+        /// <summary>
+        /// 指定された会話を削除する。
+        /// </summary>
         public Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)

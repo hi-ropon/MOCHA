@@ -6,8 +6,14 @@ using Xunit;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// DbUserRoleProvider のロール操作を検証するテスト。
+/// </summary>
 public class DbUserRoleProviderTests
 {
+    /// <summary>
+    /// インメモリ DB を使ったコンテキストを生成するヘルパー。
+    /// </summary>
     private static ChatDbContext CreateContext(string dbName)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
@@ -16,6 +22,9 @@ public class DbUserRoleProviderTests
         return new ChatDbContext(options);
     }
 
+    /// <summary>
+    /// 同じロールを複数回付与しても重複保存されないことを確認する。
+    /// </summary>
     [Fact]
     public async Task AssignAsync_重複せず保存される()
     {
@@ -31,6 +40,9 @@ public class DbUserRoleProviderTests
         Assert.Contains(UserRoleId.Predefined.Administrator, roles);
     }
 
+    /// <summary>
+    /// 削除操作でロールが取り除かれることを確認する。
+    /// </summary>
     [Fact]
     public async Task RemoveAsync_削除される()
     {
@@ -45,6 +57,9 @@ public class DbUserRoleProviderTests
         Assert.Empty(roles);
     }
 
+    /// <summary>
+    /// ロール判定が大文字小文字を無視して行われることを確認する。
+    /// </summary>
     [Fact]
     public async Task IsInRoleAsync_大小文字を無視する()
     {

@@ -5,8 +5,14 @@ using Xunit;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// RoleBootstrapper の管理者ロール付与を検証するテスト。
+/// </summary>
 public class RoleBootstrapperTests
 {
+    /// <summary>
+    /// 設定されたユーザーに管理者ロールが付与されることを確認する。
+    /// </summary>
     [Fact]
     public async Task EnsureAdminRolesAsync_管理者が付与される()
     {
@@ -23,6 +29,9 @@ public class RoleBootstrapperTests
         Assert.Contains(UserRoleId.Predefined.Administrator, roles);
     }
 
+    /// <summary>
+    /// 設定が空の場合は何も変更しないことを確認する。
+    /// </summary>
     [Fact]
     public async Task EnsureAdminRolesAsync_設定が空なら何もしない()
     {

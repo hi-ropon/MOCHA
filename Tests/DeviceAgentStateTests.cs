@@ -4,8 +4,14 @@ using Xunit;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// DeviceAgentState の状態管理を検証するテスト。
+/// </summary>
 public class DeviceAgentStateTests
 {
+    /// <summary>
+    /// 登録したエージェントが選択状態に反映されることを確認する。
+    /// </summary>
     [Fact]
     public async Task エージェント登録すると選択状態が更新される()
     {
@@ -22,6 +28,9 @@ public class DeviceAgentStateTests
         Assert.Contains(state.Agents, a => a.Number == "001" && a.Name == "ライン1");
     }
 
+    /// <summary>
+    /// 異なるエージェントを選択した際に Changed イベントが発火することを確認する。
+    /// </summary>
     [Fact]
     public async Task 別エージェントを選ぶとChangedが発火する()
     {
@@ -40,11 +49,17 @@ public class DeviceAgentStateTests
         Assert.Equal("001", state.SelectedAgentNumber);
     }
 
+    /// <summary>
+    /// メモリ上で装置エージェントを保持するテスト用リポジトリ。
+    /// </summary>
     private sealed class InMemoryDeviceAgentRepository : IDeviceAgentRepository
     {
         private readonly List<Entry> _entries = new();
         private readonly object _lock = new();
 
+        /// <summary>
+        /// 指定ユーザーのエージェント一覧を返す。
+        /// </summary>
         public Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -56,6 +71,9 @@ public class DeviceAgentStateTests
             }
         }
 
+        /// <summary>
+        /// エージェントを追加または更新する。
+        /// </summary>
         public Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -73,8 +91,14 @@ public class DeviceAgentStateTests
             }
         }
 
+        /// <summary>
+        /// ユーザーとエージェントをまとめて保持する内部クラス。
+        /// </summary>
         private sealed class Entry
         {
+            /// <summary>
+            /// ユーザーIDとエージェントを指定して初期化する。
+            /// </summary>
             public Entry(string userId, DeviceAgentProfile agent)
             {
                 UserId = userId;

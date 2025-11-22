@@ -3,6 +3,9 @@ using MOCHA.Models.Agents;
 
 namespace MOCHA.Services.Agents;
 
+/// <summary>
+/// 装置エージェントの選択状態と一覧を管理する。
+/// </summary>
 public class DeviceAgentState
 {
     private readonly IDeviceAgentRepository _repository;
@@ -10,13 +13,23 @@ public class DeviceAgentState
     private readonly object _lock = new();
     private string? _currentUserId;
 
+    /// <summary>
+    /// リポジトリを注入して状態管理を初期化する。
+    /// </summary>
+    /// <param name="repository">装置エージェントリポジトリ。</param>
     public DeviceAgentState(IDeviceAgentRepository repository)
     {
         _repository = repository;
     }
 
+    /// <summary>
+    /// 状態変更を通知するイベント。
+    /// </summary>
     public event Action? Changed;
 
+    /// <summary>
+    /// 現在保持している装置エージェント一覧。
+    /// </summary>
     public IReadOnlyList<DeviceAgentProfile> Agents
     {
         get
@@ -28,8 +41,16 @@ public class DeviceAgentState
         }
     }
 
+    /// <summary>
+    /// 選択中のエージェント番号。
+    /// </summary>
     public string? SelectedAgentNumber { get; private set; }
 
+    /// <summary>
+    /// ユーザーのエージェント一覧を読み込み、状態を更新する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task LoadAsync(string userId, CancellationToken cancellationToken = default)
     {
         var items = await _repository.GetAsync(userId, cancellationToken);
@@ -43,6 +64,14 @@ public class DeviceAgentState
         Changed?.Invoke();
     }
 
+    /// <summary>
+    /// エージェントを追加または更新し、選択状態を更新する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="number">エージェント番号。</param>
+    /// <param name="name">エージェント名。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>保存後のエージェント。</returns>
     public async Task<DeviceAgentProfile> AddOrUpdateAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
     {
         var agent = await _repository.UpsertAsync(userId, number, name, cancellationToken);
@@ -70,6 +99,10 @@ public class DeviceAgentState
         return agent;
     }
 
+    /// <summary>
+    /// 指定番号のエージェントを選択する。存在しない番号は無視する。
+    /// </summary>
+    /// <param name="number">エージェント番号。</param>
     public void Select(string? number)
     {
         lock (_lock)

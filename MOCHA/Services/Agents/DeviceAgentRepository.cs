@@ -5,15 +5,28 @@ using Microsoft.Data.Sqlite;
 
 namespace MOCHA.Services.Agents;
 
+/// <summary>
+/// 装置エージェントの永続化を行うリポジトリ。
+/// </summary>
 public class DeviceAgentRepository : IDeviceAgentRepository
 {
     private readonly IChatDbContext _dbContext;
 
+    /// <summary>
+    /// DbContext を受け取り、リポジトリを初期化する。
+    /// </summary>
+    /// <param name="dbContext">チャット用 DbContext。</param>
     public DeviceAgentRepository(IChatDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// 指定ユーザーの装置エージェント一覧を取得する。テーブルが無ければ自動作成する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>エージェント一覧。</returns>
     public async Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
@@ -40,6 +53,14 @@ public class DeviceAgentRepository : IDeviceAgentRepository
         }
     }
 
+    /// <summary>
+    /// 装置エージェントを追加または更新する。テーブルが無い場合は作成後にリトライする。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="number">エージェント番号。</param>
+    /// <param name="name">エージェント名。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>保存されたプロファイル。</returns>
     public async Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
     {
         try
@@ -73,6 +94,10 @@ public class DeviceAgentRepository : IDeviceAgentRepository
         }
     }
 
+    /// <summary>
+    /// データベースに DeviceAgents テーブルとユニークインデックスを作成する。
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     private async Task EnsureTableAsync(CancellationToken cancellationToken)
     {
         const string createSql = """

@@ -4,15 +4,28 @@ using MOCHA.Models.Auth;
 
 namespace MOCHA.Services.Auth;
 
+/// <summary>
+/// データベースにロール割り当てを保存するプロバイダー。
+/// </summary>
 public sealed class DbUserRoleProvider : IUserRoleProvider
 {
     private readonly ChatDbContext _db;
 
+    /// <summary>
+    /// DbContext を受け取りプロバイダーを初期化する。
+    /// </summary>
+    /// <param name="db">チャット用 DbContext。</param>
     public DbUserRoleProvider(ChatDbContext db)
     {
         _db = db;
     }
 
+    /// <summary>
+    /// ユーザーに付与されているロールを取得する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>ロール一覧。</returns>
     public async Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default)
     {
         var roles = await _db.UserRoles
@@ -23,6 +36,12 @@ public sealed class DbUserRoleProvider : IUserRoleProvider
         return roles.Select(UserRoleId.From).ToArray();
     }
 
+    /// <summary>
+    /// ユーザーにロールを追加する。既に存在する場合は何もしない。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="role">付与するロール。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
     {
         var normalized = role.Value;
@@ -45,6 +64,12 @@ public sealed class DbUserRoleProvider : IUserRoleProvider
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// ユーザーから指定ロールを削除する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="role">削除するロール。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
     {
         var normalized = role.Value;
@@ -61,6 +86,13 @@ public sealed class DbUserRoleProvider : IUserRoleProvider
         await _db.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// ユーザーが指定ロールを保持しているか確認する。
+    /// </summary>
+    /// <param name="userId">ユーザーID。</param>
+    /// <param name="role">ロール名。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>保持していれば true。</returns>
     public async Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
     {
         var normalized = UserRoleId.From(role).Value;

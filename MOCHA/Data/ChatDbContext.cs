@@ -5,8 +5,15 @@ using MOCHA.Services.Agents;
 
 namespace MOCHA.Data;
 
+/// <summary>
+/// チャット機能に必要なエンティティを管理する DbContext。
+/// </summary>
 public class ChatDbContext : DbContext, IChatDbContext
 {
+    /// <summary>
+    /// DbContext のオプションを受け取って初期化する。
+    /// </summary>
+    /// <param name="options">DbContext オプション。</param>
     public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options)
     {
     }
@@ -16,6 +23,10 @@ public class ChatDbContext : DbContext, IChatDbContext
     public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
     public DbSet<DeviceAgentEntity> DeviceAgents => Set<DeviceAgentEntity>();
 
+    /// <summary>
+    /// エンティティの制約やインデックスを構成する。
+    /// </summary>
+    /// <param name="modelBuilder">モデルビルダー。</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

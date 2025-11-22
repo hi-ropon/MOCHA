@@ -4,15 +4,29 @@ using MOCHA.Models.Chat;
 
 namespace MOCHA.Services.Chat;
 
+/// <summary>
+/// EF Core を利用した会話永続化リポジトリ。
+/// </summary>
 public class ChatRepository : IChatRepository
 {
     private readonly IChatDbContext _dbContext;
 
+    /// <summary>
+    /// DbContext を注入してリポジトリを初期化する。
+    /// </summary>
+    /// <param name="dbContext">チャット用 DbContext。</param>
     public ChatRepository(IChatDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
+    /// <summary>
+    /// ユーザー・エージェントに応じた会話要約一覧を取得する。
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID。</param>
+    /// <param name="agentNumber">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>会話要約リスト。</returns>
     public async Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
     {
         var query = _dbContext.Conversations
@@ -36,6 +50,14 @@ public class ChatRepository : IChatRepository
             .ToList();
     }
 
+    /// <summary>
+    /// 会話タイトルを挿入または更新し、更新日時を記録する。
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID。</param>
+    /// <param name="conversationId">会話ID。</param>
+    /// <param name="title">タイトル。</param>
+    /// <param name="agentNumber">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
     {
         var trimmed = title.Length > 30 ? title[..30] + "…" : title;
@@ -63,6 +85,14 @@ public class ChatRepository : IChatRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// メッセージを保存し、会話のタイトルと更新日時も合わせて更新する。
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID。</param>
+    /// <param name="conversationId">会話ID。</param>
+    /// <param name="message">保存するメッセージ。</param>
+    /// <param name="agentNumber">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
     {
         var conversation = await _dbContext.Conversations
@@ -98,6 +128,14 @@ public class ChatRepository : IChatRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// 会話に紐づくメッセージを時系列で取得する。
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID。</param>
+    /// <param name="conversationId">会話ID。</param>
+    /// <param name="agentNumber">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>メッセージ一覧。</returns>
     public async Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
     {
         var messagesQuery = _dbContext.Messages
@@ -135,6 +173,13 @@ public class ChatRepository : IChatRepository
             .ToList();
     }
 
+    /// <summary>
+    /// 会話を削除する。エージェント番号も一致しない場合は削除しない。
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID。</param>
+    /// <param name="conversationId">会話ID。</param>
+    /// <param name="agentNumber">エージェント番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
     {
         var existing = await _dbContext.Conversations
@@ -154,6 +199,11 @@ public class ChatRepository : IChatRepository
         await _dbContext.SaveChangesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// 文字列のロール名を列挙型に変換する。失敗時は Assistant とする。
+    /// </summary>
+    /// <param name="role">ロール名文字列。</param>
+    /// <returns>変換結果。</returns>
     private static ChatRole ParseRole(string role)
     {
         return Enum.TryParse<ChatRole>(role, ignoreCase: true, out var parsed)

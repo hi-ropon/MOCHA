@@ -18,6 +18,13 @@ public sealed class CopilotStudioChatClient : ICopilotChatClient
     private readonly ILogger<CopilotStudioChatClient> _logger;
     private readonly bool _configured;
 
+    /// <summary>
+    /// 設定と HTTP クライアントファクトリを用いて Copilot Studio クライアントを初期化する。
+    /// 設定が不足している場合はフェイククライアントにフォールバックする。
+    /// </summary>
+    /// <param name="options">Copilot Studio 設定。</param>
+    /// <param name="httpClientFactory">HTTP クライアントファクトリ。</param>
+    /// <param name="logger">ロガー。</param>
     public CopilotStudioChatClient(
         IOptions<CopilotStudioOptions> options,
         IHttpClientFactory httpClientFactory,
@@ -66,6 +73,13 @@ public sealed class CopilotStudioChatClient : ICopilotChatClient
         }
     }
 
+    /// <summary>
+    /// Copilot Studio へチャットターンを送り、応答ストリームを取得する。
+    /// 設定不足や送信失敗時はフェイククライアントに切り替える。
+    /// </summary>
+    /// <param name="turn">送信するターン。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>イベントストリーム。</returns>
     public Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurn turn, CancellationToken cancellationToken = default)
     {
         if (!_configured || _client is null)
@@ -125,6 +139,13 @@ public sealed class CopilotStudioChatClient : ICopilotChatClient
         return Task.FromResult<IAsyncEnumerable<ChatStreamEvent>>(Enumerate(cancellationToken));
     }
 
+    /// <summary>
+    /// ツールの実行結果を Copilot Studio に送信する（現状はログのみ）。
+    /// フェイク動作時はフェイククライアントに委譲する。
+    /// </summary>
+    /// <param name="result">ツール実行結果。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>送信タスク。</returns>
     public Task SubmitActionResultAsync(CopilotActionResult result, CancellationToken cancellationToken = default)
     {
         if (!_configured || _client is null)

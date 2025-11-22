@@ -15,6 +15,12 @@ public sealed class HttpPlcGatewayClient : IPlcGatewayClient
     private readonly HttpClient _httpClient;
     private readonly ILogger<HttpPlcGatewayClient> _logger;
 
+    /// <summary>
+    /// HTTP クライアントと設定を受け取り、タイムアウトやベースURLを初期化する。
+    /// </summary>
+    /// <param name="httpClient">PLC Gateway への HTTP クライアント。</param>
+    /// <param name="logger">ロガー。</param>
+    /// <param name="options">ゲートウェイ設定。</param>
     public HttpPlcGatewayClient(HttpClient httpClient, ILogger<HttpPlcGatewayClient> logger, IOptions<PlcGatewayOptions> options)
     {
         _logger = logger;
@@ -30,6 +36,12 @@ public sealed class HttpPlcGatewayClient : IPlcGatewayClient
         }
     }
 
+    /// <summary>
+    /// 単一デバイスのアドレスから値を読み出す。
+    /// </summary>
+    /// <param name="request">読み出し要求。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>読み出し結果。</returns>
     public async Task<PlcReadResult> ReadAsync(PlcReadRequest request, CancellationToken cancellationToken = default)
     {
         try
@@ -63,6 +75,12 @@ public sealed class HttpPlcGatewayClient : IPlcGatewayClient
         }
     }
 
+    /// <summary>
+    /// 複数デバイスの一括読み取りを行う。
+    /// </summary>
+    /// <param name="request">一括読み取り要求。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>一括読み取り結果。</returns>
     public async Task<PlcBatchReadResult> BatchReadAsync(PlcBatchReadRequest request, CancellationToken cancellationToken = default)
     {
         try
@@ -101,23 +119,36 @@ public sealed class HttpPlcGatewayClient : IPlcGatewayClient
         }
     }
 
+    /// <summary>
+    /// JSON シリアライザーのオプションを返す。
+    /// </summary>
+    /// <returns>シリアライザー設定。</returns>
     private static JsonSerializerOptions JsonOptions() => new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    /// <summary>
+    /// 単一読み取り API のレスポンスモデル。
+    /// </summary>
     private sealed record ReadResponse(
         [property: JsonPropertyName("values")] IReadOnlyList<int>? Values,
         [property: JsonPropertyName("success")] bool? Success,
         [property: JsonPropertyName("error")] string? Error);
 
+    /// <summary>
+    /// 一括読み取り API のレスポンスモデル。
+    /// </summary>
     private sealed record BatchReadResponse(
         [property: JsonPropertyName("results")] IReadOnlyList<BatchReadItem>? Results,
         [property: JsonPropertyName("total_devices")] int? TotalDevices,
         [property: JsonPropertyName("successful_devices")] int? SuccessfulDevices,
         [property: JsonPropertyName("error")] string? Error);
 
+    /// <summary>
+    /// 一括読み取り結果の個別アイテム。
+    /// </summary>
     private sealed record BatchReadItem(
         [property: JsonPropertyName("device")] string? Device,
         [property: JsonPropertyName("values")] IReadOnlyList<int>? Values,

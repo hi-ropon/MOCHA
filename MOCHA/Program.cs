@@ -33,13 +33,13 @@ else
 {
     if (fakeAuthOptions.Enabled)
     {
-        builder.Services.AddAuthentication(FakeAuthHandler.Scheme)
-            .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.Scheme, _ => { });
+        builder.Services.AddAuthentication(FakeAuthHandler.scheme)
+            .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.scheme, _ => { });
 
         builder.Services.AddAuthorization(options =>
         {
             var authenticatedOnly = new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(FakeAuthHandler.Scheme)
+                .AddAuthenticationSchemes(FakeAuthHandler.scheme)
                 .RequireAuthenticatedUser()
                 .Build();
             options.DefaultPolicy = authenticatedOnly;

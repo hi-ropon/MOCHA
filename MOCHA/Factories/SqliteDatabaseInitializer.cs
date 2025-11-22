@@ -6,20 +6,35 @@ using MOCHA.Data;
 
 namespace MOCHA.Factories;
 
+/// <summary>
+/// SQLite 環境で必要なテーブルやインデックスを作成する初期化クラス。
+/// </summary>
 public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 {
     private readonly ChatDbContext _db;
 
+    /// <summary>
+    /// DbContext を受け取り初期化する。
+    /// </summary>
+    /// <param name="db">チャット用 DbContext。</param>
     public SqliteDatabaseInitializer(ChatDbContext db)
     {
         _db = db;
     }
 
+    /// <summary>
+    /// テーブルを作成し、必要な列が揃っているか確認する。
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await EnsureTablesAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// 会話・メッセージ・ロール・エージェントのテーブルを作成する。
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     private async Task EnsureTablesAsync(CancellationToken cancellationToken)
     {
         const string createSql = """
@@ -67,6 +82,10 @@ public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         await EnsureAgentColumnAsync(cancellationToken);
     }
 
+    /// <summary>
+    /// Conversations テーブルに AgentNumber 列が無い場合に追加する。
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
     private async Task EnsureAgentColumnAsync(CancellationToken cancellationToken)
     {
         const string pragmaSql = "PRAGMA table_info(Conversations);";

@@ -4,17 +4,30 @@ using MOCHA.Services.Auth;
 
 namespace MOCHA.Controllers;
 
+/// <summary>
+/// ユーザーのロール付与・削除を行う API コントローラー。
+/// </summary>
 [ApiController]
 [Route("api/roles")]
 public class RolesController : ControllerBase
 {
     private readonly IUserRoleProvider _roleProvider;
 
+    /// <summary>
+    /// ロールプロバイダーを注入してコントローラーを初期化する。
+    /// </summary>
+    /// <param name="roleProvider">ロールプロバイダー。</param>
     public RolesController(IUserRoleProvider roleProvider)
     {
         _roleProvider = roleProvider;
     }
 
+    /// <summary>
+    /// ユーザーのロール一覧を取得する。
+    /// </summary>
+    /// <param name="userId">対象ユーザーID。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>ロール名のコレクション。</returns>
     [HttpGet("{userId}")]
     public async Task<ActionResult<IEnumerable<string>>> GetRoles(string userId, CancellationToken cancellationToken)
     {
@@ -27,6 +40,12 @@ public class RolesController : ControllerBase
         return Ok(roles.Select(r => r.Value));
     }
 
+    /// <summary>
+    /// ユーザーにロールを付与する。
+    /// </summary>
+    /// <param name="request">変更リクエスト。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>処理結果。</returns>
     [HttpPost("assign")]
     public async Task<IActionResult> Assign([FromBody] RoleChangeRequest request, CancellationToken cancellationToken)
     {
@@ -44,6 +63,13 @@ public class RolesController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// ユーザーからロールを削除する。
+    /// </summary>
+    /// <param name="userId">対象ユーザーID。</param>
+    /// <param name="role">削除するロール。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>処理結果。</returns>
     [HttpDelete("{userId}/{role}")]
     public async Task<IActionResult> Remove(string userId, string role, CancellationToken cancellationToken)
     {
@@ -56,6 +82,11 @@ public class RolesController : ControllerBase
         return Ok();
     }
 
+    /// <summary>
+    /// 呼び出しユーザーが管理者ロールを持つか判定する。
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>管理者であれば true。</returns>
     private async Task<bool> RequireAdminAsync(CancellationToken cancellationToken)
     {
         var userId = User.GetUserObjectId();
@@ -68,8 +99,13 @@ public class RolesController : ControllerBase
     }
 }
 
+/// <summary>
+/// ロール付与・削除用のリクエストボディ。
+/// </summary>
 public sealed class RoleChangeRequest
 {
+    /// <summary>対象ユーザーID。</summary>
     public string UserId { get; set; } = string.Empty;
+    /// <summary>付与/削除するロール名。</summary>
     public string Role { get; set; } = string.Empty;
 }

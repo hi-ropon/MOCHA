@@ -6,12 +6,26 @@ using MOCHA.Models.Auth;
 
 namespace MOCHA.Services.Auth;
 
+/// <summary>
+/// 開発用に固定ユーザーで認証済みとするフェイクハンドラー。
+/// </summary>
 public sealed class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     private readonly FakeAuthOptions _options;
 
-    public const string Scheme = "Fake";
+    /// <summary>
+    /// フェイク認証で使用するスキーム名。
+    /// </summary>
+    public const string scheme = "Fake";
 
+    /// <summary>
+    /// フェイク認証のオプションを受け取り初期化する。
+    /// </summary>
+    /// <param name="schemeOptions">スキーム設定。</param>
+    /// <param name="logger">ロガー。</param>
+    /// <param name="encoder">URL エンコーダー。</param>
+    /// <param name="clock">システムクロック。</param>
+    /// <param name="fakeOptions">フェイク認証設定。</param>
     public FakeAuthHandler(
         IOptionsMonitor<AuthenticationSchemeOptions> schemeOptions,
         ILoggerFactory logger,
@@ -23,6 +37,10 @@ public sealed class FakeAuthHandler : AuthenticationHandler<AuthenticationScheme
         _options = fakeOptions.Value;
     }
 
+    /// <summary>
+    /// フェイク認証を行い、設定が無効なら認証なしとして扱う。
+    /// </summary>
+    /// <returns>認証結果。</returns>
     protected override Task<AuthenticateResult> HandleAuthenticateAsync()
     {
         if (!_options.Enabled)
@@ -36,9 +54,9 @@ public sealed class FakeAuthHandler : AuthenticationHandler<AuthenticationScheme
             new Claim(ClaimTypes.NameIdentifier, _options.UserId),
             new Claim(ClaimTypes.Name, _options.Name),
         };
-        var identity = new ClaimsIdentity(claims, Scheme);
+        var identity = new ClaimsIdentity(claims, scheme);
         var principal = new ClaimsPrincipal(identity);
-        var ticket = new AuthenticationTicket(principal, Scheme);
+        var ticket = new AuthenticationTicket(principal, scheme);
         return Task.FromResult(AuthenticateResult.Success(ticket));
     }
 }
