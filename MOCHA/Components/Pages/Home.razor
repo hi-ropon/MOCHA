@@ -6,8 +6,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
 @using MOCHA.Models.Chat
+@using MOCHA.Services.Chat
 @using MOCHA.Services.Copilot
 @using MOCHA.Services.Plc
+@using static MOCHA.Services.Chat.ActivityPanelService
+@using static MOCHA.Services.Chat.ActivityBuilder
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
@@ -450,74 +453,11 @@
         return System.Text.Json.JsonSerializer.Serialize(payload);
     }
 
-    private static string TrimForPreview(string text, int maxLength = 80)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return string.Empty;
-        }
-
-        return text.Length <= maxLength
-            ? text
-            : text[..maxLength] + "…";
-    }
-
-    private sealed record ActivityLogItem(string Title, string? Detail, ActivityKind Kind, DateTimeOffset Timestamp);
-
-    private sealed class TurnActivity
-    {
-        public TurnActivity(int turnNumber)
-        {
-            TurnNumber = turnNumber;
-        }
-
-        public int TurnNumber { get; }
-        public List<ActivityLogItem> Items { get; } = new();
-    }
-
-    private enum ActivityKind
-    {
-        Assistant,
-        Action,
-        ToolResult,
-        Error
-    }
-
     private void RebuildActivityFromHistory(IReadOnlyList<ChatMessage> historyMessages)
     {
         TurnActivities.Clear();
-        TurnActivity? current = null;
-        var turnNumber = -1;
-
-        for (var i = 0; i < historyMessages.Count; i++)
-        {
-            var message = historyMessages[i];
-            switch (message.Role)
-            {
-                case ChatRole.User:
-                    turnNumber++;
-                    current = new TurnActivity(turnNumber);
-                    TurnActivities.Add(current);
-                    break;
-                case ChatRole.Assistant when current is not null:
-                    current.Items.Add(new ActivityLogItem($"アシスタント: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Assistant, DateTimeOffset.UtcNow));
-                    break;
-                case ChatRole.Tool when current is not null:
-                    if (message.Content.StartsWith("[action]", StringComparison.OrdinalIgnoreCase))
-                    {
-                        current.Items.Add(new ActivityLogItem($"ツール要求: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Action, DateTimeOffset.UtcNow));
-                    }
-                    else if (message.Content.StartsWith("[result]", StringComparison.OrdinalIgnoreCase))
-                    {
-                        current.Items.Add(new ActivityLogItem($"ツール結果: {TrimForPreview(message.Content)}", message.Content, ActivityKind.ToolResult, DateTimeOffset.UtcNow));
-                    }
-                    else
-                    {
-                        current.Items.Add(new ActivityLogItem($"ツール: {TrimForPreview(message.Content)}", message.Content, ActivityKind.ToolResult, DateTimeOffset.UtcNow));
-                    }
-                    break;
-            }
-        }
+        var built = ActivityBuilder.BuildActivities(historyMessages);
+        TurnActivities.AddRange(built);
     }
 
     private void StartNewTurn(int turnNumber)
@@ -530,11 +470,7 @@
         return TurnActivities.FirstOrDefault(t => t.TurnNumber == turnNumber);
     }
 
-    private string GetActivitySummary()
-    {
-        var logs = GetPanelLogs().ToList();
-        return logs.Count > 0 ? $"{logs.Count} 件の途中経過" : "まだありません";
-    }
+    private string GetActivitySummary() => ActivityPanelService.GetActivitySummary(GetPanelLogs());
 
     private RenderFragment RenderActivityList() => builder =>
     {
@@ -584,15 +520,7 @@
         }
     };
 
-    private IEnumerable<ActivityLogItem> GetPanelLogs()
-    {
-        if (SelectedTurnNumber is int turn)
-        {
-            return GetTurnActivityForTurn(turn)?.Items ?? Enumerable.Empty<ActivityLogItem>();
-        }
-
-        return TurnActivities.SelectMany(t => t.Items);
-    }
+    private IEnumerable<ActivityLogItem> GetPanelLogs() => ActivityPanelService.GetPanelLogs(TurnActivities, SelectedTurnNumber);
 
     public void Dispose()
     {

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Chat;
@@ -56,6 +58,58 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
+    /// 読み取り設定が欠落していても既定値で処理されることを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task 読み取り設定が欠落しても既定値で処理する()
+    {
+        var plc = new FakePlcGatewayClient(new Dictionary<string, IReadOnlyList<int>> { ["D0"] = new List<int> { 7 } });
+        var orchestrator = CreateOrchestrator(turn => new[]
+        {
+            ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "ack")),
+            new ChatStreamEvent(ChatStreamEventType.ActionRequest, ActionRequest: new CopilotActionRequest("read_device", turn.ConversationId ?? "conv", new Dictionary<string, object?>())),
+            ChatStreamEvent.Completed(turn.ConversationId)
+        }, plc);
+
+        var events = await CollectAsync(orchestrator, "read default");
+
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.AreEqual("D", toolResult.Payload["device"]);
+        Assert.AreEqual(0, (int)toolResult.Payload["addr"]);
+        Assert.IsTrue((bool)toolResult.Payload["success"]);
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Message && e.Message?.Content.Contains("D0") == true));
+    }
+
+    /// <summary>
+    /// 一括読み取りアクションがフェイクで成功することを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task 一括読み取りが成功する()
+    {
+        var orchestrator = CreateOrchestrator(turn => new[]
+        {
+            ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "batch start")),
+            new ChatStreamEvent(
+                ChatStreamEventType.ActionRequest,
+                ActionRequest: new CopilotActionRequest(
+                    "batch_read_devices",
+                    turn.ConversationId ?? "conv",
+                    new Dictionary<string, object?>
+                    {
+                        ["devices"] = new List<string> { "D100", "M10" }
+                    })),
+            ChatStreamEvent.Completed(turn.ConversationId)
+        });
+
+        var events = await CollectAsync(orchestrator, "batch");
+
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.IsTrue((bool)toolResult.Payload["success"]);
+        var results = toolResult.Payload["results"] as IEnumerable<object?> ?? Array.Empty<object?>();
+        Assert.AreEqual(2, results.Count());
+    }
+
+    /// <summary>
     /// オーケストレーターのストリームイベントを収集するヘルパー。
     /// </summary>
     private static async Task<List<ChatStreamEvent>> CollectAsync(ChatOrchestrator orchestrator, string text)
@@ -72,11 +126,11 @@ public class FakeChatFlowTests
     /// <summary>
     /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーターを生成する。
     /// </summary>
-    private static ChatOrchestrator CreateOrchestrator()
+    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurn, IEnumerable<ChatStreamEvent>>? script = null, FakePlcGatewayClient? plc = null)
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        return new ChatOrchestrator(new FakeCopilotChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history);
     }
 
     /// <summary>
