@@ -206,6 +206,125 @@ h1:focus {
     padding: 0.35rem 0;
 }
 
+.agent-settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(6, 9, 16, 0.6);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 1.2rem;
+}
+
+.agent-settings-dialog {
+    width: min(520px, 100%);
+    max-height: 90vh;
+    background: rgba(18, 22, 32, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    display: flex;
+    flex-direction: column;
+    padding: 1.25rem;
+    gap: 1rem;
+    color: #f5f7fb;
+    transform: translateY(0);
+    animation: settings-pop 0.18s ease-out;
+}
+
+.agent-settings-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.agent-settings-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+}
+
+.agent-settings-subtitle {
+    color: #9bb6c3;
+    font-size: 0.9rem;
+    margin-top: 0.15rem;
+}
+
+.agent-settings-close {
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5f7fb;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: all 0.15s ease;
+}
+
+.agent-settings-close:hover {
+    background: rgba(255, 215, 0, 0.2);
+    color: #111;
+}
+
+.agent-settings-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    padding-right: 0.15rem;
+}
+
+.agent-settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.agent-settings-section-title {
+    font-weight: 700;
+    color: #f5f7fb;
+}
+
+@media (max-width: 640px) {
+    .agent-settings-dialog {
+        width: 100%;
+        max-height: 100vh;
+        border-radius: 12px;
+        padding: 1rem;
+        animation: settings-pop-mobile 0.2s ease-out;
+    }
+
+    .agent-settings-overlay {
+        align-items: flex-end;
+    }
+}
+
+@keyframes settings-pop {
+    from {
+        transform: translateY(10px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes settings-pop-mobile {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 .valid.modified:not([type=checkbox]) {
     outline: 1px solid #26b050;
 }

@@ -47,59 +47,6 @@
         </div>
     </div>
 
-    @if (_settingsOpen)
-    {
-        <div class="agent-settings">
-            <div class="field">
-                <label for="agent-number">番号</label>
-                <input id="agent-number"
-                       class="agent-input"
-                       @bind="agentNumberInput"
-                       placeholder="例: A-01" />
-            </div>
-            <div class="field">
-                <label for="agent-name">名前</label>
-                <input id="agent-name"
-                       class="agent-input"
-                       @bind="agentNameInput"
-                       placeholder="装置名など" />
-            </div>
-            <button class="new-chat-btn save-agent-btn"
-                    @onclick="RegisterAgentAsync"
-                    disabled="@(_isRegistering || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))">
-                登録
-            </button>
-
-            <div class="agent-list">
-                @if (AgentState.Agents.Any())
-                {
-                    @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
-                    {
-                        <div class="agent-row">
-                            <div class="agent-row-info">
-                                <div class="agent-row-number">@agent.Number</div>
-                                <div class="agent-row-name">@agent.Name</div>
-                            </div>
-                            <button type="button"
-                                    class="agent-delete-btn"
-                                    title="エージェントを削除"
-                                    @onclick="() => ConfirmDeleteAgentAsync(agent)">
-                                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                    <path d="M9 3.5h6m-9 3h12M10 10.5v7m4-7v7M5.5 6.5l1 13a1 1 0 0 0 1 .92h9a1 1 0 0 0 1-.92l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                                    <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                                </svg>
-                            </button>
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="agent-list-empty">エージェントがありません</div>
-                }
-            </div>
-        </div>
-    }
-
     <div class="sessions-list">
         @if (HistoryState.Summaries.Any())
         {
@@ -138,6 +85,78 @@
     </div>
 </div>
 
+@if (_settingsOpen)
+{
+    <div class="agent-settings-overlay" @onclick="CloseOverlay">
+        <div class="agent-settings-dialog" @onclick:stopPropagation="true">
+            <div class="agent-settings-header">
+                <div>
+                    <div class="agent-settings-title">装置エージェント設定</div>
+                    <div class="agent-settings-subtitle">登録・削除や今後の設定拡張をまとめて管理します</div>
+                </div>
+                <button type="button" class="agent-settings-close" title="閉じる" @onclick="CloseOverlay">
+                    ×
+                </button>
+            </div>
+
+            <div class="agent-settings-body">
+                <div class="agent-settings-section">
+                    <div class="field">
+                        <label for="agent-number">番号</label>
+                        <input id="agent-number"
+                               class="agent-input"
+                               @bind="agentNumberInput"
+                               placeholder="例: A-01" />
+                    </div>
+                    <div class="field">
+                        <label for="agent-name">名前</label>
+                        <input id="agent-name"
+                               class="agent-input"
+                               @bind="agentNameInput"
+                               placeholder="装置名など" />
+                    </div>
+                    <button class="new-chat-btn save-agent-btn"
+                            @onclick="RegisterAgentAsync"
+                            disabled="@(_isRegistering || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))">
+                        登録
+                    </button>
+                </div>
+
+                <div class="agent-settings-section">
+                    <div class="agent-settings-section-title">登録済みエージェント</div>
+                    <div class="agent-list">
+                        @if (AgentState.Agents.Any())
+                        {
+                            @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
+                            {
+                                <div class="agent-row">
+                                    <div class="agent-row-info">
+                                        <div class="agent-row-number">@agent.Number</div>
+                                        <div class="agent-row-name">@agent.Name</div>
+                                    </div>
+                                    <button type="button"
+                                            class="agent-delete-btn"
+                                            title="エージェントを削除"
+                                            @onclick="() => ConfirmDeleteAgentAsync(agent)">
+                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                            <path d="M9 3.5h6m-9 3h12M10 10.5v7m4-7v7M5.5 6.5l1 13a1 1 0 0 0 1 .92h9a1 1 0 0 0 1-.92l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                            <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <div class="agent-list-empty">エージェントがありません</div>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public bool IsCollapsed { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
@@ -148,7 +167,7 @@
     private string userInitial = "U";
     private string? _userId;
     private bool _loaded;
-    private bool _settingsOpen;
+    private bool _settingsOpen; // オーバーレイ表示フラグ
     private string selectedAgentNumber = string.Empty;
     private string selectedAgentName = string.Empty;
     private string agentNumberInput = string.Empty;
@@ -235,6 +254,10 @@
     private void ToggleSettings()
     {
         _settingsOpen = !_settingsOpen;
+        if (!_settingsOpen)
+        {
+            ClearAgentInputs();
+        }
     }
 
     private async Task RegisterAgentAsync()
@@ -248,8 +271,7 @@
         try
         {
             await AgentState.AddOrUpdateAsync(_userId, agentNumberInput.Trim(), agentNameInput.Trim());
-            agentNumberInput = string.Empty;
-            agentNameInput = string.Empty;
+            ClearAgentInputs();
             _settingsOpen = false;
         }
         finally
@@ -279,6 +301,18 @@
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
         StateHasChanged();
+    }
+
+    private void CloseOverlay()
+    {
+        _settingsOpen = false;
+        ClearAgentInputs();
+    }
+
+    private void ClearAgentInputs()
+    {
+        agentNumberInput = string.Empty;
+        agentNameInput = string.Empty;
     }
 
     private async Task ConfirmDeleteAsync(ConversationSummary summary)
