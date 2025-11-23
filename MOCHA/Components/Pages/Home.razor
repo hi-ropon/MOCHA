@@ -49,29 +49,10 @@
                     </div>
                     @if (showInlineChip && i == lastUserIndex)
                     {
-                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel">
+                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel" title="アクティビティを開く">
                             <div class="chip-header">
                                 <span class="chip-title">思考時間</span>
-                                <span class="chip-count">@(ActivityLog.Any() ? $"{ActivityLog.Count} 件の経過" : "処理中…")</span>
-                            </div>
-                            <div class="chip-body">
-                                @if (IsSending)
-                                {
-                                    <div class="chip-stream">
-                                        @if (ActivityLog.Any())
-                                        {
-                                            @foreach (var log in TakeLatestActivity(2))
-                                            {
-                                                <div class="chip-line">@log.Title</div>
-                                            }
-                                        }
-                                        <div class="chip-line muted">...考え中</div>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <div class="chip-line muted">クリックでアクティビティを開く</div>
-                                }
+                                <span class="chip-count">@((ActivityLog.Any() || IsSending) ? $"{ActivityLog.Count} 件の経過" : "経過なし")</span>
                             </div>
                         </div>
                     }
