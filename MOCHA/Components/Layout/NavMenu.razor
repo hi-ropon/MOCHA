@@ -2,9 +2,11 @@
 @using Microsoft.AspNetCore.Components.Authorization
 @using MOCHA.Models.Chat
 @using MOCHA.Models.Agents
+@using MOCHA.Models.Settings
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
+@inject MOCHA.Services.Settings.UserPreferencesState PreferencesState
 @inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
 @implements IDisposable
@@ -80,12 +82,12 @@
         }
     </div>
 
-    <div class="user-info">
+    <button type="button" class="user-info" @onclick="ToggleUserSettings" title="ユーザー設定">
         <div class="user-avatar">@userInitial</div>
         <div>
             <div class="user-name">@userName</div>
         </div>
-    </div>
+    </button>
 </div>
 
 @if (_settingsOpen)
@@ -160,6 +162,40 @@
     </div>
 }
 
+@if (_userSettingsOpen)
+{
+    <div class="user-settings-overlay" @onclick="CloseUserSettings">
+        <div class="user-settings-dialog" @onclick:stopPropagation="true">
+            <div class="user-settings-header">
+                <div>
+                    <div class="user-settings-title">ユーザー設定</div>
+                    <div class="user-settings-subtitle">テーマなどの個人設定を管理します</div>
+                </div>
+                <button type="button" class="user-settings-close" title="閉じる" @onclick="CloseUserSettings">
+                    ×
+                </button>
+            </div>
+
+            <div class="user-settings-body">
+                <div class="field">
+                    <label for="theme-select">テーマ</label>
+                    <select id="theme-select" class="user-settings-select" @bind="_selectedTheme">
+                        <option value="@Theme.Light">ライト</option>
+                        <option value="@Theme.Dark">ダーク</option>
+                    </select>
+                </div>
+                <div class="user-settings-actions">
+                    <button type="button"
+                            class="user-settings-save"
+                            @onclick="SaveUserSettingsAsync">
+                        保存
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public bool IsCollapsed { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
@@ -171,17 +207,28 @@
     private string? _userId;
     private bool _loaded;
     private bool _settingsOpen; // オーバーレイ表示フラグ
+    private bool _userSettingsOpen;
     private string selectedAgentNumber = string.Empty;
     private string selectedAgentName = string.Empty;
     private string agentNumberInput = string.Empty;
     private string agentNameInput = string.Empty;
     private bool _isRegistering;
+    private Theme _selectedTheme = Theme.Light;
 
     protected override async Task OnInitializedAsync()
     {
         HistoryState.Changed += OnHistoryChanged;
         AgentState.Changed += OnAgentStateChanged;
+        PreferencesState.Changed += OnPreferencesChanged;
         await EnsureHistoryAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await EnsurePreferencesAsync();
+        }
     }
 
     private Task ToggleAsync() => OnToggle.InvokeAsync();
@@ -216,6 +263,12 @@
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
         _loaded = true;
+    }
+
+    private async Task EnsurePreferencesAsync()
+    {
+        await PreferencesState.LoadAsync();
+        _selectedTheme = PreferencesState.Preferences.Theme;
     }
 
     private void OnHistoryChanged() => InvokeAsync(StateHasChanged);
@@ -261,6 +314,23 @@
         {
             ClearAgentInputs();
         }
+    }
+
+    private void ToggleUserSettings()
+    {
+        _userSettingsOpen = true;
+        _selectedTheme = PreferencesState.Preferences.Theme;
+    }
+
+    private void CloseUserSettings()
+    {
+        _userSettingsOpen = false;
+    }
+
+    private async Task SaveUserSettingsAsync()
+    {
+        await PreferencesState.UpdateThemeAsync(_selectedTheme);
+        _userSettingsOpen = false;
     }
 
     private async Task RegisterAgentAsync()
@@ -347,9 +417,20 @@
         }
     }
 
+    private void OnPreferencesChanged()
+    {
+        _ = InvokeAsync(() =>
+        {
+            _selectedTheme = PreferencesState.Preferences.Theme;
+            StateHasChanged();
+            return Task.CompletedTask;
+        });
+    }
+
     public void Dispose()
     {
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
+        PreferencesState.Changed -= OnPreferencesChanged;
     }
 }

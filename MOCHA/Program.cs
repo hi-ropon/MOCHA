@@ -13,6 +13,7 @@ using MOCHA.Services.Auth;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 using MOCHA.Factories;
+using MOCHA.Services.Settings;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -104,6 +105,10 @@ builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();
 builder.Services.AddScoped<DeviceAgentState>();
+builder.Services.AddScoped<IUserPreferencesStore, LocalStorageUserPreferencesStore>();
+builder.Services.AddScoped<IColorSchemeProvider, BrowserColorSchemeProvider>();
+builder.Services.AddScoped<IThemeApplicator, DomThemeApplicator>();
+builder.Services.AddScoped<UserPreferencesState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
 builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
 builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("FakeAuth"));

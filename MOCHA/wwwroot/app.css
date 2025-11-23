@@ -1,9 +1,60 @@
+/* テーマ用の共通カラー変数 */
+:root {
+    --bg-layer: linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(238, 242, 248, 0.55));
+    --bg-image: url('bg.png') center/cover fixed;
+    --text-primary: #1f2a44;
+    --text-muted: #5e6b85;
+    --panel-bg: #f5f7fb;
+    --panel-strong-bg: #eef2f8;
+    --panel-soft: #e9eef7;
+    --border-color: #d5deea;
+    --accent: #2f6ac8;
+    --accent-contrast: #ffffff;
+    --card-hover: #e9f1ff;
+    --danger: #b22020;
+    --soft-shadow: 0 8px 22px rgba(63, 94, 134, 0.12);
+    --cta-start: #fff7d6;
+    --cta-end: #ffe7a8;
+    --cta-border: #f1d47a;
+    --cta-text: #7d5200;
+    --glass-bg: rgba(255, 255, 255, 0.28);
+    --glass-border: rgba(219, 227, 242, 0.55);
+    --glass-shadow: 0 16px 34px rgba(63, 94, 134, 0.22);
+    --bubble-bg: #ffffff;
+    --bubble-border: #dbe3f2;
+    --bubble-shadow: var(--soft-shadow);
+}
+
+[data-theme="dark"] {
+    --bg-layer: linear-gradient(180deg, rgba(6, 10, 18, 0.85), rgba(10, 14, 24, 0.82));
+    --bg-image: url('bg.png') center/cover fixed;
+    --text-primary: #e2e8f0;
+    --text-muted: #94a3b8;
+    --panel-bg: #1a2335;
+    --panel-strong-bg: #0f172a;
+    --panel-soft: #111827;
+    --border-color: #243045;
+    --accent: #7bb0f0;
+    --accent-contrast: #0b1220;
+    --card-hover: #1f2a3a;
+    --danger: #fca5a5;
+    --soft-shadow: 0 14px 32px rgba(0, 0, 0, 0.36);
+    --cta-start: #1c2944;
+    --cta-end: #243859;
+    --cta-border: #2f4d7a;
+    --cta-text: #e2e8f0;
+    --glass-bg: rgba(255, 255, 255, 0.08);
+    --glass-border: rgba(255, 255, 255, 0.2);
+    --glass-shadow: 0 20px 46px rgba(0, 0, 0, 0.55);
+    --bubble-bg: color-mix(in srgb, var(--glass-bg) 70%, var(--panel-bg) 30%);
+    --bubble-border: rgba(255, 255, 255, 0.16);
+    --bubble-shadow: 0 16px 34px rgba(0, 0, 0, 0.4);
+}
+
 html, body {
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.55), rgba(238, 242, 248, 0.55)),
-        url('bg.png') center/cover fixed;
-    color: #1f2a44;
+    background: var(--bg-layer), var(--bg-image);
+    color: var(--text-primary);
     height: 100%;
     min-height: 100vh;
     margin: 0;
@@ -11,7 +62,7 @@ html, body {
 }
 
 a, .btn-link {
-    color: #2f6ac8;
+    color: var(--accent);
 }
 
 /* グローバルスクロールバーを暗めのグレーに統一 */
@@ -21,22 +72,22 @@ a, .btn-link {
 }
 
 *::-webkit-scrollbar-track {
-    background: #e6edf8;
+    background: var(--panel-strong-bg);
 }
 
 *::-webkit-scrollbar-thumb {
-    background: #c6d3e9;
+    background: var(--panel-soft);
     border-radius: 10px;
 }
 
 *::-webkit-scrollbar-thumb:hover {
-    background: #b1c3e4;
+    background: var(--accent);
 }
 
 .btn-primary {
-    color: #fff;
-    background-color: #2f6ac8;
-    border-color: #2455a5;
+    color: var(--accent-contrast);
+    background-color: var(--accent);
+    border-color: var(--accent);
 }
 
 .btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
@@ -63,6 +114,7 @@ h1:focus {
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
+    background: var(--panel-strong-bg);
 }
 
 .session-item {
@@ -72,15 +124,15 @@ h1:focus {
     gap: 0.5rem;
     padding: 0.65rem 0.75rem;
     border-radius: 12px;
-    border: 1px solid #dbe3f2;
-    background: #f5f7fb;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
     transition: border-color 0.15s ease, box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
 .session-item:hover {
-    border-color: #c7d4ee;
-    box-shadow: 0 8px 20px rgba(63, 94, 134, 0.12);
-    background: #e9f1ff;
+    border-color: var(--accent);
+    box-shadow: var(--soft-shadow);
+    background: var(--card-hover);
 }
 
 .session-content {
@@ -92,7 +144,7 @@ h1:focus {
 
 .history-title {
     font-weight: 600;
-    color: #1f2a44;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -100,13 +152,13 @@ h1:focus {
 
 .history-time {
     font-size: 0.8rem;
-    color: #6b7280;
+    color: var(--text-muted);
 }
 
 .session-menu-btn {
-    border: 1px solid #d4deed;
-    background: #e9eef7;
-    color: #2f517d;
+    border: 1px solid var(--border-color);
+    background: var(--panel-soft);
+    color: var(--text-primary);
     width: 32px;
     height: 32px;
     border-radius: 8px;
@@ -124,9 +176,9 @@ h1:focus {
 }
 
 .session-menu-btn:hover {
-    background: #dce6f7;
-    color: #16305c;
-    box-shadow: 0 6px 14px rgba(63, 94, 134, 0.12);
+    background: var(--card-hover);
+    color: var(--accent);
+    box-shadow: var(--soft-shadow);
 }
 .agent-settings {
     display: flex;
@@ -147,14 +199,14 @@ h1:focus {
     justify-content: space-between;
     padding: 0.55rem 0.7rem;
     border-radius: 10px;
-    border: 1px solid #dbe3f2;
-    background: #f5f7fb;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
     transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 .agent-row:hover {
-    border-color: #c7d4ee;
-    background: #e9f1ff;
+    border-color: var(--accent);
+    background: var(--card-hover);
 }
 
 .agent-row-info {
@@ -166,13 +218,13 @@ h1:focus {
 
 .agent-row-number {
     font-size: 0.9rem;
-    color: #4b5563;
+    color: var(--text-muted);
 }
 
 .agent-row-name {
     font-size: 1rem;
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-primary);
     word-break: break-all;
 }
 
@@ -180,9 +232,9 @@ h1:focus {
     width: 30px;
     height: 30px;
     border-radius: 8px;
-    border: 1px solid #d4deed;
-    background: #e9eef7;
-    color: #2f517d;
+    border: 1px solid var(--border-color);
+    background: var(--panel-soft);
+    color: var(--text-primary);
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -197,12 +249,12 @@ h1:focus {
 
 .agent-delete-btn:hover {
     background: #fbeaea;
-    color: #b22020;
-    box-shadow: 0 6px 14px rgba(63, 94, 134, 0.12);
+    color: var(--danger);
+    box-shadow: var(--soft-shadow);
 }
 
 .agent-list-empty {
-    color: #6b7280;
+    color: var(--text-muted);
     font-size: 0.9rem;
     padding: 0.35rem 0;
 }
@@ -210,7 +262,7 @@ h1:focus {
 .agent-settings-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(31, 42, 68, 0.22);
+    background: rgba(7, 10, 18, 0.55);
     backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
@@ -222,15 +274,15 @@ h1:focus {
 .agent-settings-dialog {
     width: min(520px, 100%);
     max-height: 90vh;
-    background: #ffffff;
-    border: 1px solid #dbe3f2;
+    background: var(--panel-strong-bg);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
-    box-shadow: 0 20px 60px rgba(63, 94, 134, 0.18);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
     display: flex;
     flex-direction: column;
     padding: 1.25rem;
     gap: 1rem;
-    color: #1f2a44;
+    color: var(--text-primary);
     transform: translateY(0);
     animation: settings-pop 0.18s ease-out;
 }
@@ -248,15 +300,15 @@ h1:focus {
 }
 
 .agent-settings-subtitle {
-    color: #4b5563;
+    color: var(--text-muted);
     font-size: 0.9rem;
     margin-top: 0.15rem;
 }
 
 .agent-settings-close {
-    background: #eef2f8;
-    color: #2f517d;
-    border: 1px solid #d4deed;
+    background: var(--panel-soft);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
     border-radius: 10px;
     width: 36px;
     height: 36px;
@@ -267,8 +319,8 @@ h1:focus {
 }
 
 .agent-settings-close:hover {
-    background: #dce6f7;
-    color: #16305c;
+    background: var(--card-hover);
+    color: var(--accent);
 }
 
 .agent-settings-body {
@@ -287,7 +339,7 @@ h1:focus {
 
 .agent-settings-section-title {
     font-weight: 700;
-    color: #0f172a;
+    color: var(--text-primary);
 }
 
 @media (max-width: 640px) {
@@ -372,10 +424,10 @@ h1:focus {
 }
 
 .glass-card {
-    background: rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(219, 227, 242, 0.55);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: 16px;
-    box-shadow: 0 16px 34px rgba(63, 94, 134, 0.22);
+    box-shadow: var(--glass-shadow);
     backdrop-filter: blur(22px);
 }
 
@@ -387,16 +439,16 @@ h1:focus {
 }
 
 .chat-header .btn-outline-light {
-    color: #2f517d;
-    border-color: #c1cee4;
-    background: #f5f8ff;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+    background: var(--panel-bg);
 }
 
 .chat-header .btn-outline-light:hover,
 .chat-header .btn-outline-light:focus {
-    color: #1f2a44;
-    border-color: #9fb5d8;
-    background: #e8f0fd;
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--card-hover);
 }
 
 .env-badge {
@@ -416,7 +468,7 @@ h1:focus {
 
 .status-line {
     margin-top: 0.4rem;
-    color: #4b5563;
+    color: var(--text-muted);
     font-size: 0.9rem;
     display: flex;
     gap: 1rem;
@@ -478,42 +530,42 @@ h1:focus {
     max-width: 80%;
     padding: 0.75rem 1rem;
     border-radius: 14px;
-    border: 1px solid #dbe3f2;
-    background: #ffffff;
-    box-shadow: 0 10px 22px rgba(63, 94, 134, 0.12);
+    border: 1px solid var(--bubble-border);
+    background: var(--bubble-bg);
+    box-shadow: var(--bubble-shadow);
 }
 
 .bubble .meta {
     font-size: 0.75rem;
-    color: #6b7280;
+    color: var(--text-muted);
     margin-bottom: 0.25rem;
 }
 
 .bubble .content {
     white-space: pre-wrap;
-    color: #1f2a44;
+    color: var(--text-primary);
 }
 
 .from-user {
     align-self: flex-end;
-    background: linear-gradient(135deg, #ffedc2, #ffd88a);
-    color: #3b2f11;
-    border: 1px solid #f1c367;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: var(--cta-text);
+    border: 1px solid var(--cta-border);
     margin-right: 10px;
 }
 
 .from-user .content {
-    color: #3b2f11;
+    color: var(--cta-text);
 }
 
 .from-user .meta {
-    color: #6b5b30;
+    color: var(--cta-text);
 }
 
 .from-assistant {
     align-self: flex-start;
-    background: #f1f5ff;
-    border-color: #c7d4ee;
+    background: var(--bubble-bg);
+    border-color: var(--bubble-border);
 }
 
 .from-tool {
@@ -527,7 +579,7 @@ h1:focus {
     padding-top: 0.75rem;
     position: sticky;
     bottom: 0;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.38), rgba(245, 247, 251, 0.52));
+    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 65%, transparent), color-mix(in srgb, var(--glass-bg) 85%, transparent));
 }
 
 .composer-inner {
@@ -547,9 +599,9 @@ h1:focus {
     padding: 0.55rem 0.75rem;
     scrollbar-gutter: stable;
     border-radius: 12px;
-    border: 1px solid #dbe3f2;
-    background: #ffffff;
-    color: #1f2a44;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    color: var(--text-primary);
     height: 48px;
     min-height: 48px;
     max-height: 120px;
@@ -563,23 +615,23 @@ h1:focus {
 }
 
 .chat-input::-webkit-scrollbar-track {
-    background: #e6edf8;
+    background: var(--panel-strong-bg);
     border-radius: 8px;
     margin: 4px 8px 4px 0; /* 右余白を増やしバーを左に寄せる */
 }
 
 .chat-input::-webkit-scrollbar-thumb {
-    background: #c6d3e9;
+    background: var(--panel-soft);
     border-radius: 8px;
 }
 
 .chat-input::-webkit-scrollbar-thumb:hover {
-    background: #b1c3e4;
+    background: var(--accent);
 }
 
 .chat-input:focus {
     outline: none;
-    border-color: #7bb0f0;
+    border-color: var(--accent);
 }
 
 .input-actions {
@@ -592,9 +644,9 @@ h1:focus {
     width: 48px;
     height: 48px;
     border-radius: 10px;
-    border: 1px solid #d4deed;
-    background: #eef2f8;
-    color: #2f517d;
+    border: 1px solid var(--border-color);
+    background: var(--panel-soft);
+    color: var(--text-primary);
     font-size: 18px;
     display: inline-flex;
     align-items: center;
@@ -604,8 +656,8 @@ h1:focus {
 }
 
 .icon-btn:hover:enabled {
-    border-color: #c1cee4;
-    box-shadow: 0 10px 22px rgba(63, 94, 134, 0.16);
+    border-color: var(--accent);
+    box-shadow: var(--soft-shadow);
     transform: translateY(-1px);
 }
 
@@ -615,13 +667,13 @@ h1:focus {
 }
 
 .icon-btn.primary {
-    background: linear-gradient(135deg, #5b8def, #3d6fd6);
-    border-color: #4c7edc;
-    color: #ffffff;
+    background: linear-gradient(135deg, var(--accent), #3d6fd6);
+    border-color: var(--accent);
+    color: var(--accent-contrast);
 }
 
 .icon-btn.secondary {
-    background: #f1f5ff;
+    background: var(--panel-bg);
 }
 
 @media (max-width: 768px) {
