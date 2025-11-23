@@ -63,7 +63,7 @@
                     {
                         <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="() => OpenActivityPanelForTurn(turnIndexForChip)" title="アクティビティを開く">
                             <div class="chip-header">
-                                <span class="chip-title">思考時間</span>
+                                <span class="chip-title">思考過程</span>
                                 <span class="chip-count">@((hasLog || isCurrentSending) ? $"{(turnActivity?.Items.Count ?? 0)} 件の経過" : "経過なし")</span>
                             </div>
                         </div>
@@ -89,9 +89,6 @@
                         </button>
                         <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
                             &#10148;
-                        </button>
-                        <button class="icon-btn tertiary" @onclick="ToggleActivityPanel" title="アクティビティ">
-                            ☰
                         </button>
                     </div>
                 </div>

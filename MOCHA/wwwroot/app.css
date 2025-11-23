@@ -605,10 +605,11 @@ h1:focus {
     font-weight: 700;
     color: var(--text-primary);
     margin-right: 1rem;
+    font-size: 0.82rem;
 }
 
 .thinking-chip .chip-count {
-    font-size: 0.85rem;
+    font-size: 0.76rem;
     color: var(--text-muted);
 }
 
