@@ -14,7 +14,7 @@ public class RoleBootstrapperTests
     /// 設定されたユーザーに管理者ロールが付与されることを確認する。
     /// </summary>
     [Fact]
-    public async Task EnsureAdminRolesAsync_管理者が付与される()
+    public async Task 管理者が付与される()
     {
         var provider = new InMemoryUserRoleProvider();
         var options = Options.Create(new RoleBootstrapOptions
@@ -33,7 +33,7 @@ public class RoleBootstrapperTests
     /// 設定が空の場合は何も変更しないことを確認する。
     /// </summary>
     [Fact]
-    public async Task EnsureAdminRolesAsync_設定が空なら何もしない()
+    public async Task 設定が空なら何もしない()
     {
         var provider = new InMemoryUserRoleProvider();
         var options = Options.Create(new RoleBootstrapOptions());
