@@ -20,6 +20,13 @@
     height: 32px;
 }
 
+.sidebar-title-icon {
+    width: 144px;
+    height: 72px;
+    object-fit: contain;
+    display: block;
+}
+
 .agent-section {
     padding: 12px 12px 0 12px;
     color: #dbe8ef;
