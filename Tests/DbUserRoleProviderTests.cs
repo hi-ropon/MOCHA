@@ -26,7 +26,7 @@ public class DbUserRoleProviderTests
     /// 同じロールを複数回付与しても重複保存されないことを確認する。
     /// </summary>
     [Fact]
-    public async Task AssignAsync_重複せず保存される()
+    public async Task 重複せず保存される()
     {
         await using var db = CreateContext(nameof(AssignAsync_重複せず保存される));
         var provider = new DbUserRoleProvider(db);
@@ -44,7 +44,7 @@ public class DbUserRoleProviderTests
     /// 削除操作でロールが取り除かれることを確認する。
     /// </summary>
     [Fact]
-    public async Task RemoveAsync_削除される()
+    public async Task 削除される()
     {
         await using var db = CreateContext(nameof(RemoveAsync_削除される));
         var provider = new DbUserRoleProvider(db);
@@ -61,7 +61,7 @@ public class DbUserRoleProviderTests
     /// ロール判定が大文字小文字を無視して行われることを確認する。
     /// </summary>
     [Fact]
-    public async Task IsInRoleAsync_大小文字を無視する()
+    public async Task 大小文字を無視する()
     {
         await using var db = CreateContext(nameof(IsInRoleAsync_大小文字を無視する));
         var provider = new DbUserRoleProvider(db);
