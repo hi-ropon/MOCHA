@@ -1,18 +1,20 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Agents;
 using MOCHA.Services.Agents;
-using Xunit;
 
 namespace MOCHA.Tests;
 
 /// <summary>
 /// DeviceAgentState の状態管理を検証するテスト。
 /// </summary>
+[TestClass]
 public class DeviceAgentStateTests
 {
     /// <summary>
     /// 登録したエージェントが選択状態に反映されることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task エージェント登録すると選択状態が更新される()
     {
         var repo = new InMemoryDeviceAgentRepository();
@@ -20,18 +22,18 @@ public class DeviceAgentStateTests
         var userId = "user-1";
 
         await state.LoadAsync(userId);
-        Assert.Null(state.SelectedAgentNumber);
+        Assert.IsNull(state.SelectedAgentNumber);
 
         await state.AddOrUpdateAsync(userId, "001", "ライン1");
 
-        Assert.Equal("001", state.SelectedAgentNumber);
-        Assert.Contains(state.Agents, a => a.Number == "001" && a.Name == "ライン1");
+        Assert.AreEqual("001", state.SelectedAgentNumber);
+        Assert.IsTrue(state.Agents.Any(a => a.Number == "001" && a.Name == "ライン1"));
     }
 
     /// <summary>
     /// 異なるエージェントを選択した際に Changed イベントが発火することを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 別エージェントを選ぶとChangedが発火する()
     {
         var repo = new InMemoryDeviceAgentRepository();
@@ -45,14 +47,14 @@ public class DeviceAgentStateTests
 
         state.Select("001");
 
-        Assert.True(changed);
-        Assert.Equal("001", state.SelectedAgentNumber);
+        Assert.IsTrue(changed);
+        Assert.AreEqual("001", state.SelectedAgentNumber);
     }
 
     /// <summary>
     /// エージェント削除時に一覧から除外され、選択状態が次のエージェントへ移ることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task エージェント削除で一覧と選択が更新される()
     {
         var repo = new InMemoryDeviceAgentRepository();
@@ -64,15 +66,15 @@ public class DeviceAgentStateTests
 
         await state.RemoveAsync(userId, "001");
 
-        Assert.Single(state.Agents);
-        Assert.Equal("002", state.SelectedAgentNumber);
-        Assert.DoesNotContain(state.Agents, a => a.Number == "001");
+        Assert.AreEqual(1, state.Agents.Count);
+        Assert.AreEqual("002", state.SelectedAgentNumber);
+        Assert.IsFalse(state.Agents.Any(a => a.Number == "001"));
     }
 
     /// <summary>
     /// 存在しない番号を削除しても例外にならず状態も変化しないことを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 存在しないエージェント削除は無視される()
     {
         var repo = new InMemoryDeviceAgentRepository();
@@ -83,14 +85,14 @@ public class DeviceAgentStateTests
 
         await state.RemoveAsync(userId, "999");
 
-        Assert.Single(state.Agents);
-        Assert.Equal("001", state.SelectedAgentNumber);
+        Assert.AreEqual(1, state.Agents.Count);
+        Assert.AreEqual("001", state.SelectedAgentNumber);
     }
 
     /// <summary>
     /// 最後のエージェントを削除した場合は選択状態が空になることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 最後のエージェントを削除すると選択が解除される()
     {
         var repo = new InMemoryDeviceAgentRepository();
@@ -101,8 +103,8 @@ public class DeviceAgentStateTests
 
         await state.RemoveAsync(userId, "001");
 
-        Assert.Empty(state.Agents);
-        Assert.Null(state.SelectedAgentNumber);
+        Assert.AreEqual(0, state.Agents.Count);
+        Assert.IsNull(state.SelectedAgentNumber);
     }
 
     /// <summary>

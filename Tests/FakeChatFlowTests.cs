@@ -1,56 +1,58 @@
+using System.Linq;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Chat;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
-using Xunit;
 
 namespace MOCHA.Tests;
 
 /// <summary>
 /// フェイククライアントを用いたチャットフローの動作を検証するテスト。
 /// </summary>
+[TestClass]
 public class FakeChatFlowTests
 {
     /// <summary>
     /// プレーンテキスト送信でアシスタント応答と完了イベントが返ることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task プレーンテキストならアシスタント応答が返る()
     {
         var orchestrator = CreateOrchestrator();
         var events = await CollectAsync(orchestrator, "こんにちは");
 
-        Assert.Contains(events, e => e.Type == ChatStreamEventType.Message && e.Message?.Role == ChatRole.Assistant);
-        Assert.Contains(events, e => e.Type == ChatStreamEventType.Completed);
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Message && e.Message?.Role == ChatRole.Assistant));
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Completed));
     }
 
     /// <summary>
     /// 読み取りキーワードを含む発話でツール経由の結果が返ることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 読み取りキーワードならツール経由で値を返す()
     {
         var orchestrator = CreateOrchestrator();
         var events = await CollectAsync(orchestrator, "Please read D100");
 
-        Assert.Contains(events, e => e.Type == ChatStreamEventType.ActionRequest);
-        Assert.Contains(events, e => e.Type == ChatStreamEventType.ToolResult);
-        Assert.Contains(events, e =>
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ActionRequest));
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ToolResult));
+        Assert.IsTrue(events.Any(e =>
             e.Type == ChatStreamEventType.Message &&
             e.Message?.Role == ChatRole.Assistant &&
             e.Message.Content.Contains("D100") &&
-            e.Message.Content.Contains("42"));
-        Assert.Contains(events, e =>
+            e.Message.Content.Contains("42")));
+        Assert.IsTrue(events.Any(e =>
             e.Type == ChatStreamEventType.Message &&
             e.Message?.Role == ChatRole.Assistant &&
             e.Message.Content.Contains("Copilot Studio") &&
-            e.Message.Content.Contains("D100"));
-        Assert.Contains(events, e =>
+            e.Message.Content.Contains("D100")));
+        Assert.IsTrue(events.Any(e =>
             e.Type == ChatStreamEventType.Message &&
             e.Message?.Role == ChatRole.Assistant &&
             e.Message.Content.Contains("fake Copilot") &&
-            e.Message.Content.Contains("D100"));
-        Assert.Contains(events, e => e.Type == ChatStreamEventType.Completed);
+            e.Message.Content.Contains("D100")));
+        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Completed));
     }
 
     /// <summary>
@@ -80,7 +82,7 @@ public class FakeChatFlowTests
     /// <summary>
     /// チャット送信で履歴にユーザーとアシスタントのメッセージが保存されることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task チャット送信すると履歴にメッセージが保存される()
     {
         var repo = new InMemoryChatRepository();
@@ -96,15 +98,15 @@ public class FakeChatFlowTests
 
         var saved = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
 
-        Assert.True(saved.Count >= 2, "ユーザーとアシスタントのメッセージが保存されていること");
-        Assert.Contains(saved, m => m.Role == ChatRole.User && m.Content.Contains("こんにちは"));
-        Assert.Contains(saved, m => m.Role == ChatRole.Assistant);
+        Assert.IsTrue(saved.Count >= 2, "ユーザーとアシスタントのメッセージが保存されていること");
+        Assert.IsTrue(saved.Any(m => m.Role == ChatRole.User && m.Content.Contains("こんにちは")));
+        Assert.IsTrue(saved.Any(m => m.Role == ChatRole.Assistant));
     }
 
     /// <summary>
     /// 履歴削除でサマリとメッセージが除去されることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 履歴削除するとサマリとメッセージが消える()
     {
         var repo = new InMemoryChatRepository();
@@ -118,19 +120,19 @@ public class FakeChatFlowTests
         }
 
         await history.LoadAsync(user.UserId, "AG-01");
-        Assert.Contains(history.Summaries, s => s.Id == conversationId);
+        Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId));
 
         await history.DeleteAsync(user.UserId, conversationId, "AG-01");
 
-        Assert.DoesNotContain(history.Summaries, s => s.Id == conversationId);
+        Assert.IsFalse(history.Summaries.Any(s => s.Id == conversationId));
         var messages = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
-        Assert.Empty(messages);
+        Assert.AreEqual(0, messages.Count);
     }
 
     /// <summary>
     /// 会話がエージェント番号付きで保存されることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task エージェント番号付きで会話が保存される()
     {
         var repo = new InMemoryChatRepository();
@@ -144,7 +146,7 @@ public class FakeChatFlowTests
         }
 
         await history.LoadAsync(user.UserId, "AG-77");
-        Assert.Contains(history.Summaries, s => s.Id == conversationId && s.AgentNumber == "AG-77");
+        Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId && s.AgentNumber == "AG-77"));
     }
 
     /// <summary>

@@ -1,14 +1,16 @@
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Data;
 using MOCHA.Models.Auth;
 using MOCHA.Services.Auth;
-using Xunit;
 
 namespace MOCHA.Tests;
 
 /// <summary>
 /// DbUserRoleProvider のロール操作を検証するテスト。
 /// </summary>
+[TestClass]
 public class DbUserRoleProviderTests
 {
     /// <summary>
@@ -25,7 +27,7 @@ public class DbUserRoleProviderTests
     /// <summary>
     /// 同じロールを複数回付与しても重複保存されないことを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 重複せず保存される()
     {
         await using var db = CreateContext(nameof(重複せず保存される));
@@ -36,14 +38,14 @@ public class DbUserRoleProviderTests
 
         var roles = await provider.GetRolesAsync("u1");
 
-        Assert.Single(roles);
-        Assert.Contains(UserRoleId.Predefined.Administrator, roles);
+        Assert.AreEqual(1, roles.Count);
+        Assert.IsTrue(roles.Contains(UserRoleId.Predefined.Administrator));
     }
 
     /// <summary>
     /// 削除操作でロールが取り除かれることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 削除操作でロールが取り除かれる()
     {
         await using var db = CreateContext(nameof(削除操作でロールが取り除かれる));
@@ -54,13 +56,13 @@ public class DbUserRoleProviderTests
 
         var roles = await provider.GetRolesAsync("u1");
 
-        Assert.Empty(roles);
+        Assert.AreEqual(0, roles.Count);
     }
 
     /// <summary>
     /// ロール判定が大文字小文字を無視して行われることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 大小文字を無視する()
     {
         await using var db = CreateContext(nameof(大小文字を無視する));
@@ -70,6 +72,6 @@ public class DbUserRoleProviderTests
 
         var result = await provider.IsInRoleAsync("u1", "developer");
 
-        Assert.True(result);
+        Assert.IsTrue(result);
     }
 }

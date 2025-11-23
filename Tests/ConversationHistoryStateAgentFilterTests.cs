@@ -1,18 +1,19 @@
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Chat;
 using MOCHA.Services.Chat;
-using Xunit;
 
 namespace MOCHA.Tests;
 
 /// <summary>
 /// ConversationHistoryState のエージェント別フィルタリングを検証するテスト。
 /// </summary>
+[TestClass]
 public class ConversationHistoryStateAgentFilterTests
 {
     /// <summary>
     /// 選択したエージェントの履歴のみ読み込まれることを確認する。
     /// </summary>
-    [Fact]
+    [TestMethod]
     public async Task 選択したエージェントのみ履歴を読み込む()
     {
         var repo = new InMemoryChatRepositoryWithAgent();
@@ -20,18 +21,18 @@ public class ConversationHistoryStateAgentFilterTests
         var userId = "user-filter";
 
         await state.LoadAsync(userId, "A001");
-        Assert.Empty(state.Summaries);
+        Assert.AreEqual(0, state.Summaries.Count);
 
         await state.UpsertAsync(userId, "c1", "Aの会話", "A001");
         await state.UpsertAsync(userId, "c2", "Bの会話", "B002");
 
         await state.LoadAsync(userId, "A001");
-        Assert.Single(state.Summaries);
-        Assert.Equal("A001", state.Summaries[0].AgentNumber);
+        Assert.AreEqual(1, state.Summaries.Count);
+        Assert.AreEqual("A001", state.Summaries[0].AgentNumber);
 
         await state.LoadAsync(userId, "B002");
-        Assert.Single(state.Summaries);
-        Assert.Equal("c2", state.Summaries[0].Id);
+        Assert.AreEqual(1, state.Summaries.Count);
+        Assert.AreEqual("c2", state.Summaries[0].Id);
     }
 
     /// <summary>
