@@ -165,13 +165,14 @@ h1:focus {
 }
 
 .agent-row-number {
-    font-weight: 600;
-    color: #f5f7fb;
+    font-size: 0.9rem;
+    color: #9bb6c3;
 }
 
 .agent-row-name {
-    font-size: 0.85rem;
-    color: #9bb6c3;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #f5f7fb;
     word-break: break-all;
 }
 
