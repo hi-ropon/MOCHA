@@ -44,30 +44,109 @@
                     </div>
                 }
 
+                @if (HasActivity)
+                {
+                    <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel">
+                        <div class="chip-header">
+                            <span class="chip-title">思考時間</span>
+                            <span class="chip-count">@(ActivityLog.Any() ? $"{ActivityLog.Count} 件の経過" : "処理中…")</span>
+                        </div>
+                        <div class="chip-body">
+                            @if (IsSending)
+                            {
+                                <div class="chip-stream">
+                                    @if (ActivityLog.Any())
+                                    {
+                                        @foreach (var log in TakeLatestActivity(2))
+                                        {
+                                            <div class="chip-line">@log.Title</div>
+                                        }
+                                    }
+                                    <div class="chip-line muted">...考え中</div>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="chip-line muted">クリックでアクティビティを開く</div>
+                            }
+                        </div>
+                    </div>
+                }
+
                 @if (!string.IsNullOrEmpty(Status))
                 {
                     <div class="status-line">@Status</div>
                 }
             </div>
 
-                <div class="composer">
-                    <div class="composer-inner">
-                        <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
-                                  @bind="Input"
-                                  @bind:event="oninput"
-                                  @onkeydown="HandleKeyDown"
-                                  rows="1"></textarea>
-                        <div class="input-actions">
-                            <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
-                                &#9632;
-                            </button>
+            <div class="composer">
+                <div class="composer-inner">
+                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                              @bind="Input"
+                              @bind:event="oninput"
+                              @onkeydown="HandleKeyDown"
+                              rows="1"></textarea>
+                    <div class="input-actions">
+                        <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
+                            &#9632;
+                        </button>
                         <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
                             &#10148;
+                        </button>
+                        <button class="icon-btn tertiary" @onclick="ToggleActivityPanel" title="アクティビティ">
+                            ☰
                         </button>
                     </div>
                 </div>
             </div>
         </main>
+
+        @if (ShowActivityPanel)
+        {
+            <div class="activity-scrim" @onclick="CloseActivityPanel"></div>
+        }
+
+        <aside class="activity-panel glass-card @(ShowActivityPanel ? "open" : string.Empty)">
+            <div class="activity-header">
+                <div>
+                    <div class="activity-title">アクティビティ</div>
+                    <div class="activity-sub">
+                        @if (ActivityLog.Any())
+                        {
+                            @($"{ActivityLog.Count} 件の途中経過")
+                        }
+                        else
+                        {
+                            <span>まだありません</span>
+                        }
+                    </div>
+                </div>
+                <button class="icon-btn tertiary" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
+            </div>
+            <div class="activity-body">
+                @if (ActivityLog.Any())
+                {
+                    @foreach (var log in ActivityLog)
+                    {
+                        <div class="activity-item">
+                            <div class="activity-meta">
+                                <span class="pill @GetPillClass(log.Kind)">@GetPillLabel(log.Kind)</span>
+                                <span class="timestamp">@log.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
+                            </div>
+                            <div class="activity-title-text">@log.Title</div>
+                            @if (!string.IsNullOrWhiteSpace(log.Detail))
+                            {
+                                <div class="activity-detail">@log.Detail</div>
+                            }
+                        </div>
+                    }
+                }
+                else
+                {
+                    <div class="activity-empty">思考の途中経過がここに表示されます。</div>
+                }
+            </div>
+        </aside>
     </div>
 </div>
 
@@ -76,6 +155,7 @@
     [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
     private readonly List<ChatMessage> Messages = new();
+    private readonly List<ActivityLogItem> ActivityLog = new();
     private string Input = string.Empty;
     private string? Status;
     private bool IsSending;
@@ -87,6 +167,9 @@
     private IDisposable? _plcOptionsSubscription;
     private UserContext? _user;
     private string? _loadedConversationId;
+    private ChatMessage? _latestAssistant;
+    private bool ShowActivityPanel;
+    private bool HasActivity => ActivityLog.Any() || IsSending;
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
@@ -169,6 +252,9 @@
 
         var userMessage = new ChatMessage(ChatRole.User, text);
         Messages.Add(userMessage);
+        ActivityLog.Clear();
+        _latestAssistant = null;
+        ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
         try
@@ -178,24 +264,30 @@
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        Messages.Add(ev.Message);
+                        _latestAssistant = ev.Message;
+                        RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(ev.Message.Content)}", ev.Message.Content);
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
                         await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber);
                         Status = $"ツール実行中: {ev.ActionRequest.ActionName}";
+                        RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
                         ConversationId ??= ev.ActionResult.ConversationId;
-                        var payloadJson = System.Text.Json.JsonSerializer.Serialize(ev.ActionResult.Payload);
-                        Messages.Add(new ChatMessage(ChatRole.Tool, $"{ev.ActionResult.ActionName}: {payloadJson}"));
-                        Status = null;
+                        var payloadJson = SafeSerialize(ev.ActionResult.Payload);
+                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
                         break;
                     case ChatStreamEventType.Completed:
                         Status = null;
+                        if (_latestAssistant is not null)
+                        {
+                            Messages.Add(_latestAssistant);
+                        }
                         break;
                     case ChatStreamEventType.Error:
                         Status = ev.Error;
+                        RecordActivity(ActivityKind.Error, "エラー", ev.Error);
                         break;
                 }
 
@@ -272,8 +364,11 @@
         ConversationId = null;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
+        ActivityLog.Clear();
         Status = null;
         Input = string.Empty;
+        ShowActivityPanel = false;
+        _latestAssistant = null;
         SeedInitialMessage();
     }
 
@@ -283,12 +378,16 @@
         ConversationId = conversationId;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
+        ActivityLog.Clear();
         Status = null;
         Input = string.Empty;
+        ShowActivityPanel = false;
+        _latestAssistant = null;
 
         var user = _user ?? await ResolveUserAsync();
         var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
-        Messages.AddRange(historyMessages);
+        Messages.AddRange(ChatMessageProjector.KeepUserAndFinalAssistant(historyMessages));
+        RebuildActivityFromHistory(historyMessages);
 
         if (!Messages.Any())
         {
@@ -324,6 +423,79 @@
                           ?? principal.FindFirst("name")?.Value
                           ?? "ユーザー";
         return new UserContext(objectId, displayName);
+    }
+
+    private void RecordActivity(ActivityKind kind, string title, string? detail = null)
+    {
+        ActivityLog.Add(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
+    }
+
+    private IEnumerable<ActivityLogItem> TakeLatestActivity(int count) => ActivityLog.TakeLast(count);
+
+    private void ToggleActivityPanel() => ShowActivityPanel = !ShowActivityPanel;
+
+    private void OpenActivityPanel() => ShowActivityPanel = true;
+
+    private void CloseActivityPanel() => ShowActivityPanel = false;
+
+    private static string GetPillClass(ActivityKind kind) => kind switch
+    {
+        ActivityKind.Action => "pill-action",
+        ActivityKind.ToolResult => "pill-tool",
+        ActivityKind.Error => "pill-error",
+        _ => "pill-assistant"
+    };
+
+    private static string GetPillLabel(ActivityKind kind) => kind switch
+    {
+        ActivityKind.Action => "Action",
+        ActivityKind.ToolResult => "Result",
+        ActivityKind.Error => "Error",
+        _ => "Thought"
+    };
+
+    private static string SafeSerialize(IReadOnlyDictionary<string, object?> payload)
+    {
+        return System.Text.Json.JsonSerializer.Serialize(payload);
+    }
+
+    private static string TrimForPreview(string text, int maxLength = 80)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return string.Empty;
+        }
+
+        return text.Length <= maxLength
+            ? text
+            : text[..maxLength] + "…";
+    }
+
+    private sealed record ActivityLogItem(string Title, string? Detail, ActivityKind Kind, DateTimeOffset Timestamp);
+
+    private enum ActivityKind
+    {
+        Assistant,
+        Action,
+        ToolResult,
+        Error
+    }
+
+    private void RebuildActivityFromHistory(IReadOnlyList<ChatMessage> historyMessages)
+    {
+        ActivityLog.Clear();
+        foreach (var message in historyMessages)
+        {
+            switch (message.Role)
+            {
+                case ChatRole.Assistant:
+                    RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(message.Content)}", message.Content);
+                    break;
+                case ChatRole.Tool:
+                    RecordActivity(ActivityKind.ToolResult, $"ツール: {TrimForPreview(message.Content)}", message.Content);
+                    break;
+            }
+        }
     }
 
     public void Dispose()
