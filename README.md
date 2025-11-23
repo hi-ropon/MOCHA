@@ -1,76 +1,72 @@
-# MOCHA (Blazor Server)
+# MOCHA
 
-## 概要
-- .NET 8/Blazor Server のチャット UI。Copilot Studio/PLC ゲートウェイと連携する設計だが、既定はフェイク実装で動作。
-- 履歴は SQLite（`chat.db`）に永続化。ユーザー識別は Azure AD 認証の OID を使用。
-- 認証はフラグで切替可能（`AzureAd:Enabled`）。ローカル開発は無効のまま動作させられる。
+Blazor Server (.NET 8) で構築した Copilot Studio/PLC Gateway 連携チャット UI。ローカルではフェイククライアントで完結し、認証や外部接続を後から有効化できる。
 
-## 必要環境
-- .NET 8 SDK
-- SQLite はバイナリ不要（`Microsoft.EntityFrameworkCore.Sqlite` で内蔵）
-- Azure AD を使う場合はテナント/アプリ登録情報
+## できること
+- Copilot 風チャット UI（ストリーム表示）。ツール要求を受け取り、PLC Gateway へ読み取りを実行（`PlcGateway:Enabled=false` ならフェイクで応答）。
+- 装置エージェント管理と紐づく履歴フィルタ。サイドバーからエージェントを登録/選択し、その番号ごとに会話を保存。
+- 会話履歴とメッセージを SQLite（`chat.db`）へ永続化。初回起動時にスキーマ自動生成。
+- ユーザーロール管理（DB 持ち）。`/settings/roles` で Admin が付与/削除、API も提供。
+- テーマ・ユーザー設定をブラウザに保存（ライト/ダーク）。
+- 認証は Entra ID（Azure AD）と開発用フェイク認証を切替可能。
 
 ## セットアップ
-1. 依存復元: `dotnet restore`
-2. 開発サーバー: `dotnet run --project MOCHA/MOCHA.csproj`
-3. テスト: `dotnet test`
+1. 前提: .NET 8 SDK。SQLite バイナリは不要（内蔵プロバイダー利用）。
+2. 依存復元: `dotnet restore`
+3. ローカル起動: `dotnet run --project MOCHA/MOCHA.csproj`  
+   - 既定では `FakeAuth` が有効になり、`dev-user` としてログインした扱い。  
+   - 起動時に `chat.db` が同ディレクトリに作成される。
+4. テスト: `dotnet test`（MSTest ベース、フェイククライアントで外部依存なし）
 
-## 認証の設定
-- `appsettings.json` の `AzureAd:Enabled` を `false` にすると認証なしでアクセス可能（ローカル開発向け、既定）。
-- Azure AD で保護する場合は `AzureAd` セクションを実テナント値に更新し、`Enabled` を `true` にする。
-  - `TenantId`, `ClientId`, `Domain`, `CallbackPath` を設定。
-  - ネットワークから `https://login.microsoftonline.com/{TenantId}/v2.0/.well-known/openid-configuration` に到達できること。
+## 設定ポイント（`MOCHA/appsettings*.json`）
+- `ConnectionStrings:ChatDb`: SQLite の場所（既定 `Data Source=chat.db`）。削除すれば再生成。
+- `AzureAd`: 本番用 OIDC 認証。`Enabled=true` で有効化し、`TenantId`/`ClientId`/`Domain`/`CallbackPath` をテナント値に置換。
+- `FakeAuth`: ローカル用フェイク認証。`Enabled=true` のままなら認証不要で固定ユーザーとして動作。
+- `Copilot`: Copilot Studio 接続設定。`Enabled=false` なら `FakeCopilotChatClient` が応答。
+- `PlcGateway`: PLC Gateway への HTTP 呼び出し設定。`Enabled=false` なら `FakePlcGatewayClient` が応答。
+- `RoleBootstrap:AdminUserIds`: 起動時に Admin を付与するユーザーID 配列（付与後は空に戻す運用推奨）。
 
-### AzureAd セクション例
+### AzureAd 設定例
 ```json
 "AzureAd": {
-  "Enabled": false,                         // true にすると OIDC (Azure AD) 認証を有効化
+  "Enabled": false,
   "Instance": "https://login.microsoftonline.com/",
-  "Domain": "your-domain.onmicrosoft.com",  // アプリ登録テナントのドメイン
+  "Domain": "your-domain.onmicrosoft.com",
   "TenantId": "00000000-0000-0000-0000-000000000000",
   "ClientId": "00000000-0000-0000-0000-000000000000",
-  "CallbackPath": "/signin-oidc"            // 既定のサインインコールバック
+  "CallbackPath": "/signin-oidc"
 }
 ```
 
-## データ永続化
-- 接続文字列: `ConnectionStrings:ChatDb`（既定 `Data Source=chat.db`）。`EnsureCreated` で初回起動時に作成。
-- `.gitignore` に `chat.db*` を追加済み。必要なら削除して再生成できる。
+### Copilot/PLC 設定メモ
+- Copilot へ実接続する場合、`SchemaName` と `EnvironmentId` または `DirectConnectUrl` を設定し、`AccessToken` を適宜付与。
+- PLC Gateway は `BaseAddress` と `Timeout` を上書きする。`Enabled=false` のままでもチャット UI の挙動確認は可能。
 
-## 主な設定
-- `Copilot`: Copilot Studio 接続設定。未設定/Enabled=false の場合はフェイククライアントで応答。
-- `PlcGateway`: `Enabled=true` で HTTP クライアント（`BaseAddress` 既定 `http://localhost:8000`）。`false` ならフェイク。
-- `AzureAd`: 上記のとおり認証オン/オフを切替。
+## アーキテクチャ概要
+- UI: `MOCHA/Components`（チャット画面、サイドバー、ロール設定ページなど）。
+- ドメインモデル: `MOCHA/Models`（チャット/ロール/装置エージェント/設定）。
+- アプリサービス: `MOCHA/Services`  
+  - `Chat`: `ChatOrchestrator` が Copilot と PLC Gateway を仲介し、履歴 (`ConversationHistoryState`) とストレージ (`IChatRepository`) を更新。  
+  - `Copilot`/`Plc`: 実クライアントとフェイク実装を DI 切替。  
+  - `Agents`: ユーザーごとの装置エージェントを管理し、選択状態を UI に通知。  
+  - `Auth`: ユーザーロール永続化とフェイク認証、Admin ブートストラップ。  
+  - `Settings`: テーマ/ユーザー設定の保存と適用。
+- インフラ: `MOCHA/Data` と `MOCHA/Factories` で SQLite スキーマを初期化し、EF Core の DbContext を提供。
 
-### Copilot セクション例
-```json
-"Copilot": {
-  "Enabled": false,          // true で実接続、それ以外はフェイク
-  "SchemaName": "",
-  "EnvironmentId": "",
-  "DirectConnectUrl": "",
-  "Cloud": "Prod",
-  "AgentType": "Published",
-  "CustomPowerPlatformCloud": null,
-  "UseExperimentalEndpoint": false,
-  "EnableDiagnostics": false,
-  "HttpClientName": "CopilotStudio",
-  "AccessToken": ""
-}
-```
+## 画面の使い方（ローカル既定設定）
+- サイドバーの「装置エージェント」を登録し、選択してからチャットを送信（エージェントごとに履歴が分かれる）。
+- メッセージ入力は `Ctrl+Enter` で送信。Stop ボタンでストリームをキャンセル。
+- 履歴はサイドバーに表示され、削除すると会話とメッセージが DB から除去される。
+- 右上メニューからテーマ切替、`/settings/roles` で Admin によるロール管理が可能（`FakeAuth` では `dev-user` が Admin）。
 
-## 挙動メモ
-- New Chat で初期画面へ戻る。履歴はユーザーごとに SQLite に保存され、サイドバーに表示。
-- ツール実行（PLC 読み取り）はフェイク/実クライアントを切替可能。ツール結果後にフェイクの応答を返し、Copilot 側のフェイク応答も表示する。
+## テストと品質
+- `dotnet test` でユニットテスト実行（外部サービス不要）。  
+  - `FakeChatFlowTests`: フェイク Copilot/PLC でオーケストレーションの分岐を検証。  
+  - `DeviceAgentStateTests`/`ConversationHistoryStateAgentFilterTests`: エージェントと履歴の状態管理を検証。  
+  - `DbUserRoleProviderTests`/`RoleBootstrapperTests`: ロール付与・ブートストラップの動作確認。  
+  - `UserPreferencesStateTests`: テーマ保存・適用の確認。
 
-## ロール管理
-- ロール種別: Administrator / Developer / Operator（将来拡張: Development, MechanicalDesign, ElectricalDesign, Manufacturing）
-- 保存先: アプリDB（`UserRoles` テーブル）。`IUserRoleProvider` を介して付与/削除。
-- 初期Admin付与: `RoleBootstrap:AdminUserIds` に OID を配列で設定し、起動時に自動付与（Idempotent）。付与後は設定を消す運用を推奨。
-- 管理UI: `/settings/roles` でユーザーID（oid/email 等）を入力し、ロールをチェックして保存（Adminのみ利用可）。
-- 管理API（Adminのみ）:
-  - `GET /api/roles/{userId}`: ロール一覧
-  - `POST /api/roles/assign` (body: `{ userId, role }`): 付与
-  - `DELETE /api/roles/{userId}/{role}`: 削除
-  - いずれもログインユーザーが Administrator でない場合は `403 Forbid`
-- 開発時のヒント: AzureAd を無効にしたローカル環境では認証なしでアクセス可能。`RoleBootstrap:AdminUserIds` に開発用IDを入れておくと `/settings/roles` に入れる。
+## ディレクトリ
+- `MOCHA/`: Blazor Server 本体。`Program.cs` で DI とスキーマ初期化を構成。
+- `Tests/`: MSTest プロジェクト。
+- `docs/`: 設計メモ（`spec.md`、`database-schema.md`）。
