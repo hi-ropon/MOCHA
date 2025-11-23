@@ -11,7 +11,7 @@ namespace MOCHA.Services.Copilot;
 /// <summary>
 /// Copilot Studio SDK を利用したクライアント。設定不足時はフェイクにフォールバックする。
 /// </summary>
-public sealed class CopilotStudioChatClient : ICopilotChatClient
+internal sealed class CopilotStudioChatClient : ICopilotChatClient
 {
     private readonly CopilotClient? _client;
     private readonly ICopilotChatClient _fallback = new FakeCopilotChatClient();

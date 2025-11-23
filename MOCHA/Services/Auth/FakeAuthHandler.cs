@@ -9,7 +9,7 @@ namespace MOCHA.Services.Auth;
 /// <summary>
 /// 開発用に固定ユーザーで認証済みとするフェイクハンドラー。
 /// </summary>
-public sealed class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
+internal sealed class FakeAuthHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {
     private readonly FakeAuthOptions _options;
 

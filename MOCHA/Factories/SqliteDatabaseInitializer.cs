@@ -9,7 +9,7 @@ namespace MOCHA.Factories;
 /// <summary>
 /// SQLite 環境で必要なテーブルやインデックスを作成する初期化クラス。
 /// </summary>
-public sealed class SqliteDatabaseInitializer : IDatabaseInitializer
+internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 {
     private readonly ChatDbContext _db;
 

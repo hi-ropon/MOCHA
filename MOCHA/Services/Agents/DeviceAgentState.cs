@@ -6,7 +6,7 @@ namespace MOCHA.Services.Agents;
 /// <summary>
 /// 装置エージェントの選択状態と一覧を管理する。
 /// </summary>
-public sealed class DeviceAgentState
+internal sealed class DeviceAgentState
 {
     private readonly IDeviceAgentRepository _repository;
     private readonly List<DeviceAgentProfile> _agents = new();

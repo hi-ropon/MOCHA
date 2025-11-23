@@ -5,7 +5,7 @@ namespace MOCHA.Services.Chat;
 /// <summary>
 /// 会話一覧の状態を保持し、UI に変更を通知する。
 /// </summary>
-public sealed class ConversationHistoryState
+internal sealed class ConversationHistoryState
 {
     private readonly IChatRepository _repository;
     private readonly List<ConversationSummary> _summaries = new();

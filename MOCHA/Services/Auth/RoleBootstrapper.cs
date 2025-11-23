@@ -6,7 +6,7 @@ namespace MOCHA.Services.Auth;
 /// <summary>
 /// 設定されたユーザーに管理者ロールを付与する初期化処理。
 /// </summary>
-public sealed class RoleBootstrapper
+internal sealed class RoleBootstrapper
 {
     private readonly IUserRoleProvider _roleProvider;
     private readonly RoleBootstrapOptions _options;

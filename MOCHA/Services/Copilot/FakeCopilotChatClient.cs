@@ -7,7 +7,7 @@ namespace MOCHA.Services.Copilot;
 /// Copilot Studio に未接続でも振る舞いを再現できるフェイク実装。
 /// テストやローカル開発で注入する。
 /// </summary>
-public sealed class FakeCopilotChatClient : ICopilotChatClient
+internal sealed class FakeCopilotChatClient : ICopilotChatClient
 {
     private readonly Func<ChatTurn, IEnumerable<ChatStreamEvent>> _script;
 

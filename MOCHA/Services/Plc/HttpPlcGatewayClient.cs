@@ -10,7 +10,7 @@ namespace MOCHA.Services.Plc;
 /// PLC Gateway HTTP クライアント。
 /// UIで指定された接続先が無い場合はベースアドレス（既定 http://localhost:8000）を利用する。
 /// </summary>
-public sealed class HttpPlcGatewayClient : IPlcGatewayClient
+internal sealed class HttpPlcGatewayClient : IPlcGatewayClient
 {
     private readonly HttpClient _httpClient;
     private readonly ILogger<HttpPlcGatewayClient> _logger;

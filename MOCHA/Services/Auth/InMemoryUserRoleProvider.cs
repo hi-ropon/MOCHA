@@ -10,7 +10,7 @@ namespace MOCHA.Services.Auth;
 /// <summary>
 /// メモリ上でユーザーロールを管理するシンプルなプロバイダー。
 /// </summary>
-public sealed class InMemoryUserRoleProvider : IUserRoleProvider
+internal sealed class InMemoryUserRoleProvider : IUserRoleProvider
 {
     private readonly ConcurrentDictionary<string, HashSet<UserRoleId>> _roles = new(StringComparer.OrdinalIgnoreCase);
 

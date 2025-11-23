@@ -3,7 +3,7 @@ namespace MOCHA.Models.Agents;
 /// <summary>
 /// 装置エージェントの識別情報と作成日時を保持するドメインモデル。
 /// </summary>
-public sealed class DeviceAgentProfile
+internal sealed class DeviceAgentProfile
 {
     /// <summary>
     /// エージェント番号・名称・作成日時を指定して初期化する。

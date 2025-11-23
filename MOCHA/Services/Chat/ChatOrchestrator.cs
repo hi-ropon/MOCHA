@@ -10,7 +10,7 @@ namespace MOCHA.Services.Chat;
 /// Copilot とのやり取りと PLC Gateway 呼び出しを仲介するサービス。
 /// 実際の接続先がなくてもフェイク実装で動作をテストできるように抽象化している。
 /// </summary>
-public sealed class ChatOrchestrator : IChatOrchestrator
+internal sealed class ChatOrchestrator : IChatOrchestrator
 {
     private readonly ICopilotChatClient _copilot;
     private readonly IPlcGatewayClient _plcGateway;

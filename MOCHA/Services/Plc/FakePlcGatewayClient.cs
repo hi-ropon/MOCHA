@@ -5,7 +5,7 @@ namespace MOCHA.Services.Plc;
 /// <summary>
 /// PLC Gateway を実際に呼ばず、決め打ちの値を返すフェイク実装。
 /// </summary>
-public sealed class FakePlcGatewayClient : IPlcGatewayClient
+internal sealed class FakePlcGatewayClient : IPlcGatewayClient
 {
     private readonly Dictionary<string, IReadOnlyList<int>> _data;
 

@@ -7,7 +7,7 @@ namespace MOCHA.Services.Auth;
 /// <summary>
 /// データベースにロール割り当てを保存するプロバイダー。
 /// </summary>
-public sealed class DbUserRoleProvider : IUserRoleProvider
+internal sealed class DbUserRoleProvider : IUserRoleProvider
 {
     private readonly ChatDbContext _db;
 

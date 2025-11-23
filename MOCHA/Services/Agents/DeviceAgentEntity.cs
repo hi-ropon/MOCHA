@@ -3,7 +3,7 @@ namespace MOCHA.Services.Agents;
 /// <summary>
 /// 装置エージェントの永続化用エンティティ。
 /// </summary>
-public sealed class DeviceAgentEntity
+internal sealed class DeviceAgentEntity
 {
     /// <summary>
     /// 主キー。
