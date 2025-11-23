@@ -28,7 +28,7 @@ public class DbUserRoleProviderTests
     [Fact]
     public async Task 重複せず保存される()
     {
-        await using var db = CreateContext(nameof(AssignAsync_重複せず保存される));
+        await using var db = CreateContext(nameof(重複せず保存される));
         var provider = new DbUserRoleProvider(db);
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Administrator);
@@ -44,9 +44,9 @@ public class DbUserRoleProviderTests
     /// 削除操作でロールが取り除かれることを確認する。
     /// </summary>
     [Fact]
-    public async Task 削除される()
+    public async Task 削除操作でロールが取り除かれる()
     {
-        await using var db = CreateContext(nameof(RemoveAsync_削除される));
+        await using var db = CreateContext(nameof(削除操作でロールが取り除かれる));
         var provider = new DbUserRoleProvider(db);
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Operator);
@@ -63,7 +63,7 @@ public class DbUserRoleProviderTests
     [Fact]
     public async Task 大小文字を無視する()
     {
-        await using var db = CreateContext(nameof(IsInRoleAsync_大小文字を無視する));
+        await using var db = CreateContext(nameof(大小文字を無視する));
         var provider = new DbUserRoleProvider(db);
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Developer);
