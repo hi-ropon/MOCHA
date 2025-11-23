@@ -455,7 +455,8 @@ h1:focus {
     justify-content: flex-start;
     align-items: flex-start;
     gap: 0.75rem;
-    padding-right: 0.2rem;
+    padding-left: 1rem;
+    padding-right: 1rem;
     padding-top: 1rem;
     min-height: 0;
 }
