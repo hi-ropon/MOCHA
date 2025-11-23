@@ -8,9 +8,9 @@
 .sidebar {
     width: 280px;
     min-width: 280px;
-    background: rgba(42, 42, 46, 0.92);
-    border-right: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 6px 0 28px rgba(0, 0, 0, 0.30);
+    background: linear-gradient(180deg, #f8fafc, #eef1f7);
+    border-right: 1px solid #d5deea;
+    box-shadow: 6px 0 24px rgba(52, 79, 123, 0.12);
     position: sticky;
     top: 0;
     height: 100vh;
