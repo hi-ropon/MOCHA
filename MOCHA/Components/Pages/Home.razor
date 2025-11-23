@@ -1,5 +1,6 @@
 ﻿@page "/"
 @attribute [Authorize]
+@using System.Linq
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
@@ -38,21 +39,31 @@
         <main class="chat-main glass-card">
             <div class="messages" @ref="MessageList">
                 @{
-                    var lastUserIndex = Messages.FindLastIndex(m => m.Role == ChatRole.User);
-                    var showInlineChip = HasActivity && lastUserIndex >= 0;
+                    var userTurnCounter = -1;
                 }
                 @for (var i = 0; i < Messages.Count; i++)
                 {
                     var message = Messages[i];
+                    if (message.Role == ChatRole.User)
+                    {
+                        userTurnCounter++;
+                    }
+
+                    var turnActivity = message.Role == ChatRole.User
+                        ? GetTurnActivityForTurn(userTurnCounter)
+                        : null;
+                    var hasLog = turnActivity?.Items.Any() == true;
+                    var isCurrentSending = IsSending && i == Messages.FindLastIndex(m => m.Role == ChatRole.User);
+                    var showInlineChip = message.Role == ChatRole.User && (hasLog || isCurrentSending);
                     <div class="@GetBubbleClass(message.Role)">
                         <div class="content">@message.Content</div>
                     </div>
-                    @if (showInlineChip && i == lastUserIndex)
+                    @if (showInlineChip)
                     {
                         <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel" title="アクティビティを開く">
                             <div class="chip-header">
                                 <span class="chip-title">思考時間</span>
-                                <span class="chip-count">@((ActivityLog.Any() || IsSending) ? $"{ActivityLog.Count} 件の経過" : "経過なし")</span>
+                                <span class="chip-count">@((hasLog || isCurrentSending) ? $"{(turnActivity?.Items.Count ?? 0)} 件の経過" : "経過なし")</span>
                             </div>
                         </div>
                     }
@@ -95,41 +106,12 @@
             <div class="activity-header">
                 <div>
                     <div class="activity-title">アクティビティ</div>
-                    <div class="activity-sub">
-                        @if (ActivityLog.Any())
-                        {
-                            @($"{ActivityLog.Count} 件の途中経過")
-                        }
-                        else
-                        {
-                            <span>まだありません</span>
-                        }
-                    </div>
+                    <div class="activity-sub">@GetActivitySummary()</div>
                 </div>
                 <button class="icon-btn tertiary" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
             </div>
             <div class="activity-body">
-                @if (ActivityLog.Any())
-                {
-                    @foreach (var log in ActivityLog)
-                    {
-                        <div class="activity-item">
-                            <div class="activity-meta">
-                                <span class="pill @GetPillClass(log.Kind)">@GetPillLabel(log.Kind)</span>
-                                <span class="timestamp">@log.Timestamp.ToLocalTime().ToString("HH:mm:ss")</span>
-                            </div>
-                            <div class="activity-title-text">@log.Title</div>
-                            @if (!string.IsNullOrWhiteSpace(log.Detail))
-                            {
-                                <div class="activity-detail">@log.Detail</div>
-                            }
-                        </div>
-                    }
-                }
-                else
-                {
-                    <div class="activity-empty">思考の途中経過がここに表示されます。</div>
-                }
+                @RenderActivityList()
             </div>
         </aside>
     </div>
@@ -140,7 +122,7 @@
     [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
     private readonly List<ChatMessage> Messages = new();
-    private readonly List<ActivityLogItem> ActivityLog = new();
+    private readonly List<TurnActivity> TurnActivities = new();
     private string Input = string.Empty;
     private string? Status;
     private bool IsSending;
@@ -154,7 +136,7 @@
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
     private bool ShowActivityPanel;
-    private bool HasActivity => ActivityLog.Any() || IsSending;
+    private bool HasActivity => TurnActivities.Any(t => t.Items.Any()) || IsSending;
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
@@ -237,7 +219,7 @@
 
         var userMessage = new ChatMessage(ChatRole.User, text);
         Messages.Add(userMessage);
-        ActivityLog.Clear();
+        StartNewTurn(TurnActivities.Count);
         _latestAssistant = null;
         ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
@@ -349,7 +331,7 @@
         ConversationId = null;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
-        ActivityLog.Clear();
+        TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
         ShowActivityPanel = false;
@@ -363,7 +345,7 @@
         ConversationId = conversationId;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
-        ActivityLog.Clear();
+        TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
         ShowActivityPanel = false;
@@ -412,10 +394,14 @@
 
     private void RecordActivity(ActivityKind kind, string title, string? detail = null)
     {
-        ActivityLog.Add(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
-    }
+        var current = TurnActivities.LastOrDefault();
+        if (current is null)
+        {
+            return;
+        }
 
-    private IEnumerable<ActivityLogItem> TakeLatestActivity(int count) => ActivityLog.TakeLast(count);
+        current.Items.Add(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
+    }
 
     private void ToggleActivityPanel() => ShowActivityPanel = !ShowActivityPanel;
 
@@ -458,6 +444,17 @@
 
     private sealed record ActivityLogItem(string Title, string? Detail, ActivityKind Kind, DateTimeOffset Timestamp);
 
+    private sealed class TurnActivity
+    {
+        public TurnActivity(int turnNumber)
+        {
+            TurnNumber = turnNumber;
+        }
+
+        public int TurnNumber { get; }
+        public List<ActivityLogItem> Items { get; } = new();
+    }
+
     private enum ActivityKind
     {
         Assistant,
@@ -468,31 +465,104 @@
 
     private void RebuildActivityFromHistory(IReadOnlyList<ChatMessage> historyMessages)
     {
-        ActivityLog.Clear();
-        foreach (var message in historyMessages)
+        TurnActivities.Clear();
+        TurnActivity? current = null;
+        var turnNumber = -1;
+
+        for (var i = 0; i < historyMessages.Count; i++)
         {
+            var message = historyMessages[i];
             switch (message.Role)
             {
-                case ChatRole.Assistant:
-                    RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(message.Content)}", message.Content);
+                case ChatRole.User:
+                    turnNumber++;
+                    current = new TurnActivity(turnNumber);
+                    TurnActivities.Add(current);
                     break;
-                case ChatRole.Tool:
+                case ChatRole.Assistant when current is not null:
+                    current.Items.Add(new ActivityLogItem($"アシスタント: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Assistant, DateTimeOffset.UtcNow));
+                    break;
+                case ChatRole.Tool when current is not null:
                     if (message.Content.StartsWith("[action]", StringComparison.OrdinalIgnoreCase))
                     {
-                        RecordActivity(ActivityKind.Action, $"ツール要求: {TrimForPreview(message.Content)}", message.Content);
+                        current.Items.Add(new ActivityLogItem($"ツール要求: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Action, DateTimeOffset.UtcNow));
                     }
                     else if (message.Content.StartsWith("[result]", StringComparison.OrdinalIgnoreCase))
                     {
-                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {TrimForPreview(message.Content)}", message.Content);
+                        current.Items.Add(new ActivityLogItem($"ツール結果: {TrimForPreview(message.Content)}", message.Content, ActivityKind.ToolResult, DateTimeOffset.UtcNow));
                     }
                     else
                     {
-                        RecordActivity(ActivityKind.ToolResult, $"ツール: {TrimForPreview(message.Content)}", message.Content);
+                        current.Items.Add(new ActivityLogItem($"ツール: {TrimForPreview(message.Content)}", message.Content, ActivityKind.ToolResult, DateTimeOffset.UtcNow));
                     }
                     break;
             }
         }
     }
+
+    private void StartNewTurn(int turnNumber)
+    {
+        TurnActivities.Add(new TurnActivity(turnNumber));
+    }
+
+    private TurnActivity? GetTurnActivityForTurn(int turnNumber)
+    {
+        return TurnActivities.FirstOrDefault(t => t.TurnNumber == turnNumber);
+    }
+
+    private string GetActivitySummary()
+    {
+        var total = TurnActivities.Sum(t => t.Items.Count);
+        return total > 0 ? $"{total} 件の途中経過" : "まだありません";
+    }
+
+    private RenderFragment RenderActivityList() => builder =>
+    {
+        var seq = 0;
+        var logs = TurnActivities.SelectMany(t => t.Items).ToList();
+        if (logs.Any())
+        {
+            foreach (var log in logs)
+            {
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-item");
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-meta");
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", $"pill {GetPillClass(log.Kind)}");
+                builder.AddContent(seq++, GetPillLabel(log.Kind));
+                builder.CloseElement();
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", "timestamp");
+                builder.AddContent(seq++, log.Timestamp.ToLocalTime().ToString("HH:mm:ss"));
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-title-text");
+                builder.AddContent(seq++, log.Title);
+                builder.CloseElement();
+
+                if (!string.IsNullOrWhiteSpace(log.Detail))
+                {
+                    builder.OpenElement(seq++, "div");
+                    builder.AddAttribute(seq++, "class", "activity-detail");
+                    builder.AddContent(seq++, log.Detail);
+                    builder.CloseElement();
+                }
+
+                builder.CloseElement();
+            }
+        }
+        else
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "activity-empty");
+            builder.AddContent(seq++, "思考の途中経過がここに表示されます。");
+            builder.CloseElement();
+        }
+    };
 
     public void Dispose()
     {
