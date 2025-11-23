@@ -10,11 +10,11 @@ namespace MOCHA.Services.Settings;
 /// </summary>
 public sealed class DomThemeApplicator : IThemeApplicator
 {
-    private readonly IJSRuntime jsRuntime;
+    private readonly IJSRuntime _jsRuntime;
 
     public DomThemeApplicator(IJSRuntime jsRuntime)
     {
-        this.jsRuntime = jsRuntime;
+        this._jsRuntime = jsRuntime;
     }
 
     public Task ApplyAsync(Theme theme, CancellationToken cancellationToken = default)
@@ -22,7 +22,7 @@ public sealed class DomThemeApplicator : IThemeApplicator
         var value = theme == Theme.Dark ? "dark" : "light";
         try
         {
-            return jsRuntime.InvokeVoidAsync("mochaPreferences.applyTheme", cancellationToken, value).AsTask();
+            return _jsRuntime.InvokeVoidAsync("mochaPreferences.applyTheme", cancellationToken, value).AsTask();
         }
         catch (JSException)
         {

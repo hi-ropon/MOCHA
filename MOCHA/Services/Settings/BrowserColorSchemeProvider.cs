@@ -10,11 +10,11 @@ namespace MOCHA.Services.Settings;
 /// </summary>
 public sealed class BrowserColorSchemeProvider : IColorSchemeProvider
 {
-    private readonly IJSRuntime jsRuntime;
+    private readonly IJSRuntime _jsRuntime;
 
     public BrowserColorSchemeProvider(IJSRuntime jsRuntime)
     {
-        this.jsRuntime = jsRuntime;
+        this._jsRuntime = jsRuntime;
     }
 
     public async Task<Theme> GetPreferredThemeAsync(CancellationToken cancellationToken = default)
@@ -22,7 +22,7 @@ public sealed class BrowserColorSchemeProvider : IColorSchemeProvider
         string? scheme;
         try
         {
-            scheme = await jsRuntime.InvokeAsync<string>(
+            scheme = await _jsRuntime.InvokeAsync<string>(
                 "mochaPreferences.getPreferredColorScheme",
                 cancellationToken);
         }
