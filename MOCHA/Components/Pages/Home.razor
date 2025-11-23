@@ -55,12 +55,13 @@
                     var hasLog = turnActivity?.Items.Any() == true;
                     var isCurrentSending = IsSending && i == Messages.FindLastIndex(m => m.Role == ChatRole.User);
                     var showInlineChip = message.Role == ChatRole.User && (hasLog || isCurrentSending);
+                    var turnIndexForChip = userTurnCounter;
                     <div class="@GetBubbleClass(message.Role)">
                         <div class="content">@message.Content</div>
                     </div>
                     @if (showInlineChip)
                     {
-                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel" title="アクティビティを開く">
+                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="() => OpenActivityPanelForTurn(turnIndexForChip)" title="アクティビティを開く">
                             <div class="chip-header">
                                 <span class="chip-title">思考時間</span>
                                 <span class="chip-count">@((hasLog || isCurrentSending) ? $"{(turnActivity?.Items.Count ?? 0)} 件の経過" : "経過なし")</span>
@@ -136,6 +137,7 @@
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
     private bool ShowActivityPanel;
+    private int? SelectedTurnNumber;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any()) || IsSending;
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
@@ -335,6 +337,7 @@
         Status = null;
         Input = string.Empty;
         ShowActivityPanel = false;
+        SelectedTurnNumber = null;
         _latestAssistant = null;
         SeedInitialMessage();
     }
@@ -349,6 +352,7 @@
         Status = null;
         Input = string.Empty;
         ShowActivityPanel = false;
+        SelectedTurnNumber = null;
         _latestAssistant = null;
 
         var user = _user ?? await ResolveUserAsync();
@@ -403,11 +407,30 @@
         current.Items.Add(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
     }
 
-    private void ToggleActivityPanel() => ShowActivityPanel = !ShowActivityPanel;
+    private void ToggleActivityPanel()
+    {
+        if (ShowActivityPanel)
+        {
+            ShowActivityPanel = false;
+            SelectedTurnNumber = null;
+            return;
+        }
 
-    private void OpenActivityPanel() => ShowActivityPanel = true;
+        SelectedTurnNumber = null;
+        ShowActivityPanel = true;
+    }
 
-    private void CloseActivityPanel() => ShowActivityPanel = false;
+    private void OpenActivityPanelForTurn(int turnNumber)
+    {
+        SelectedTurnNumber = turnNumber;
+        ShowActivityPanel = true;
+    }
+
+    private void CloseActivityPanel()
+    {
+        ShowActivityPanel = false;
+        SelectedTurnNumber = null;
+    }
 
     private static string GetPillClass(ActivityKind kind) => kind switch
     {
@@ -512,14 +535,14 @@
 
     private string GetActivitySummary()
     {
-        var total = TurnActivities.Sum(t => t.Items.Count);
-        return total > 0 ? $"{total} 件の途中経過" : "まだありません";
+        var logs = GetPanelLogs().ToList();
+        return logs.Count > 0 ? $"{logs.Count} 件の途中経過" : "まだありません";
     }
 
     private RenderFragment RenderActivityList() => builder =>
     {
         var seq = 0;
-        var logs = TurnActivities.SelectMany(t => t.Items).ToList();
+        var logs = GetPanelLogs().ToList();
         if (logs.Any())
         {
             foreach (var log in logs)
@@ -563,6 +586,16 @@
             builder.CloseElement();
         }
     };
+
+    private IEnumerable<ActivityLogItem> GetPanelLogs()
+    {
+        if (SelectedTurnNumber is int turn)
+        {
+            return GetTurnActivityForTurn(turn)?.Items ?? Enumerable.Empty<ActivityLogItem>();
+        }
+
+        return TurnActivities.SelectMany(t => t.Items);
+    }
 
     public void Dispose()
     {
