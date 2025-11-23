@@ -576,10 +576,11 @@ h1:focus {
 
 .composer {
     margin-top: auto;
-    padding-top: 0.75rem;
+    padding-top: 0.5rem;
     position: sticky;
     bottom: 0;
-    background: linear-gradient(180deg, color-mix(in srgb, var(--glass-bg) 65%, transparent), color-mix(in srgb, var(--glass-bg) 85%, transparent));
+    background: transparent;
+    box-shadow: none;
 }
 
 .composer-inner {
