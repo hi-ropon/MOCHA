@@ -8,7 +8,7 @@ namespace MOCHA.Data;
 /// <summary>
 /// チャット機能に必要なエンティティを管理する DbContext。
 /// </summary>
-public class ChatDbContext : DbContext, IChatDbContext
+public sealed class ChatDbContext : DbContext, IChatDbContext
 {
     /// <summary>
     /// DbContext のオプションを受け取って初期化する。

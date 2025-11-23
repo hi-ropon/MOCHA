@@ -9,7 +9,7 @@ namespace MOCHA.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/roles")]
-public class RolesController : ControllerBase
+public sealed class RolesController : ControllerBase
 {
     private readonly IUserRoleProvider _roleProvider;
 

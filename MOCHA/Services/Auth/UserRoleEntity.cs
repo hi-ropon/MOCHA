@@ -5,7 +5,7 @@ namespace MOCHA.Services.Auth;
 /// <summary>
 /// ユーザーに割り当てたロールの永続化エンティティ。
 /// </summary>
-public class UserRoleEntity
+public sealed class UserRoleEntity
 {
     /// <summary>
     /// 主キー。

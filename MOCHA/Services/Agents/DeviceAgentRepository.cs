@@ -8,7 +8,7 @@ namespace MOCHA.Services.Agents;
 /// <summary>
 /// 装置エージェントの永続化を行うリポジトリ。
 /// </summary>
-public class DeviceAgentRepository : IDeviceAgentRepository
+public sealed class DeviceAgentRepository : IDeviceAgentRepository
 {
     private readonly IChatDbContext _dbContext;
 

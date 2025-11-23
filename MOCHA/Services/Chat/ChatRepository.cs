@@ -7,7 +7,7 @@ namespace MOCHA.Services.Chat;
 /// <summary>
 /// EF Core を利用した会話永続化リポジトリ。
 /// </summary>
-public class ChatRepository : IChatRepository
+public sealed class ChatRepository : IChatRepository
 {
     private readonly IChatDbContext _dbContext;
 

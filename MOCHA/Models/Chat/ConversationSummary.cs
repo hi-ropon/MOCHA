@@ -3,7 +3,7 @@ namespace MOCHA.Models.Chat;
 /// <summary>
 /// 会話履歴の一覧表示に利用する要約情報。
 /// </summary>
-public class ConversationSummary
+public sealed class ConversationSummary
 {
     /// <summary>
     /// 一意なID、タイトル、更新日時、ひも付くエージェントとユーザーを指定して初期化する。

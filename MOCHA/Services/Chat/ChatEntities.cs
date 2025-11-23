@@ -3,7 +3,7 @@ namespace MOCHA.Services.Chat;
 /// <summary>
 /// 永続化用の会話エンティティ。
 /// </summary>
-public class ChatConversationEntity
+public sealed class ChatConversationEntity
 {
     /// <summary>
     /// 会話ID（主キー）。
@@ -35,7 +35,7 @@ public class ChatConversationEntity
 /// <summary>
 /// 永続化用のメッセージエンティティ。
 /// </summary>
-public class ChatMessageEntity
+public sealed class ChatMessageEntity
 {
     /// <summary>
     /// メッセージID（主キー）。
