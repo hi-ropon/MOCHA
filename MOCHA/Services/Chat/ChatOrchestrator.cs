@@ -71,9 +71,23 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             {
                 var actionRequest = ev.ActionRequest with { ConversationId = convId };
 
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload)}"),
+                    agentNumber,
+                    cancellationToken);
+
                 yield return ev; // UI に「ツール実行開始」を通知
 
                 var actionResult = await ExecuteActionAsync(actionRequest, cancellationToken);
+
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload)}"),
+                    agentNumber,
+                    cancellationToken);
 
                 yield return new ChatStreamEvent(
                     ChatStreamEventType.ToolResult,

@@ -37,40 +37,44 @@
     <div class="chat-body">
         <main class="chat-main glass-card">
             <div class="messages" @ref="MessageList">
-                @foreach (var message in Messages)
+                @{
+                    var lastUserIndex = Messages.FindLastIndex(m => m.Role == ChatRole.User);
+                    var showInlineChip = HasActivity && lastUserIndex >= 0;
+                }
+                @for (var i = 0; i < Messages.Count; i++)
                 {
+                    var message = Messages[i];
                     <div class="@GetBubbleClass(message.Role)">
                         <div class="content">@message.Content</div>
                     </div>
-                }
-
-                @if (HasActivity)
-                {
-                    <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel">
-                        <div class="chip-header">
-                            <span class="chip-title">思考時間</span>
-                            <span class="chip-count">@(ActivityLog.Any() ? $"{ActivityLog.Count} 件の経過" : "処理中…")</span>
-                        </div>
-                        <div class="chip-body">
-                            @if (IsSending)
-                            {
-                                <div class="chip-stream">
-                                    @if (ActivityLog.Any())
-                                    {
-                                        @foreach (var log in TakeLatestActivity(2))
+                    @if (showInlineChip && i == lastUserIndex)
+                    {
+                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="OpenActivityPanel">
+                            <div class="chip-header">
+                                <span class="chip-title">思考時間</span>
+                                <span class="chip-count">@(ActivityLog.Any() ? $"{ActivityLog.Count} 件の経過" : "処理中…")</span>
+                            </div>
+                            <div class="chip-body">
+                                @if (IsSending)
+                                {
+                                    <div class="chip-stream">
+                                        @if (ActivityLog.Any())
                                         {
-                                            <div class="chip-line">@log.Title</div>
+                                            @foreach (var log in TakeLatestActivity(2))
+                                            {
+                                                <div class="chip-line">@log.Title</div>
+                                            }
                                         }
-                                    }
-                                    <div class="chip-line muted">...考え中</div>
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="chip-line muted">クリックでアクティビティを開く</div>
-                            }
+                                        <div class="chip-line muted">...考え中</div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="chip-line muted">クリックでアクティビティを開く</div>
+                                }
+                            </div>
                         </div>
-                    </div>
+                    }
                 }
 
                 @if (!string.IsNullOrEmpty(Status))
@@ -492,7 +496,18 @@
                     RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(message.Content)}", message.Content);
                     break;
                 case ChatRole.Tool:
-                    RecordActivity(ActivityKind.ToolResult, $"ツール: {TrimForPreview(message.Content)}", message.Content);
+                    if (message.Content.StartsWith("[action]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RecordActivity(ActivityKind.Action, $"ツール要求: {TrimForPreview(message.Content)}", message.Content);
+                    }
+                    else if (message.Content.StartsWith("[result]", StringComparison.OrdinalIgnoreCase))
+                    {
+                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {TrimForPreview(message.Content)}", message.Content);
+                    }
+                    else
+                    {
+                        RecordActivity(ActivityKind.ToolResult, $"ツール: {TrimForPreview(message.Content)}", message.Content);
+                    }
                     break;
             }
         }
