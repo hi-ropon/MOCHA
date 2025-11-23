@@ -577,13 +577,17 @@ h1:focus {
 }
 
 .thinking-chip {
-    width: 100%;
+    width: auto;
+    max-width: 320px;
     border: 1px dashed var(--border-color);
-    border-radius: 14px;
-    padding: 0.75rem 0.85rem;
+    border-radius: 12px;
+    padding: 0.45rem 0.7rem;
     background: rgba(36, 193, 154, 0.06);
     cursor: pointer;
     transition: all 0.15s ease;
+    display: inline-flex;
+    flex-direction: column;
+    align-self: flex-start;
 }
 
 .thinking-chip:hover {
@@ -595,31 +599,16 @@ h1:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 0.35rem;
 }
 
 .thinking-chip .chip-title {
     font-weight: 700;
     color: var(--text-primary);
+    margin-right: 1rem;
 }
 
 .thinking-chip .chip-count {
     font-size: 0.85rem;
-    color: var(--text-muted);
-}
-
-.thinking-chip .chip-body {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-}
-
-.thinking-chip .chip-line {
-    font-size: 0.92rem;
-    color: var(--text-primary);
-}
-
-.thinking-chip .chip-line.muted {
     color: var(--text-muted);
 }
 
