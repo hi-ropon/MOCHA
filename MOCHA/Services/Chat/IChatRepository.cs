@@ -5,7 +5,7 @@ namespace MOCHA.Services.Chat;
 /// <summary>
 /// 会話の永続化を担うリポジトリインターフェース。
 /// </summary>
-public interface IChatRepository
+internal interface IChatRepository
 {
     /// <summary>
     /// ユーザーとエージェントで絞り込んだ会話要約を取得する。

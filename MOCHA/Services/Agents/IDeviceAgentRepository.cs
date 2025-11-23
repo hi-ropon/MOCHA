@@ -5,7 +5,7 @@ namespace MOCHA.Services.Agents;
 /// <summary>
 /// 装置エージェント情報の永続化を抽象化するインターフェース。
 /// </summary>
-public interface IDeviceAgentRepository
+internal interface IDeviceAgentRepository
 {
     /// <summary>
     /// 指定ユーザーの装置エージェント一覧を取得する。

@@ -9,7 +9,7 @@ namespace MOCHA.Data;
 /// <summary>
 /// チャット用の DbContext を抽象化し、テストで差し替えられるようにする。
 /// </summary>
-public interface IChatDbContext
+internal interface IChatDbContext
 {
     /// <summary>会話エンティティのセット。</summary>
     DbSet<ChatConversationEntity> Conversations { get; }
