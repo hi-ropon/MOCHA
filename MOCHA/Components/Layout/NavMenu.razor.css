@@ -41,8 +41,8 @@
 
 .agent-select {
     flex: 1;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: #1e2430;
+    border: 1px solid rgba(255, 255, 255, 0.18);
     border-radius: 8px;
     color: #e8f0f3;
     padding: 10px;
@@ -51,6 +51,11 @@
 
 .agent-select:focus {
     outline: 1px solid #37d0c0;
+}
+
+.agent-select option {
+    background: #161a24;
+    color: #f5f7fb;
 }
 
 .agent-gear-btn {
