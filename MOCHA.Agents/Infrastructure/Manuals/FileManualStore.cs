@@ -133,12 +133,38 @@ public sealed class FileManualStore : IManualStore
 
     private string? ResolveAgentRoot(string agentName)
     {
-        if (!_options.AgentFolders.TryGetValue(agentName, out var folder))
+        var normalized = NormalizeAgentName(agentName);
+        if (!_options.AgentFolders.TryGetValue(normalized, out var folder))
         {
             return null;
         }
 
         return Path.Combine(AppContext.BaseDirectory, _options.BasePath, folder, "docs");
+    }
+
+    private static string NormalizeAgentName(string agentName)
+    {
+        if (string.IsNullOrWhiteSpace(agentName))
+        {
+            return agentName;
+        }
+
+        // "IAI/Oriental/PLC" のような複合指定の場合は先頭要素を使用
+        var first = agentName.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
+        var token = (first ?? agentName).Trim();
+        if (token.EndsWith("Agent", StringComparison.OrdinalIgnoreCase))
+        {
+            return token;
+        }
+
+        var lowered = token.ToLowerInvariant();
+        return lowered switch
+        {
+            "iai" => "iaiAgent",
+            "oriental" => "orientalAgent",
+            "plc" => "plcAgent",
+            _ => token
+        };
     }
 
     private static List<string> SplitTokens(string query)

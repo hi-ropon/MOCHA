@@ -30,7 +30,7 @@ public class AgentFrameworkOrchestratorTests
             new OrientalTaskAgent()
         });
         var manualStore = new InMemoryManualStore();
-        var tools = new OrganizerToolset(manualStore, NullLogger<OrganizerToolset>.Instance);
+        var tools = new OrganizerToolset(manualStore, NullLogger<OrganizerToolset>.Instance, NullLoggerFactory.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,

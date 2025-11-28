@@ -1,6 +1,7 @@
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using MOCHA.Models.Chat;
+using MOCHA.Agents.Application;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 
@@ -16,6 +17,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private readonly IPlcGatewayClient _plcGateway;
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
+    private readonly IManualStore _manualStore;
 
     /// <summary>
     /// 依存するクライアントと状態管理を受け取って初期化する。
@@ -24,16 +26,19 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="plcGateway">PLC Gateway クライアント。</param>
     /// <param name="chatRepository">チャットリポジトリ。</param>
     /// <param name="history">会話履歴状態。</param>
+    /// <param name="manualStore">マニュアルストア。</param>
     public ChatOrchestrator(
         ICopilotChatClient agentChatClient,
         IPlcGatewayClient plcGateway,
         IChatRepository chatRepository,
-        ConversationHistoryState history)
+        ConversationHistoryState history,
+        IManualStore manualStore)
     {
         _agentChatClient = agentChatClient;
         _plcGateway = plcGateway;
         _chatRepository = chatRepository;
         _history = history;
+        _manualStore = manualStore;
     }
 
     /// <summary>
@@ -140,6 +145,10 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 return await HandleReadDeviceAsync(request, cancellationToken);
             case "batch_read_devices":
                 return await HandleBatchReadAsync(request, cancellationToken);
+            case "find_manuals":
+                return await HandleFindManualsAsync(request, cancellationToken);
+            case "read_manual":
+                return await HandleReadManualAsync(request, cancellationToken);
             default:
                 return new CopilotActionResult(
                     request.ActionName,
@@ -218,6 +227,92 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             result.Success,
             responsePayload,
             result.Error);
+    }
+
+    /// <summary>
+    /// マニュアル検索アクションを実行する。
+    /// </summary>
+    private async Task<CopilotActionResult> HandleFindManualsAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    {
+        var payload = request.Payload;
+        var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
+        var query = ReadString(payload, "query") ?? string.Empty;
+
+        try
+        {
+            var hits = await _manualStore.SearchAsync(agentName, query, cancellationToken);
+            var responsePayload = new Dictionary<string, object?>
+            {
+                ["agentName"] = agentName,
+                ["query"] = query,
+                ["hits"] = hits.Select(h => new { h.Title, h.RelativePath, h.Score }).ToList()
+            };
+
+            var success = responsePayload["hits"] is List<object?> list && list.Count > 0;
+            return new CopilotActionResult(
+                request.ActionName,
+                request.ConversationId,
+                success,
+                responsePayload,
+                success ? null : "no manual hits");
+        }
+        catch (Exception ex)
+        {
+            return new CopilotActionResult(
+                request.ActionName,
+                request.ConversationId,
+                false,
+                new Dictionary<string, object?>
+                {
+                    ["agentName"] = agentName,
+                    ["query"] = query
+                },
+                ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// マニュアル読取アクションを実行する。
+    /// </summary>
+    private async Task<CopilotActionResult> HandleReadManualAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    {
+        var payload = request.Payload;
+        var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
+        var relativePath = ReadString(payload, "relativePath") ?? string.Empty;
+
+        try
+        {
+            var content = await _manualStore.ReadAsync(agentName, relativePath, cancellationToken: cancellationToken);
+            var success = content is not null;
+
+            var responsePayload = new Dictionary<string, object?>
+            {
+                ["agentName"] = agentName,
+                ["relativePath"] = relativePath,
+                ["content"] = content?.Content,
+                ["length"] = content?.Length
+            };
+
+            return new CopilotActionResult(
+                request.ActionName,
+                request.ConversationId,
+                success,
+                responsePayload,
+                success ? null : "manual not found");
+        }
+        catch (Exception ex)
+        {
+            return new CopilotActionResult(
+                request.ActionName,
+                request.ConversationId,
+                false,
+                new Dictionary<string, object?>
+                {
+                    ["agentName"] = agentName,
+                    ["relativePath"] = relativePath
+                },
+                ex.Message);
+        }
     }
 
     /// <summary>

@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
+using MOCHA.Agents.Domain;
+using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 
 namespace MOCHA.Tests;
 
@@ -126,11 +129,11 @@ public class FakeChatFlowTests
     /// <summary>
     /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーターを生成する。
     /// </summary>
-    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurn, IEnumerable<ChatStreamEvent>>? script = null, FakePlcGatewayClient? plc = null)
+    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurnModel, IEnumerable<ChatStreamEvent>>? script = null, FakePlcGatewayClient? plc = null)
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeCopilotChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history);
+        return new ChatOrchestrator(new FakeCopilotChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore());
     }
 
     /// <summary>
@@ -141,7 +144,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -165,7 +168,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -191,7 +194,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
@@ -201,6 +204,20 @@ public class FakeChatFlowTests
 
         await history.LoadAsync(user.UserId, "AG-77");
         Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId && s.AgentNumber == "AG-77"));
+    }
+
+    private sealed class DummyManualStore : IManualStore
+    {
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy manual", 12));
+        }
+
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy manual", "dummy.txt", 1.0) };
+            return Task.FromResult(hits);
+        }
     }
 
     /// <summary>
