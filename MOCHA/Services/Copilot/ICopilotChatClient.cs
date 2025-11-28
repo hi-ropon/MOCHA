@@ -3,12 +3,12 @@ using MOCHA.Models.Chat;
 namespace MOCHA.Services.Copilot;
 
 /// <summary>
-/// Copilot Studio とのチャット送受信を抽象化するクライアントインターフェース。
+/// エージェントチャット送受信を抽象化するクライアントインターフェース。
 /// </summary>
 public interface ICopilotChatClient
 {
     /// <summary>
-    /// Copilot Studio (Microsoft 365 Agents SDK) にメッセージを送り、ストリームでイベントを受け取る。
+    /// エージェントにメッセージを送り、ストリームでイベントを受け取る。
     /// </summary>
     /// <param name="turn">送信するターン。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
@@ -16,7 +16,7 @@ public interface ICopilotChatClient
     Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurn turn, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// ツール実行結果を Copilot 側へ返す。
+    /// ツール実行結果をエージェント側へ返す。
     /// </summary>
     /// <param name="result">実行結果。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>

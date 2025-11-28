@@ -1,9 +1,9 @@
 # MOCHA
 
-Blazor Server (.NET 8) で構築した Copilot Studio/PLC Gateway 連携チャット UI。ローカルではフェイククライアントで完結し、認証や外部接続を後から有効化できる。
+Blazor Server (.NET 8) で構築した Microsoft Agent Framework + PLC Gateway 連携チャット UI。ローカルではフェイククライアントで完結し、認証や外部接続を後から有効化できる。
 
 ## できること
-- Copilot 風チャット UI（ストリーム表示）。ツール要求を受け取り、PLC Gateway へ読み取りを実行（`PlcGateway:Enabled=false` ならフェイクで応答）。
+- エージェント連携チャット UI（ストリーム表示）。ツール要求を受け取り、PLC Gateway へ読み取りを実行（`PlcGateway:Enabled=false` ならフェイクで応答）。
 - 装置エージェント管理と紐づく履歴フィルタ。サイドバーからエージェントを登録/選択し、その番号ごとに会話を保存。
 - 会話履歴とメッセージを SQLite（`chat.db`）へ永続化。初回起動時にスキーマ自動生成。
 - ユーザーロール管理（DB 持ち）。`/settings/roles` で Admin が付与/削除、API も提供。
@@ -22,7 +22,7 @@ Blazor Server (.NET 8) で構築した Copilot Studio/PLC Gateway 連携チャ�
 - `ConnectionStrings:ChatDb`: SQLite の場所（既定 `Data Source=chat.db`）。削除すれば再生成。
 - `AzureAd`: 本番用 OIDC 認証。`Enabled=true` で有効化し、`TenantId`/`ClientId`/`Domain`/`CallbackPath` をテナント値に置換。
 - `FakeAuth`: ローカル用フェイク認証。`Enabled=true` のままなら認証不要で固定ユーザーとして動作。
-- `Copilot`: Copilot Studio 接続設定。`Enabled=false` なら `FakeCopilotChatClient` が応答。
+- `Llm`: Microsoft Agent Framework 用の LLM 設定（OpenAI/Azure OpenAI を切替）。未設定でもフェイクが動作。
 - `PlcGateway`: PLC Gateway への HTTP 呼び出し設定。`Enabled=false` なら `FakePlcGatewayClient` が応答。
 - `RoleBootstrap:AdminUserIds`: 起動時に Admin を付与するユーザーID 配列（付与後は空に戻す運用推奨）。
 
@@ -38,16 +38,42 @@ Blazor Server (.NET 8) で構築した Copilot Studio/PLC Gateway 連携チャ�
 }
 ```
 
-### Copilot/PLC 設定メモ
-- Copilot へ実接続する場合、`SchemaName` と `EnvironmentId` または `DirectConnectUrl` を設定し、`AccessToken` を適宜付与。
+### エージェント/PLC 設定メモ
+- LLM は `Llm` セクションで `Provider`（OpenAI/AzureOpenAI）と `ApiKey`/`Endpoint`/`ModelOrDeployment` を指定。
 - PLC Gateway は `BaseAddress` と `Timeout` を上書きする。`Enabled=false` のままでもチャット UI の挙動確認は可能。
+
+#### Llm 設定例
+OpenAI（ApiKey のみ必須）:
+```json
+"Llm": {
+  "Provider": "OpenAI",
+  "ApiKey": "<your-openai-api-key>",
+  "ModelOrDeployment": "gpt-5.1-mini",
+  "AgentName": "mocha-agent",
+  "AgentDescription": "Local dev agent",
+  "Instructions": "You are a helpful assistant for MOCHA."
+}
+```
+
+Azure OpenAI（ApiKey と Endpoint が必須）:
+```json
+"Llm": {
+  "Provider": "AzureOpenAI",
+  "Endpoint": "https://<your-resource>.openai.azure.com/",
+  "ApiKey": "<your-azure-openai-key>",
+  "ModelOrDeployment": "<your-deployment-name>",
+  "AgentName": "mocha-agent",
+  "AgentDescription": "Local dev agent",
+  "Instructions": "You are a helpful assistant for MOCHA."
+}
+```
 
 ## アーキテクチャ概要
 - UI: `MOCHA/Components`（チャット画面、サイドバー、ロール設定ページなど）。
 - ドメインモデル: `MOCHA/Models`（チャット/ロール/装置エージェント/設定）。
 - アプリサービス: `MOCHA/Services`  
-  - `Chat`: `ChatOrchestrator` が Copilot と PLC Gateway を仲介し、履歴 (`ConversationHistoryState`) とストレージ (`IChatRepository`) を更新。  
-  - `Copilot`/`Plc`: 実クライアントとフェイク実装を DI 切替。  
+  - `Chat`: `ChatOrchestrator` がエージェントと PLC Gateway を仲介し、履歴 (`ConversationHistoryState`) とストレージ (`IChatRepository`) を更新。  
+  - `AgentChat`/`Plc`: エージェントクライアントと PLC クライアントの実装/フェイクを DI 切替。  
   - `Agents`: ユーザーごとの装置エージェントを管理し、選択状態を UI に通知。  
   - `Auth`: ユーザーロール永続化とフェイク認証、Admin ブートストラップ。  
   - `Settings`: テーマ/ユーザー設定の保存と適用。
@@ -61,7 +87,7 @@ Blazor Server (.NET 8) で構築した Copilot Studio/PLC Gateway 連携チャ�
 
 ## テストと品質
 - `dotnet test` でユニットテスト実行（外部サービス不要）。  
-  - `FakeChatFlowTests`: フェイク Copilot/PLC でオーケストレーションの分岐を検証。  
+  - `FakeChatFlowTests`: フェイクエージェント/PLC でオーケストレーションの分岐を検証。  
   - `DeviceAgentStateTests`/`ConversationHistoryStateAgentFilterTests`: エージェントと履歴の状態管理を検証。  
   - `DbUserRoleProviderTests`/`RoleBootstrapperTests`: ロール付与・ブートストラップの動作確認。  
   - `UserPreferencesStateTests`: テーマ保存・適用の確認。

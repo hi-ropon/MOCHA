@@ -47,12 +47,12 @@ public class FakeChatFlowTests
         Assert.IsTrue(events.Any(e =>
             e.Type == ChatStreamEventType.Message &&
             e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("Copilot Studio") &&
+            e.Message.Content.Contains("Agent") &&
             e.Message.Content.Contains("D100")));
         Assert.IsTrue(events.Any(e =>
             e.Type == ChatStreamEventType.Message &&
             e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("fake Copilot") &&
+            e.Message.Content.Contains("fake Agent") &&
             e.Message.Content.Contains("D100")));
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Completed));
     }

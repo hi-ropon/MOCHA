@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
+using MOCHA.Agents;
 using MOCHA.Components;
 using MOCHA.Data;
 using MOCHA.Models.Auth;
@@ -77,9 +78,6 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddMicrosoftIdentityConsentHandler();
 
-builder.Services.Configure<CopilotStudioOptions>(builder.Configuration.GetSection("Copilot"));
-builder.Services.AddHttpClient("CopilotStudio");
-builder.Services.AddScoped<ICopilotChatClient, CopilotStudioChatClient>();
 builder.Services.Configure<PlcGatewayOptions>(builder.Configuration.GetSection("PlcGateway"));
 builder.Services.AddHttpClient<HttpPlcGatewayClient>((sp, client) =>
 {
@@ -114,6 +112,8 @@ builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSectio
 builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("FakeAuth"));
 builder.Services.AddScoped<RoleBootstrapper>();
 builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
+builder.Services.AddMochaAgents(builder.Configuration);
+builder.Services.AddScoped<ICopilotChatClient, AgentOrchestratorChatClient>();
 
 var app = builder.Build();
 

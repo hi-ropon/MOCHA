@@ -7,12 +7,12 @@ using MOCHA.Services.Plc;
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// Copilot とのやり取りと PLC Gateway 呼び出しを仲介するサービス。
+/// エージェントとのやり取りと PLC Gateway 呼び出しを仲介するサービス。
 /// 実際の接続先がなくてもフェイク実装で動作をテストできるように抽象化している。
 /// </summary>
 internal sealed class ChatOrchestrator : IChatOrchestrator
 {
-    private readonly ICopilotChatClient _copilot;
+    private readonly ICopilotChatClient _agentChatClient;
     private readonly IPlcGatewayClient _plcGateway;
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
@@ -20,24 +20,24 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <summary>
     /// 依存するクライアントと状態管理を受け取って初期化する。
     /// </summary>
-    /// <param name="copilot">Copilot クライアント。</param>
+    /// <param name="agentChatClient">エージェント クライアント。</param>
     /// <param name="plcGateway">PLC Gateway クライアント。</param>
     /// <param name="chatRepository">チャットリポジトリ。</param>
     /// <param name="history">会話履歴状態。</param>
     public ChatOrchestrator(
-        ICopilotChatClient copilot,
+        ICopilotChatClient agentChatClient,
         IPlcGatewayClient plcGateway,
         IChatRepository chatRepository,
         ConversationHistoryState history)
     {
-        _copilot = copilot;
+        _agentChatClient = agentChatClient;
         _plcGateway = plcGateway;
         _chatRepository = chatRepository;
         _history = history;
     }
 
     /// <summary>
-    /// ユーザーの発話を Copilot に送り、ツール要求や応答をストリームで返す。
+    /// ユーザーの発話をエージェントに送り、ツール要求や応答をストリームで返す。
     /// </summary>
     /// <param name="user">ユーザー情報。</param>
     /// <param name="conversationId">既存の会話ID。未指定なら新規を生成。</param>
@@ -64,7 +64,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             new(ChatRole.User, text)
         });
 
-        var stream = await _copilot.SendAsync(turn, cancellationToken);
+        var stream = await _agentChatClient.SendAsync(turn, cancellationToken);
         await foreach (var ev in stream.WithCancellation(cancellationToken))
         {
             if (ev.Type == ChatStreamEventType.ActionRequest && ev.ActionRequest is not null)
@@ -93,7 +93,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                     ChatStreamEventType.ToolResult,
                     ActionResult: actionResult);
 
-                await _copilot.SubmitActionResultAsync(actionResult, cancellationToken);
+                await _agentChatClient.SubmitActionResultAsync(actionResult, cancellationToken);
 
                 var device = ReadString(actionResult.Payload, "device") ?? "D";
                 var addr = ReadInt(actionResult.Payload, "addr") ?? 0;
@@ -103,13 +103,13 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 yield return ChatStreamEvent.FromMessage(
                     await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), agentNumber, cancellationToken));
 
-                // Copilot Studio に渡したことを示すフェイクメッセージ
+                // エージェントにアクションを渡したことを示すフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
                     await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), agentNumber, cancellationToken));
 
-                // Copilot Studio が最終回答した想定のフェイクメッセージ
+                // エージェントが最終回答した想定のフェイクメッセージ
                 yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)), agentNumber, cancellationToken));
+                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildAgentReplyText(device, addr, values, actionResult.Success, actionResult.Error)), agentNumber, cancellationToken));
             }
             else
             {
@@ -345,7 +345,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     }
 
     /// <summary>
-    /// Copilot Studio へ送信した旨の簡易メッセージを生成する。
+    /// エージェントへ送信した旨の簡易メッセージを生成する。
     /// </summary>
     /// <param name="device">デバイス種別。</param>
     /// <param name="addr">アドレス。</param>
@@ -354,11 +354,11 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private static string BuildActionSubmitText(string device, int addr, List<int> values)
     {
         var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
-        return $"(fake) Copilot Studio に送信: {device}{addr} -> [{valuesText}]";
+        return $"(fake) Agent に送信: {device}{addr} -> [{valuesText}]";
     }
 
     /// <summary>
-    /// Copilot から返ってきたと想定したメッセージを生成する。
+    /// エージェントから返ってきたと想定したメッセージを生成する。
     /// </summary>
     /// <param name="device">デバイス種別。</param>
     /// <param name="addr">アドレス。</param>
@@ -366,20 +366,20 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="success">成功フラグ。</param>
     /// <param name="error">エラー内容。</param>
     /// <returns>表示用メッセージ。</returns>
-    private static string BuildCopilotReplyText(string device, int addr, List<int> values, bool success, string? error)
+    private static string BuildAgentReplyText(string device, int addr, List<int> values, bool success, string? error)
     {
         if (success && values.Any())
         {
-            return $"(fake Copilot) {device}{addr} は {string.Join(", ", values)} でした。";
+            return $"(fake Agent) {device}{addr} は {string.Join(", ", values)} でした。";
         }
 
         if (success)
         {
-            return $"(fake Copilot) {device}{addr} の値は空でした。";
+            return $"(fake Agent) {device}{addr} の値は空でした。";
         }
 
         var err = error ?? "unknown error";
-        return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
+        return $"(fake Agent) {device}{addr} の読み取りに失敗しました: {err}";
     }
 
     /// <summary>

@@ -4,7 +4,7 @@ using MOCHA.Models.Chat;
 namespace MOCHA.Services.Copilot;
 
 /// <summary>
-/// Copilot Studio に未接続でも振る舞いを再現できるフェイク実装。
+/// 実接続なしでも振る舞いを再現できるフェイク実装。
 /// テストやローカル開発で注入する。
 /// </summary>
 internal sealed class FakeCopilotChatClient : ICopilotChatClient
