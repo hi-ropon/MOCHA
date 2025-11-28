@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\\MOCHA\\MOCHA.csproj" />
+    <ProjectReference Include="..\\MOCHA.Agents\\MOCHA.Agents.csproj" />
   </ItemGroup>
 
 </Project>
