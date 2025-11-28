@@ -2,6 +2,8 @@
 @attribute [Authorize]
 @using System.Linq
 @using System.Security.Claims
+@using System.Text.Encodings.Web
+@using System.Text.Json
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
@@ -451,10 +453,13 @@
         _ => "Thought"
     };
 
-    private static string SafeSerialize(IReadOnlyDictionary<string, object?> payload)
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
     {
-        return System.Text.Json.JsonSerializer.Serialize(payload);
-    }
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    private static string SafeSerialize(IReadOnlyDictionary<string, object?> payload) =>
+        JsonSerializer.Serialize(payload, SerializerOptions);
 
     private void RebuildActivityFromHistory(IReadOnlyList<ChatMessage> historyMessages)
     {

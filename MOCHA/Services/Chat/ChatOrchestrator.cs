@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 using MOCHA.Models.Chat;
 using MOCHA.Agents.Application;
@@ -18,6 +19,10 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
     private readonly IManualStore _manualStore;
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     /// <summary>
     /// 依存するクライアントと状態管理を受け取って初期化する。
@@ -79,7 +84,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 await SaveMessageAsync(
                     user,
                     convId,
-                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload)}"),
+                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload, SerializerOptions)}"),
                     agentNumber,
                     cancellationToken);
 
@@ -90,7 +95,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 await SaveMessageAsync(
                     user,
                     convId,
-                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload)}"),
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, SerializerOptions)}"),
                     agentNumber,
                     cancellationToken);
 
