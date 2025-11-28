@@ -1,0 +1,57 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page139
+
+<overview>
+このページは主に表形式で構成されており、REAL型、TIME型、STRING型などのデータ型変換に関するファンクション（関数）一覧を示しています。テキスト部分は各変換の説明と参照ページ番号を含み、表部分はファンクション記号、処理内容、参照先の3列で構成されています。グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### データ型変換ファンクション一覧
+
+| ファンクション記号 | 処理内容 | 参照先 |
+|--------------------|----------|--------|
+| **LREAL型→INT型/DINT型変換** | | |
+| LREAL_TO_INT | LREAL型データをINT型データへ変換します。 | 1376ページ LREAL_TO_INT(_E) |
+| LREAL_TO_INT_E | 同上 | 同上 |
+| LREAL_TO_DINT | LREAL型データをDINT型データへ変換します。 | 1378ページ LREAL_TO_DINT(_E) |
+| LREAL_TO_DINT_E | 同上 | 同上 |
+
+| **LREAL型→REAL型変換** | | |
+| LREAL_TO_REAL | LREAL型データをREAL型データへ変換します。 | 1380ページ LREAL_TO_REAL(_E) |
+| LREAL_TO_REAL_E | 同上 | 同上 |
+
+| **TIME型→BOOL型変換** | | |
+| TIME_TO_BOOL | TIME型データをBOOL型データへ変換します。 | 1382ページ TIME_TO_BOOL(_E) |
+| TIME_TO_BOOL_E | 同上 | 同上 |
+
+| **TIME型→WORD型/DWORD型変換** | | |
+| TIME_TO_WORD | TIME型データをWORD型データへ変換します。 | 1383ページ TIME_TO_WORD(_E) |
+| TIME_TO_WORD_E | 同上 | 同上 |
+| TIME_TO_DWORD | TIME型データをDWORD型データへ変換します。 | 1384ページ TIME_TO_DWORD(_E) |
+| TIME_TO_DWORD_E | 同上 | 同上 |
+
+| **TIME型→INT型/DINT型変換** | | |
+| TIME_TO_INT | TIME型データをINT型データへ変換します。 | 1385ページ TIME_TO_INT(_E) |
+| TIME_TO_INT_E | 同上 | 同上 |
+| TIME_TO_DINT | TIME型データをDINT型データへ変換します。 | 1386ページ TIME_TO_DINT(_E) |
+| TIME_TO_DINT_E | 同上 | 同上 |
+
+| **TIME型→STRING型変換** | | |
+| TIME_TO_STRING | TIME型データをSTRING型データへ変換します。 | 1387ページ TIME_TO_STRING(_E) |
+| TIME_TO_STRING_E | 同上 | 同上 |
+
+| **STRING型→BOOL型変換** | | |
+| STRING_TO_BOOL | STRING型データをBOOL型データへ変換します。 | 1389ページ STRING_TO_BOOL(_E) |
+| STRING_TO_BOOL_E | 同上 | 同上 |
+
+| **STRING型→WORD型/DWORD型変換** | | |
+| STRING_TO_WORD | STRING型データをWORD型データへ変換します。 | 1390ページ STRING_TO_WORD(_E) |
+| STRING_TO_WORD_E | 同上 | 同上 |
+| STRING_TO_DWORD | STRING型データをDWORD型データへ変換します。 | 1391ページ STRING_TO_DWORD(_E) |
+| STRING_TO_DWORD_E | 同上 | 同上 |
+
+---
+
+以上の表は、各種データ型間の変換を行うファンクションの一覧であり、関数名、処理内容、詳細説明が記載されているページ番号を示しています。  
+各ファンクションは基本的に元のデータ型を指定の型に変換する役割を持ち、対応する「_E」付きの関数も同様の処理を行います。
+</contents>

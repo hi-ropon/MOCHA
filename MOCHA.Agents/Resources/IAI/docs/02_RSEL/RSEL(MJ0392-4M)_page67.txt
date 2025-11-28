@@ -1,0 +1,49 @@
+ファイル名: RSEL(MJ0392-4M)_page67
+
+<overview>
+本ページは「2.1.4 ユニット一覧」というセクションで構成されており、主に表形式で各ユニットの製品名と型式が一覧化されています。テキスト部分は見出しと説明的な文言が少量含まれています。表部分がページの大半を占めており、グラフや図は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.1.4 ユニット一覧
+各種ユニットの製品名と対応する型式を一覧表で示しています。
+
+### 表
+#### ユニット一覧表
+
+| ユニット種別 | 製品名 | 型式 |
+| :--- | :--- | :--- |
+| **SELユニット** | 未使用 | RSEL-G-E |
+|  | PIO仕様（NPN 16/16） | RSEL-G-NP |
+|  | PIO仕様（PNP 16/16） | RSEL-G-PN |
+|  | CC-Link接続仕様（二股コネクター付属） | RSEL-G-CC（CC2） |
+|  | CC-Link IE Field接続仕様 | RSEL-G-CIE |
+|  | DeviceNet接続仕様（二股コネクター付属） | RSEL-G-DV（DV2） |
+|  | EtherCAT接続仕様 | RSEL-G-EC |
+|  | EtherNet/IP接続仕様 | RSEL-G-EP |
+|  | PROFIBUS-DP接続仕様 | RSEL-G-PR |
+|  | PROFINET IO接続仕様 | RSEL-G-PRT |
+| **ドライバーユニット** | パルスモーター1軸仕様 | RCON-PC-1 |
+|  | パルスモーター2軸仕様 | RCON-PC-2 |
+|  | 高推力パルスモーター1軸仕様 | RCON-PCF-1 |
+|  | ACサーボモーター1軸仕様 | RCON-AC-1 |
+|  | ACサーボモーター2軸仕様 | RCON-AC-2 |
+|  | DCブラシレスモーター1軸仕様 | RCON-DC-1 |
+|  | DCブラシレスモーター2軸仕様 | RCON-DC-2 |
+|  | AC200Vサーボモーター1軸仕様 | RCON-SC-1 |
+| **200V電源ユニット** | AC200V用電源 | RCON-PS2-3 |
+| **ターミナルユニット** | 24V用（SELユニットに付属） | RCON-GW-TR |
+|  | 200V用（200V電源ユニットに付属） | RCON-GW-TRS |
+| **SCON拡張ユニット** | SCON接続用 | RCON-EXT |
+| **PIO/SIO/SCON拡張ユニット** | SCON接続、PIO/SIO拡張用（NPN） | RCON-EXT-NP |
+|  | SCON接続、PIO/SIO拡張用（PNP） | RCON-EXT-PN |
+| **PIOユニット** | PIO拡張用（NPN） | RCON-NP |
+|  | PIO拡張用（PNP） | RCON-PN |
+| **EC接続ユニット** | エレシリンダー4軸仕様 | RCON-EC-4 |
+| **簡易アブソユニット（1軸仕様）** | RCON-PC用 | RCON-ABU-P |
+|  | RCON-AC用 | RCON-ABU-A |
+| **ファンユニット** | SELユニットで付属数を指定<br>・24Vドライバーユニット用<br>・200V電源ユニット用<br>・SELユニット用 | RCON-FU |
+| **200Vドライバー用ファンユニット** | RCON-SC 1台に1台装着（RCON-SCに付属） | RCON-FUH |
+
+</contents>

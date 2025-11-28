@@ -1,0 +1,64 @@
+ファイル名: HM-60252J_page250
+
+<overview>
+このページは主にテキストと図で構成されています。テキスト部分ではUSB-IDとUSB-PIDの設定に関する説明があり、USB-IDの設定によるCOMポート番号の固定化の仕組みと注意点、USB-PIDの役割について解説しています。図はUSB-ID設定時のCOMポート番号の割り当て例を示したイラストと、USB-PID設定画面のスクリーンショットが含まれています。表やグラフはありません。
+</overview>
+
+<contents>
+### テキスト
+#### パラメータ：通信・I/F機能
+
+- **USB-IDを設定した場合**  
+  USB-IDパラメータを設定すると、COMポート番号がドライバごとに固定され、接続順序に関係なく常に同じCOMポート番号が表示されるようになります。  
+  （パソコンは空いているCOMポート番号を降順に紐付けるため、USB-IDとCOMポート番号は一致しないことがあります。）
+
+- **重要**  
+  USB-IDパラメータで設定したCOMポート番号は、パソコンが替わると無効になります。
+
+- **USB-PID**  
+  USB-IDはCOMポート番号をドライバごとに固定できますが、パソコンが替わるとCOMポート番号も変わってしまい無効となります。  
+  一方、USB-PIDはドライバ自体に製品IDを設定するパラメータで、パソコンやCOMポート番号が変わっても製品IDは変わらないため、MEXE02で容易に製品を見分けることができます。
+
+- **memo**  
+  同じ番号のUSB-PIDを複数のドライバに設定すると、COMポート番号は接続した順序で割り振られます。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph パソコン(MEXE02)
+        PC[パソコン]
+    end
+    subgraph ドライバの電源投入順序
+        D1[ドライバA USB-ID:0 COM3]
+        D2[ドライバB USB-ID:1 COM5]
+        D3[ドライバC USB-ID:2 COM6]
+    end
+
+    PC -->|1| D1
+    PC -->|2| D2
+    PC -->|3| D3
+
+    PC -->|電源投入順序変更| PC2[パソコン]
+    PC2 -->|3| D1
+    PC2 -->|1| D2
+    PC2 -->|2| D3
+
+    note right of PC2
+      電源の投入順序が変わっても
+      COMポート番号を維持
+    end
+```
+
+```mermaid
+flowchart TD
+    A[通信ポート設定画面]
+    A --> B[COM53: ORIENTAL MOTOR / Common Virtual COM Port #15]
+    A --> C[COM6: ORIENTAL MOTOR / Common Virtual COM Port #01]
+    A --> D[COM58: DENSO WAVE Active USB-COM Port]
+    B -.-> E["[USB-PID]パラメータで設定した製品ID"]
+```
+
+**図の説明:**  
+- 左の図はUSB-ID設定時のCOMポート番号割り当て例を示し、電源投入順序が変わってもCOMポート番号が維持されることを表しています。  
+- 右の図はUSB-PID設定画面の一部で、製品IDが表示されている様子を示しています。
+</contents>

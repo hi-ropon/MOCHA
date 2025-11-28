@@ -1,0 +1,73 @@
+ファイル名: RCON(MJ0384-8D)_page330
+
+<overview>
+本ページは「簡易アブソユニットの配線」に関する内容で構成されています。  
+主に以下のセクションで構成されています。  
+- テキスト部分：配線図の対象機種やケーブル種類の説明  
+- 図（配線図）部分：複数の配線パターン（配線図A～D）を示す接続構成図  
+表やグラフはなく、図はすべて配線構成を示すイラスト形式です。  
+各配線図はドライバーユニット、簡易アブソユニット、変換ケーブル、アクチュエーターの接続関係を示しています。
+</overview>
+
+<contents>
+### テキスト
+#### 簡易アブソユニットの配線
+RCON接続ケーブル配線図（簡易アブソユニット接続の場合）として、以下の配線図が示されています。
+
+- 配線図A  
+  対象機種：RCP4グリッパー（GR＊）、ST4525E、SA3/RA3  
+  RCP2CR/RCP2Wのロータリー（RT＊）およびGRS/GRM/GR3SS/GR3SM  
+  RCA2/RCA2CR/RCA2W（CNSオプション）
+
+- 配線図B  
+  対象機種：RCP4/RCP4CR/RCP4W（GR＊、ST4525E、SA3/RA3）
+
+- 配線図C  
+  対象機種：RCP3  
+  RCP2/RCP2CR/RCP2W-GRSS/GRLS/GRST/GRHM/GRHB  
+  RCP2-SRA4R/SRGS4R/SRGD4R  
+  RCA2/RCA2CR/RCA2W、RCL  
+  RCA全長ショートタイプ（RCA-SRA4R/SRGS4R/SRGD4R）
+
+- 配線図D  
+  対象機種：RCP2-RTBS/RTBSL/RTCS/RTCSL  
+  RCP2/RCP2CR/RCP2W一部除く（詳細は前ページ一覧表参照）  
+  RCA/RCACR/RCAW（RCA-SRA4R/SRGS4R/SRGD4R以外）
+
+### 図（配線図）
+#### 配線図A
+```mermaid
+flowchart LR
+    DU[ドライバーユニット] -->|CB-ADPC-MPA005| SA[簡易アブソユニット]
+    SA -->|CB-ADPC(2)-MPA□□□(-RB)| ACT[アクチュエーター]
+```
+
+#### 配線図B
+```mermaid
+flowchart LR
+    DU[ドライバーユニット] -->|CB-ADPC-MPA005| SA[簡易アブソユニット]
+    SA -->|CB-ADPC(2)-MPA□□□(-RB)| TR[変換ケーブル CB-CAN-AJ002]
+    TR --> ACT[アクチュエーター]
+```
+
+#### 配線図C
+```mermaid
+flowchart LR
+    DU[ドライバーユニット] -->|CB-ADPC-MPA005| SA[簡易アブソユニット]
+    SA -->|CB-RCAPC-MPA□□□(-RB)| ACT[アクチュエーター]
+```
+
+#### 配線図D
+```mermaid
+flowchart LR
+    DU[ドライバーユニット] -->|CB-ADPC-MPA005| SA[簡易アブソユニット]
+    SA -->|CB-ADPC(2)-MPA□□□(-RB)| TRU[変換ユニット RCM-CV-APCS]
+    TRU -->|各アクチュエーター接続ケーブル| ACT[アクチュエーター]
+```
+
+**図の説明:**  
+- 「ドライバーユニット」から「簡易アブソユニット」へは付属ケーブルCB-ADPC-MPA005で接続。  
+- 簡易アブソユニットからアクチュエーターへの接続は機種により異なり、直接接続、変換ケーブル経由、変換ユニット経由など複数パターンがある。  
+- 変換ケーブルや変換ユニットは別途注文が必要。  
+- アクチュエーターは最終接続機器として配置されている。
+</contents>

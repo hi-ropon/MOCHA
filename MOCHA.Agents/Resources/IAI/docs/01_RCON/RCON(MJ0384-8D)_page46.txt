@@ -1,0 +1,51 @@
+ファイル名: RCON(MJ0384-8D)_page46
+
+<overview>
+本ページは「1.3.2 構成ユニット一覧」というタイトルで、システム構成における各ユニットの製品名と型式を一覧表形式で示している。テキスト部分は見出しと説明が少量あり、主に表部分で構成されている。表は「ゲートウェイユニット」「ドライバーユニット」「電源ユニット」「ターミナルユニット」「SCON拡張ユニット」「PIO/SIO/SCON拡張ユニット」「PIOユニット」「EC接続ユニット」「簡易アブソユニット」「ファンユニット」「200Vドライバー用ファンユニット」の各カテゴリに分かれており、それぞれの製品名と対応型式が記載されている。グラフや図は含まれていない。
+</overview>
+
+<contents>
+### テキスト
+#### 1.3.2 構成ユニット一覧
+システム構成における各ユニットの製品名と型式を一覧表で示す。
+
+### 表
+#### 構成ユニット一覧
+
+| ユニットカテゴリ | 製品名 | 型式 |
+| :--- | :--- | :--- |
+| ゲートウェイユニット (GWG：安全カテゴリー対応タイプ) | CC-Link 接続仕様 | RCON-GW(GWG)-CC |
+|  | CC-Link IE Field 接続仕様 | RCON-GW(GWG)-CIE |
+|  | CC-Link IE TSN 接続仕様 | RCON-GW(GWG)-CIT |
+|  | DeviceNet 接続仕様 | RCON-GW(GWG)-DV |
+|  | EtherCAT 接続仕様 | RCON-GW(GWG)-EC |
+|  | EtherNet/IP 接続仕様 | RCON-GW(GWG)-EP |
+|  | EtherNet/IP 接続フロントポート仕様 | RCON-GW(GWG)-N-EP |
+|  | PROFIBUS-DP 接続仕様 | RCON-GW(GWG)-PR |
+|  | PROFINET IO 接続仕様 | RCON-GW(GWG)-PRT |
+|  | EtherCAT モーション接続仕様 | RCON-GW(GWG)-ECM |
+|  | MECHATROLINK-Ⅲ 接続仕様 | RCON-GW(GWG)-ML3 |
+|  | SSCNETⅢ/H 接続仕様 | RCON-GW(GWG)-SSN |
+| ドライバーユニット | 24V パルスモーター 1軸仕様 | RCON-PC-1 |
+|  | 24V パルスモーター 2軸仕様 | RCON-PC-2 |
+|  | 24V 高推力パルスモーター 1軸仕様 | RCON-PCF-1 |
+|  | 24V ACサーボモーター 1軸仕様 | RCON-AC-1 |
+|  | 24V ACサーボモーター 2軸仕様 | RCON-AC-2 |
+|  | 24V DCブラシレスモーター 1軸仕様 | RCON-DC-1 |
+|  | 24V DCブラシレスモーター 2軸仕様 | RCON-DC-2 |
+|  | 200V ACサーボモーター 1軸仕様 | RCON-SC-1 |
+| 200V電源ユニット | AC200V 入力用電源 | RCON-PS2-3 |
+| ターミナルユニット | 24V用終端抵抗（ゲートウェイユニット付属品） | RCON-GW-TR |
+|  | 200V用終端抵抗（200V電源ユニット付属品） | RCON-GW-TRS |
+| SCON拡張ユニット | SCONシリーズ接続用ユニット | RCON-EXT |
+| PIO/SIO/SCON拡張ユニット | SCONシリーズ接続、PIO/SIO拡張用（NPN） | RCON-EXT-NP |
+|  | SCONシリーズ接続、PIO/SIO拡張用（PNP） | RCON-EXT-PN |
+| PIOユニット | PIO拡張用（NPN） | RCON-NP |
+|  | PIO拡張用（PNP） | RCON-PN |
+| EC接続ユニット | エレシリンダー 4軸仕様 | RCON-EC-4 |
+| 簡易アブソユニット (1軸仕様) | パルスモーター用 | RCON-ABU-P |
+|  | ACサーボモーター用 | RCON-ABU-A |
+| ファンユニット | ・RCON-GWで付属数を指定（24Vドライバーユニット2台に1台装着）<br>・200V電源ユニット付属品 | RCON-FU |
+| 200Vドライバー用ファンユニット | RCON-SC 1台に1台付属 | RCON-FUH |
+
+</contents>

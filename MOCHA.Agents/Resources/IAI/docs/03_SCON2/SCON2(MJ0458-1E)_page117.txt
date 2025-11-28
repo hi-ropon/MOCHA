@@ -1,0 +1,64 @@
+ファイル名: SCON2(MJ0458-1E)_page117
+
+<overview>
+本ページは「3.3.2 非常停止回路（システムI/O）の配線」について説明しています。構成は以下の通りです。
+- テキスト部分：非常停止回路の配線に関する注意事項と説明
+- 図部分：非常停止回路の配線イメージ図（システムI/Oの接続構成図）
+- 表部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### 3.3.2 非常停止回路（システムI/O）の配線
+装置全体の安全カテゴリーに合わせた非常停止回路を構成し、配線してください。
+
+**注釈**
+1. 本コントローラーは、ティーチングツールが挿入されたことを自動認識し、配線を切替えるリレーを搭載していません。（未接続でもS1、S2端子間はコントローラー内部で短絡されません）
+2. 装置全体の安全カテゴリーに合わせて回路を構成してください。
+3. STOP−、ENB−端子には必ず内蔵24V（STOP＋、ENB＋端子）出力を用いて非常停止回路を構成してください。
+
+### 図
+#### 非常停止回路の配線イメージ
+```mermaid
+flowchart LR
+    subgraph SCON2
+        S1((S1))
+        S2((S2))
+        STOP_P((STOP+))
+        STOP_N((STOP−))
+        ENB_P((ENB+))
+        ENB_N((ENB−))
+        L1((L1))
+        L2((L2))
+        CPU[CPU]
+        StopDetect[停止検出回路]
+        EnableDetect[イネーブル検出回路]
+    end
+
+    StopSwitch[停止スイッチ] --> S1
+    StopSwitch --> S2
+    EnableSwitch[イネーブルスイッチ] --> STOP_N
+    EnableSwitch --> ENB_P
+
+    STOP_P --> StopDetect
+    STOP_N --> StopDetect
+    ENB_P --> EnableDetect
+    ENB_N --> EnableDetect
+
+    StopDetect --> CPU
+    EnableDetect --> CPU
+
+    L1 --> SCON2
+    L2 --> SCON2
+
+    TeachingBox[ティーチングボックス] --> S1
+```
+
+**図の説明**
+- 停止スイッチはS1、S2端子に接続されている。
+- イネーブルスイッチはSTOP−、ENB＋端子に接続されている。
+- STOP＋、ENB＋端子から24Vが供給され、停止検出回路およびイネーブル検出回路に入力される。
+- CPUはこれらの検出回路から信号を受け取り、駆動源遮断を制御する。
+- ティーチングボックスはS1端子に接続されている。
+
+</contents>

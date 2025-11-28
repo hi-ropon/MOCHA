@@ -1,0 +1,60 @@
+ファイル名: HM-60252J_page124
+
+<overview>
+本ページは「マクロ運転」に関する説明で構成されており、テキスト部分とタイミングチャートのグラフ部分で構成されています。テキスト部分ではマクロ運転のタイミングチャートの手順が箇条書きで示されており、グラフ部分では各信号のON/OFF状態とモーター動作の関係を示すタイミングチャートが2種類掲載されています。表やフローチャートは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転 タイミングチャート
+1. READY出力がONであることを確認します。  
+2. FW-JOG入力（またはRV-JOG入力）をONにします。  
+　READY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。  
+3. FW-JOG入力（またはRV-JOG入力）をOFFにします。  
+　モーターが減速停止を開始します。  
+4. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※負荷、運転速度、速度フィルタなどによって動作は異なります。
+
+### グラフ（タイミングチャート）
+#### 信号のON/OFFとモーター動作の関係
+
+1つ目のタイミングチャートは以下の信号の状態変化を示しています。  
+- FW-JOG入力  
+- RV-JOG入力  
+- PLS-RDY出力  
+- READY出力  
+- MOVE出力  
+- モーター動作  
+
+2つ目のタイミングチャートは各信号のON/OFFの遷移時間を詳細に示し、READY出力とMOVE出力のOFF/ON切り替えが2ms以内であることを強調しています。
+
+```mermaid
+flowchart TD
+    subgraph タイミングチャート1
+        FWJOG[FW-JOG入力 ON/OFF]
+        RVJOG[RV-JOG入力 ON/OFF]
+        PLSRDY[PLS-RDY出力 ON/OFF]
+        READY[READY出力 ON/OFF]
+        MOVE[MOVE出力 ON/OFF]
+        MOTOR[モーター動作]
+    end
+
+    FWJOG -->|ON| READY
+    FWJOG -->|ON| MOVE
+    RVJOG -->|ON| READY
+    RVJOG -->|ON| MOVE
+    READY -->|ON| MOVE
+    MOVE -->|ON| MOTOR
+    FWJOG -->|OFF| MOTOR
+    RVJOG -->|OFF| MOTOR
+    MOTOR -->|停止| READY
+    MOTOR -->|停止| MOVE
+```
+
+**図の説明:**  
+- FW-JOG入力またはRV-JOG入力がONになるとREADY出力がOFF、MOVE出力がONとなりモーターが動作開始。  
+- 入力がOFFになるとモーターは減速停止し、停止後READY出力がON、MOVE出力がOFFに戻る。  
+- 2つ目のチャートではREADY出力とMOVE出力の切り替えが2ms以内であることを示している。
+
+</contents>

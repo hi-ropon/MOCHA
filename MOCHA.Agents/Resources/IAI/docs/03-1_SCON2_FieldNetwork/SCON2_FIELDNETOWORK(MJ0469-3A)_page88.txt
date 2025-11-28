@@ -1,0 +1,17 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page88
+
+<overview>
+このページはテキストのみで構成されており、EtherCAT用のESIファイルに関する説明が記載されています。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.4.5 EtherCAT用ESIファイル
+ESIファイルが必要な場合は、当社ホームページからダウンロードして使用するよう案内しています。
+
+##### ダウンロードページ
+フィールドネットワーク設定用ファイル ダウンロードページ  
+https://www.iai-robot.co.jp/knowledge/support/network/index.html
+
+必要なファイルをリストから選択し、ダウンロードしてください。
+</contents>

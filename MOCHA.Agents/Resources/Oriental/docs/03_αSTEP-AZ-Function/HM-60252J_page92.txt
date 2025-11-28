@@ -1,0 +1,44 @@
+ファイル名: HM-60252J_page92
+
+<overview>
+このページは「ストアードデータ(SD)運転」に関する説明で構成されています。テキスト部分では運転のタイミングチャートの手順が箇条書きで示されており、グラフ部分では各信号のON/OFF状態と内部速度指令の変化を示すタイミングチャートが描かれています。表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### ストアードデータ(SD)運転 タイミングチャート
+1. READY出力がONであることを確認します。
+2. M0～M7入力で運転データNo.を選択します。
+3. START入力をONにします。  
+　READY出力がOFF、SEQ-BSY出力がONになり、モーターが運転を開始します。
+4. READY出力がOFFになっていることを確認し、START入力をOFFにします。
+5. 運転中のモーターが目標位置に到達すると、結合した次の運転に遷移し、現在速度から目標速度への加減速が始まります。
+6. 結合されたすべての運転が終わると、SEQ-BSY出力がOFF、READY出力がONになります。
+
+### グラフ（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 信号状態
+        direction TB
+        START入力_ON[START入力 ON]
+        START入力_OFF[START入力 OFF]
+        M0_M7入力_ON[M0～M7入力 ON]
+        M0_M7入力_OFF[M0～M7入力 OFF]
+        READY出力_ON[READY出力 ON]
+        READY出力_OFF[READY出力 OFF]
+        SEQ_BSY出力_ON[SEQ-BSY出力 ON]
+        SEQ_BSY出力_OFF[SEQ-BSY出力 OFF]
+    end
+
+    START入力_OFF -->|①| M0_M7入力_ON
+    M0_M7入力_ON -->|②| START入力_ON
+    START入力_ON -->|③| READY出力_OFF
+    READY出力_OFF -->|④| START入力_OFF
+
+    %% 内部速度指令の変化はグラフで示されているため、ここでは説明のみ
+```
+
+**図の説明:**  
+- START入力、M0～M7入力、READY出力、SEQ-BSY出力のON/OFF状態の変化を示す。  
+- 内部速度指令はモーターの加減速を表す波形で、目標位置到達時に次の運転へ遷移し速度が変化する様子を示している。
+</contents>

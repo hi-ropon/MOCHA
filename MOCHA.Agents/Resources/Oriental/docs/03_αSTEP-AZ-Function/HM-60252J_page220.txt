@@ -1,0 +1,71 @@
+ファイル名: HM-60252J_page220
+
+<overview>
+本ページは「動力遮断機能の動作」について説明しています。構成は以下の通りです。
+- テキスト部分：動力遮断状態への移行の説明、注意事項
+- グラフ部分：動力遮断状態への移行に関するタイミングチャート
+表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 動力遮断状態への移行
+HWTO1入力とHWTO2入力の両方をOFFにすると、ドライバは動力遮断状態に移行し、ハードウェアによりモーターへの電力供給が遮断されてモーターは無励磁状態になります。  
+動力遮断状態になると、モーターおよびドライバの状態は以下のようになります。（「HWTO動作」パラメータが「0:アラーム発生なし（初期値）」の場合）  
+- ETO-MON出力がON  
+- READY出力、PLS-RDY出力、MBC出力がOFF  
+- PWR/ALM LED（またはPOWER/ALARM LED）が緑色に点滅  
+- 電磁ブレーキ付きモーターの場合、電磁ブレーキが保持状態  
+
+##### 重要事項
+- 必ずモーターが停止していることを確認してから動力遮断機能を実行すること。運転中に実行するとモーター、ドライバ、装置が破損する恐れがある。  
+- HWTO1入力とHWTO2入力をOFFにしてから動力遮断状態になるまで最大15msかかる。  
+- 動力遮断状態に移行するには、HWTO1入力とHWTO2入力を必ず15ms以上OFFにすること。  
+- ETO-MON出力、READY出力、PLS-RDY出力、MBC出力、PWR/ALM LED（またはPOWER/ALARM LED）、および電磁ブレーキは安全関連部ではない。  
+
+### 図（タイミングチャート）
+```mermaid
+gantt
+    title 動力遮断状態への移行タイミングチャート
+    dateFormat  HH:mm:ss.SSS
+    axisFormat  %L ms
+
+    section HWTO1入力, HWTO2入力
+    ON          :a1, 0, 15ms
+    OFF         :a2, after a1, 15ms
+
+    section ドライバの状態
+    通常状態    :b1, 0, 15ms
+    動力遮断状態 :b2, after b1, 15ms
+
+    section EDM出力
+    ON          :c1, 0, 15ms
+    OFF         :c2, after c1, 15ms
+
+    section ETO-MON出力
+    ON          :d1, 0, 15ms
+    OFF         :d2, after d1, 15ms
+
+    section READY出力, PLS-RDY出力
+    ON          :e1, 0, 15ms
+    OFF         :e2, after e1, 15ms
+
+    section MBC出力
+    ON          :f1, 0, 15ms
+    OFF         :f2, after f1, 15ms
+
+    section モーター励磁
+    励磁        :g1, 0, 60ms
+    無励磁      :g2, after g1, 60ms
+
+    section 電磁ブレーキ
+    保持        :h1, 0, 60ms
+    解放        :h2, after h1, 60ms
+```
+
+**図の説明:**  
+- HWTO1入力とHWTO2入力がOFFになると、最大15ms以内にドライバの状態が動力遮断状態に変わる。  
+- EDM出力、ETO-MON出力、READY出力、PLS-RDY出力、MBC出力は15ms以内にOFFになる。  
+- モーター励磁は最大60ms以内に無励磁状態に移行。  
+- 電磁ブレーキは最大60ms以内に保持から解放状態に移行。  
+</contents>

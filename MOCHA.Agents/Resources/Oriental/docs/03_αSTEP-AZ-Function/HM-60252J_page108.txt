@@ -1,0 +1,55 @@
+ファイル名: HM-60252J_page108
+
+<overview>
+このページは「原点復帰運転」に関する説明で構成されています。  
+テキスト部分では、タイミングチャートの手順が箇条書きで示されています。  
+グラフ部分には、各信号のON/OFF状態やモーターの動作状態を示すタイミングチャートが掲載されています。  
+表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 原点復帰運転 タイミングチャート
+1. READY出力がONであることを確認します。  
+2. ZHOME入力をONにします。  
+　IN-POS出力、PLS-RDY出力、READY出力、およびDCMD-RDY出力がOFF、MOVE出力がONになりモーターが運転を開始します。  
+3. READY出力がOFFになっていることを確認し、ZHOME入力をOFFにします。  
+4. 機械原点に到達すると、HOME-END出力、IN-POS出力、PLS-RDY出力、READY出力、およびDCMD-RDY出力がON、MOVEがOFFになります。  
+5. START入力をONにします。  
+　HOME-END出力、IN-POS出力、およびREADY出力がOFF、MOVE出力がONになりモーターが運転を開始します。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 信号ライン
+        ZHOME[ZHOME入力]
+        START[START入力]
+        HOMEEND[HOME-END出力]
+        INPOS[IN-POS出力]
+        PLSRDY[PLS-RDY出力]
+        READY[READY出力]
+        DCMD[DCMD-RDY出力]
+        MOVE[MOVE出力]
+        MOTOR[モーター動作]
+        MOTOREXC[モーター励磁]
+        BRAKE[電磁ブレーキ]
+    end
+
+    ZHOME -->|ON/OFF| ZHOME
+    START -->|ON/OFF| START
+    HOMEEND -->|ON/OFF| HOMEEND
+    INPOS -->|ON/OFF| INPOS
+    PLSRDY -->|ON/OFF| PLSRDY
+    READY -->|ON/OFF| READY
+    DCMD -->|ON/OFF| DCMD
+    MOVE -->|ON/OFF| MOVE
+
+    MOTOREXC -.-> MOTOR
+    BRAKE -.-> MOTOR
+```
+
+**図の説明:**  
+- 各信号のON/OFF状態が時間軸に沿って変化し、モーターの励磁状態や電磁ブレーキの保持・解放状態も示されています。  
+- モーター動作は信号の変化に連動して開始・停止します。  
+- 矢印と番号で手順の流れが示されており、タイミングチャートの各ポイントを対応付けています。
+</contents>

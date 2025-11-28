@@ -1,0 +1,67 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page44
+
+<overview>
+本ページは「CC-Link」の配線方法に関する説明で構成されています。上部に配線構成図（PLC、スレーブ機器、SCON2間の接続と接地・終端抵抗の配置）があり、その下に配線作業手順の説明がテキストと図解で示されています。具体的には、CC-Link専用ケーブルのシース除去方法と各線のシース除去方法について、図を用いて段階的に説明しています。テキスト部分と図（配線図、ケーブル切断・剥離図）が主な構成要素です。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.1 CC-Link
+【2】配線方法  
+配線方法について以下に記します。
+
+(1) CC-Link専用ケーブルのシースを除去します。  
+(2) CC-Link専用ケーブル各線のシースを除去します。
+
+#### 配線のストリップ部長さ  
+7mmとします。
+
+### 図
+```mermaid
+flowchart LR
+    A[PLC (CC-Linkマスターユニット)]
+    B[スレーブ機器]
+    C[SCON2]
+
+    A ---|終端抵抗| D[終端抵抗]
+    C ---|終端抵抗| E[終端抵抗]
+
+    A --- F[FG]
+    A --- G[SLD]
+    A --- H[DG]
+    A --- I[DB]
+    A --- J[DA]
+
+    B --- F2[FG]
+    B --- G2[SLD]
+    B --- H2[DG]
+    B --- I2[DB]
+    B --- J2[DA]
+
+    C --- F3[FG]
+    C --- G3[SLD]
+    C --- H3[DG]
+    C --- I3[DB]
+    C --- J3[DA]
+
+    F -->|接地| Ground1[接地]
+    F2 -->|接地| Ground2[接地]
+    F3 -->|接地| Ground3[接地]
+
+    style Ground1 fill:#aaffaa
+    style Ground2 fill:#aaffaa
+    style Ground3 fill:#aaffaa
+
+    note1["D種接地 (旧第3種、接地抵抗100Ω以下)"]:::note
+
+    classDef note fill:#eef,stroke:#333,stroke-width:1px,color:#000
+
+    Ground1 --- note1
+```
+
+#### ケーブル剥離図説明
+- CC-Link専用ケーブルのシースをカットし、剥がす工程を示す図（オレンジ色のケーブルの一部を切断し、シースを剥がした状態）
+- 各信号線（SLDシールド、DG信号グラウンド、DB信号線、DA信号線）のシースを剥がす図解
+- 剥離長さは7mmであることを示す写真付き注釈
+
+</contents>

@@ -1,0 +1,53 @@
+ファイル名: HM-60252J_page253
+
+<overview>
+このページは「入出力信号 割り付け一覧」というタイトルの表ページで構成されています。ページ全体は表部分のみで構成されており、テキスト説明やグラフ、図は含まれていません。表は「割付No.」と「信号名」の2列からなる一覧表形式で、複数の信号名が割り付け番号と対応して記載されています。
+</overview>
+
+<contents>
+### 表
+#### 入出力信号 割り付け一覧
+
+| 割付No. | 信号名       |
+| :------ | :----------- |
+| 211     | M-ACT3       |
+| 212     | M-ACT4       |
+| 213     | M-ACT5       |
+| 214     | M-ACT6       |
+| 215     | M-ACT7       |
+| 216     | D-END0       |
+| 217     | D-END1       |
+| 218     | D-END2       |
+| 219     | D-END3       |
+| 220     | D-END4       |
+| 221     | D-END5       |
+| 222     | D-END6       |
+| 223     | D-END7       |
+| 224     | INFO-USRIO   |
+| 225     | INFO-POSERR  |
+| 226     | INFO-DRV_TMP |
+| 227     | INFO-MTRTMP  |
+| 228     | INFO-OVOLT   |
+| 229     | INFO-UVOLT   |
+| 230     | INFO-OLTIME  |
+| 232     | INFO-SPD     |
+| 233     | INFO-START   |
+| 234     | INFO-ZHOME   |
+| 235     | INFO-PR-REQ  |
+| 237     | INFO-EGR-E   |
+| 238     | INFO-RND-E   |
+| 239     | INFO-NET-E   |
+| 240     | INFO-FW-OT   |
+| 241     | INFO-RV-OT   |
+| 242     | INFO-CULD0   |
+| 243     | INFO-CULD1   |
+| 244     | INFO-TRIP    |
+| 245     | INFO-ODO    |
+| 252     | INFO-DSLMTD  |
+| 253     | INFO-IOTEST  |
+| 254     | INFO-CFG     |
+| 255     | INFO-RBT     |
+
+- 割付No.は信号の割り付け番号を示し、信号名は各番号に対応する入出力信号の名称を表しています。
+- 信号名は主にM-、D-、INFO-で始まる複数の種類があり、各信号の種類や用途を示唆していますが、このページでは一覧のみの記載です。
+</contents>

@@ -1,0 +1,32 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page91
+
+<overview>
+このページはEtherNet/IPに関連する機器の各部名称とその機能について説明しています。構成はテキスト説明と機器の前面図のイラスト（図解）で構成されており、図中の各部に番号が振られて機能説明が付されています。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.5.2 各部の名称と機能
+EtherNet/IPに関連する各部の名称を示しています。
+
+- （1）ステータスLED  
+  - NS  
+  - MS
+
+- （2）EtherNet/IP通信ポート
+
+注：その他のLEDやスイッチの名称・機能説明の詳細は、「SCON2取扱説明書（MJ0458）」を参照してください。
+
+### 図
+```mermaid
+flowchart LR
+    A[EtherNet/IP機器前面図] --> B1[（1）ステータスLED]
+    A --> B2[（2）EtherNet/IP通信ポート]
+
+    B1 --> NS[NS LED]
+    B1 --> MS[MS LED]
+```
+
+**図の説明:**  
+機器前面の図において、（1）はステータスLEDでNSとMSの2つのLEDがあり、（2）はEtherNet/IP通信ポートを示しています。
+</contents>

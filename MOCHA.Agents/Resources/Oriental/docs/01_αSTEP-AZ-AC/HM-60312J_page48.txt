@@ -1,0 +1,82 @@
+<overview>
+ページ48は、1パルス入力方式の設定完了手順と、高速原点復帰運転（ZHOME運転）のタイミングチャートについて説明している。パルス列入力タイプでの設定方法と、ZHOME運転時の信号タイミングが記載されている。
+</overview>
+
+<contents>
+## ガイダンス
+
+4. ドライバの制御電源を再投入します。
+   変更したパラメーターが反映されます。
+
+#### パルス列入力タイプの場合
+
+1. SW1のNo.2をONにします。
+
+2. ドライバの制御電源を再投入します。
+   変更した設定が有効になります。
+
+## ■ 高速原点復帰運転（ZHOME運転）
+
+MEXE02またはHOME PRESETスイッチで確定した原点に復帰します。
+
+**運転シーケンス:**
+
+1. 主電源と制御電源を投入します。
+   READY出力とPLS-RDY出力がONになります。
+
+2. READY出力がONであることを確認し、ZHOME入力をONにします。
+   READY出力がOFFになり、モーターが高速原点復帰運転を始めます。
+
+3. READY出力がOFFになったことを確認し、ZHOME入力をOFFにします。
+   原点に到達すると、運転が停止します。
+   HOME-END出力とREADY出力がONになります。
+
+**タイミングチャート:**
+
+```mermaid
+gantt
+    title ZHOME運転タイミングチャート
+    dateFormat X
+    axisFormat %s
+
+    section 制御電源
+    ON  :done, power, 0, 10
+
+    section 主電源
+    ON  :done, main, 0, 10
+
+    section ZHOME入力
+    OFF->ON->OFF :crit, zhome, 2, 3
+
+    section HOME-END出力
+    OFF->ON :homeend, 6, 10
+
+    section READY出力
+    OFF->ON->OFF->ON :ready, 1, 10
+
+    section PLS-RDY出力
+    OFF->ON :plsrdy, 1, 10
+
+    section MOVE出力
+    OFF->ON->OFF :move, 2, 6
+```
+
+**信号タイミング詳細:**
+
+| 信号名 | 状態変化 | タイミング | 説明 |
+|--------|----------|------------|------|
+| 制御電源 | OFF→ON | ① | 電源投入 |
+| 主電源 | OFF→ON | ① | 電源投入 |
+| ZHOME入力 | OFF→ON→OFF | ②③ | 原点復帰運転開始・停止指令 |
+| HOME-END出力 | OFF→ON | 運転完了後 | 原点復帰完了信号 |
+| READY出力 | OFF→ON→OFF→ON | ①②③ | 準備完了・運転中・運転完了 |
+| PLS-RDY出力 | OFF→ON | ② | パルス受付準備完了 |
+| MOVE出力 | OFF→ON→OFF | 運転中 | モーター動作中表示 |
+| モーター動作 | 停止→動作→停止 | ZHOME信号に同期 | 原点への移動動作 |
+
+**動作説明:**
+- ①: 電源投入でREADY/PLS-RDY出力がON
+- ②: ZHOME入力でREADY出力がOFFになり運転開始
+- ③: ZHOME入力をOFFにして運転継続、原点到達で停止
+- 運転完了後、HOME-END出力とREADY出力がONになる
+</contents>

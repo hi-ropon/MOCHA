@@ -1,0 +1,45 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page106
+
+<overview>
+本ページはMECHATROLINK-Ⅲの配線方法に関する説明で構成されています。テキスト部分では配線手順と注意点が記載されており、図部分ではPLC、SCON2、スレーブユニット間のケーブル接続イメージが示されています。表はなく、ポイントとして注意事項が箇条書きでまとめられています。
+</overview>
+
+<contents>
+### テキスト
+#### 2.6 MECHATROLINK-Ⅲ 配線方法
+配線方法について以下の通り説明しています。
+
+(1) MECHATROLINK-Ⅲ用ケーブルをマスターユニットに接続し、もう一方のコネクターをSCON2のLK1コネクターに挿入する。  
+(2) SCON2のLK2コネクターにMECHATROLINK-Ⅲ用ケーブルのコネクターを接続する。  
+※ もう一方のコネクターを次に接続するスレーブユニットのコネクターに挿入する。
+
+##### Point!
+- MECHATROLINK-Ⅲの接続は専用ケーブルを使用すること。  
+  ケーブル参考型式：JEPC-W6012-□□-E（安川コントロール株式会社製）  
+- スレーブ側の終端コネクターには何も接続しない（終端抵抗は不要）。  
+- マスター側の配線についてはMECHATROLINK-Ⅲマスターの取扱説明書を参照すること。
+
+### 図
+```mermaid
+flowchart LR
+    PLC[PLC (マスターユニット)] -->|MECHATROLINK-Ⅲ用ケーブル| SCON2_LK1[SCON2 LK1コネクター]
+    SCON2_LK2[SCON2 LK2コネクター] -->|MECHATROLINK-Ⅲ用ケーブル| SlaveUnit[スレーブユニット]
+    SlaveUnit -->|次のスレーブユニットへ| NextSlaveUnit[スレーブユニット（続く）]
+
+    note1["※ マスターユニット側の配線は使用製品の取扱説明書を参照"]:::note
+    note2["※ MECHATROLINK-Ⅲでは終端処理は不要"]:::note
+
+    classDef note fill:#f9f,stroke:#333,stroke-width:1px,color:#000,font-size:12px;
+
+    PLC --- note1
+    SlaveUnit --- note2
+```
+
+**図の説明:**  
+- PLC（マスターユニット）からMECHATROLINK-Ⅲ用ケーブルを通じてSCON2のLK1コネクターに接続。  
+- SCON2のLK2コネクターからスレーブユニットへケーブル接続。  
+- スレーブユニットはさらに次のスレーブユニットへ連結可能。  
+- マスターユニット側の配線は製品の取扱説明書を参照。  
+- MECHATROLINK-Ⅲでは終端処理は不要。
+
+</contents>

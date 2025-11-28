@@ -1,0 +1,59 @@
+ファイル名: HM-60252J_page132
+
+<overview>
+このページは「マクロ運転」に関する説明で構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：マクロ運転のタイミングチャートの説明文（4つの手順）
+- グラフ部分：タイミングチャートが2種類掲載されており、各信号のON/OFF状態とモーター動作の関係を示している
+- 表部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転 タイミングチャート
+1. READY出力がONであることを確認します。  
+2. FW-POS入力（またはRV-POS入力）をONにします。READY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。  
+3. FW-POS入力（またはRV-POS入力）をOFFにします。モーターが減速停止を開始します。  
+4. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※ 負荷、運転速度、速度フィルタなどによって異なります。
+
+### グラフ
+#### タイミングチャート（上段）
+- 信号：FW-POS入力、RV-POS入力、PLS-RDY出力、READY出力、MOVE出力、モーター動作
+- 各信号のON/OFF状態が時間軸に沿って示されており、番号①～④で動作の流れを示す矢印が描かれている。
+
+#### タイミングチャート（下段）
+- 信号：FW-POS入力、RV-POS入力、PLS-RDY出力、READY出力、MOVE出力、モーター動作
+- 各信号のON/OFF状態の遷移時間が「2 ms以下」と示されている部分があり、タイミングの厳密さを表現。
+
+```mermaid
+flowchart TD
+    subgraph タイミングチャート上段
+        FW_POS[FW-POS入力]
+        RV_POS[RV-POS入力]
+        PLS_RDY[PLS-RDY出力]
+        READY[READY出力]
+        MOVE[MOVE出力]
+        MOTOR[モーター動作]
+
+        FW_POS -->|① ON| READY
+        READY -->|① ON| MOVE
+        MOVE -->|② ON| MOTOR
+        MOTOR -->|③ OFF| READY
+        READY -->|④ OFF| MOVE
+    end
+
+    subgraph タイミングチャート下段
+        FW_POS2[FW-POS入力]
+        RV_POS2[RV-POS入力]
+        PLS_RDY2[PLS-RDY出力]
+        READY2[READY出力]
+        MOVE2[MOVE出力]
+        MOTOR2[モーター動作]
+
+        FW_POS2 -->|2ms以下| READY2
+        READY2 -->|2ms以下| MOVE2
+        MOVE2 -->|2ms以下| MOTOR2
+    end
+```
+</contents>

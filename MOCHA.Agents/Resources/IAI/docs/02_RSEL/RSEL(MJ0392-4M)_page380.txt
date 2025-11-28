@@ -1,0 +1,57 @@
+ファイル名: RSEL(MJ0392-4M)_page380
+
+<overview>
+このページは「6.2 機能仕様」の一部であり、ワードモジュール使用時のPLC側の登録モジュールと使用点数の対応表が掲載されています。ページ全体は表形式で構成されており、テキスト部分は表のタイトルと説明的な見出しのみで、グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### 1ワードモジュール使用時の出力・入力使用点数とPLC側登録モジュール対応表
+
+| 出力使用点数 | PLC側登録モジュール | 入力使用点数 | PLC側登録モジュール |
+| :---: | :---: | :---: | :---: |
+| 0 | － | 0 | － |
+| 8 ～ 16 | Input 1Word×1 | 8 ～ 16 | Output 1Word×1 |
+| 24 ～ 32 | Input 1Word×2 | 24 ～ 32 | Output 1Word×2 |
+| 40 ～ 48 | Input 1Word×3 | 40 ～ 48 | Output 1Word×3 |
+| 56 ～ 64 | Input 1Word×4 | 56 ～ 64 | Output 1Word×4 |
+| 72 ～ 80 | Input 1Word×5 | 72 ～ 80 | Output 1Word×5 |
+| 88 ～ 96 | Input 1Word×6 | 88 ～ 96 | Output 1Word×6 |
+| 104 ～ 112 | Input 1Word×7 | 104 ～ 112 | Output 1Word×7 |
+| 120 ～ 128 | Input 1Word×8 | 120 ～ 128 | Output 1Word×8 |
+| 136 ～ 144 | Input 1Word×9 | 136 ～ 144 | Output 1Word×9 |
+| 152 ～ 160 | Input 1Word×10 | 152 ～ 160 | Output 1Word×10 |
+| 168 ～ 176 | Input 1Word×11 | 168 ～ 176 | Output 1Word×11 |
+| 184 ～ 192 | Input 1Word×12 | 184 ～ 192 | Output 1Word×12 |
+| 200 ～ 208 | Input 1Word×13 | 200 ～ 208 | Output 1Word×13 |
+| 216 ～ 224 | Input 1Word×14 | 216 ～ 224 | Output 1Word×14 |
+| 232 ～ 240 | Input 1Word×15 | 232 ～ 240 | Output 1Word×15 |
+| 248 ～ 256 | Input 1Word×16 | 248 ～ 256 | Output 1Word×16 |
+| 264 ～ 272 | Input 1Word×17 | 264 ～ 272 | Output 1Word×17 |
+| 280 ～ 288 | Input 1Word×18 | 280 ～ 288 | Output 1Word×18 |
+| 296 ～ 304 | Input 1Word×19 | 296 ～ 304 | Output 1Word×19 |
+| 312 ～ 320 | Input 1Word×20 | 312 ～ 320 | Output 1Word×20 |
+| 328 ～ 336 | Input 1Word×21 | 328 ～ 336 | Output 1Word×21 |
+| 344 ～ 352 | Input 1Word×22 | 344 ～ 352 | Output 1Word×22 |
+| 360 ～ 368 | Input 1Word×23 | 360 ～ 368 | Output 1Word×23 |
+| 376 ～ 384 | Input 1Word×24 | 376 ～ 384 | Output 1Word×24 |
+| 392 ～ 400 | Input 1Word×25 | 392 ～ 400 | Output 1Word×25 |
+| 408 ～ 416 | Input 1Word×26 | 408 ～ 416 | Output 1Word×26 |
+| 424 ～ 432 | Input 1Word×27 | 424 ～ 432 | Output 1Word×27 |
+| 440 ～ 448 | Input 1Word×28 | 440 ～ 448 | Output 1Word×28 |
+| 456 ～ 464 | Input 1Word×29 | 456 ～ 464 | Output 1Word×29 |
+| 472 ～ 480 | Input 1Word×30 | 472 ～ 480 | Output 1Word×30 |
+| 488 ～ 496 | Input 1Word×31 | 488 ～ 496 | Output 1Word×31 |
+| 504 ～ 512 | Input 1Word×32 | 504 ～ 512 | Output 1Word×32 |
+| 520 ～ 528 | Input 1Word×33 | 520 ～ 528 | Output 1Word×33 |
+| 536 ～ 544 | Input 1Word×34 | 536 ～ 544 | Output 1Word×34 |
+| 552 ～ 560 | Input 1Word×35 | 552 ～ 560 | Output 1Word×35 |
+| 568 ～ 576 | Input 1Word×36 | 568 ～ 576 | Output 1Word×36 |
+| 584 ～ 592 | Input 1Word×37 | 584 ～ 592 | Output 1Word×37 |
+
+**説明:**  
+- 出力使用点数と入力使用点数の範囲に応じて、PLC側で登録するモジュールが「Input 1Word×○」または「Output 1Word×○」の形式で対応しています。  
+- 使用点数が0の場合は登録モジュールなし（－）となっています。  
+- 使用点数は8点刻みで増加し、それに応じて登録モジュールの数も増加します。
+
+</contents>

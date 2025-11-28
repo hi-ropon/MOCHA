@@ -1,0 +1,58 @@
+ファイル名: RCON(MJ0384-8D)_page194
+
+<overview>
+このページは、SCON拡張ユニット、PIO/SIO/SCON拡張ユニット、およびPIOユニットに関する説明で構成されています。  
+構成は以下の通りです。  
+- テキスト部分：各ユニットの接続方法、機能、仕様の説明  
+- 図部分：RCONコントローラーとSCON拡張ユニットの接続構成図（ケーブル接続やコネクターの位置を示す）  
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### SCON拡張ユニット、PIO/SIO/SCON拡張ユニット、PIOユニットの概要
+- SCON拡張ユニットとSCONコントローラーは専用ケーブル（型式：CB-RE-CTL□□□）で接続する。  
+- 2台以上のSCONコントローラーを接続する場合は、SCON同士を専用ケーブルで接続可能。  
+- 24Vドライバーユニットと組み合わせて最大16軸まで制御可能。
+
+#### PIO/SIO/SCON拡張ユニット
+- SCON拡張ユニットと同様にSCONコントローラー接続用のコネクターを装備。  
+- 入力16点、出力16点のパラレルI/OコネクターとRS-485シリアル通信コネクターを装備。  
+- 実装されているSIOコネクターはRCONシステムでは使用不可。  
+- RCONゲートウェイユニットの右隣に配置して使用。
+
+#### PIOユニット
+- 入力16点、出力16点のパラレルI/Oコネクターを装備。  
+- PIO/SIO/SCON拡張ユニットを含め最大8個（入力144点、出力144点）まで増設可能。
+
+### 図
+```mermaid
+flowchart TD
+    RCON_Controller[RCONコントローラー]
+    SCON_Expansion[SCON拡張ユニット または PIO/SIO/SCON拡張ユニット]
+    SCON_CB_Controller[SCON-CBコントローラー (RCON接続仕様)]
+    Terminal_Connector[ターミナルコネクター RCON-EXT-TR]
+    Actuator[アクチュエーター]
+
+    RCON_Controller -->|接続ケーブル CB-RE-CTL□□□| SCON_Expansion
+    SCON_Expansion -->|接続ケーブル CB-RE-CTL□□□| SCON_CB_Controller
+    SCON_CB_Controller --> Terminal_Connector
+    SCON_CB_Controller -->|各アクチュエーター用ケーブル| Actuator
+
+    subgraph ケーブル長
+        direction LR
+        Cable_Total[総ケーブル長：最大10m]
+        Cable_Between_Devices[機器間ケーブル長：最大3m]
+    end
+```
+
+**図の説明:**  
+- RCONコントローラーとSCON拡張ユニット（またはPIO/SIO/SCON拡張ユニット）は専用ケーブルで接続。  
+- SCON-CBコントローラーはRCON接続仕様で、ターミナルコネクターを備える。  
+- 各アクチュエーターはSCON-CBコントローラーから専用ケーブルで接続。  
+- ケーブル長は総ケーブル長最大10m、機器間ケーブル長最大3m。  
+
+### 注意事項
+- RCONシステムでは、SCON拡張ユニットとPIO/SIO/SCON拡張ユニットのどちらか一方のみ接続可能。  
+- SIOコネクターはRCONシステムでは使用不可。
+</contents>

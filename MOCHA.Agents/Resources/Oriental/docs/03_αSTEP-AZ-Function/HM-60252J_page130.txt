@@ -1,0 +1,67 @@
+ファイル名: HM-60252J_page130
+
+<overview>
+このページは「マクロ運転」に関する説明で構成されています。主にテキスト部分とタイミングチャート（グラフ部分）で構成されており、テキストでタイミングチャートの動作手順を説明し、グラフで各信号のON/OFF状態とモーター動作の関係を示しています。表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転 タイミングチャート
+1. READY出力がONであることを確認します。  
+2. FW-JOG-C入力（またはRV-JOG-C入力）をONにします。  
+　READY出力がOFF、MOVE出力がONになり、モーターがインチング運転を開始します。  
+3. 「JOG-C連続運転移行時間」パラメータで設定した時間が経過すると、JOG運転が開始します。  
+4. 「JOG-C高速連続運転移行時間」パラメータで設定した時間が経過すると、高速JOG運転が開始します。  
+5. FW-JOG-C入力（またはRV-JOG-C入力）をOFFにします。  
+　モーターが減速停止を開始します。  
+6. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※注釈  
+※1 負荷、運転速度、速度フィルタなどによって異なります。  
+※2 「JOG-C連続運転移行時間」で設定します。  
+※3 「JOG-C高速連続運転移行時間」で設定します。
+
+### グラフ（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 信号状態
+        direction TB
+        A1[FW-JOG-C入力 (RV-JOG-C入力)]:::signal
+        A2[PLS-RDY出力]:::signal
+        A3[READY出力]:::signal
+        A4[MOVE出力]:::signal
+        A5[モーター動作]:::motor
+    end
+
+    A1 -->|ON| A3
+    A3 -->|ON| A4
+    A4 -->|ON| A5
+
+    %% 上段タイミングチャートの流れ
+    A1 -.->|2| A3
+    A3 -.->|1| A4
+    A4 -.->|3| A5
+    A5 -.->|4| A1
+    A1 -.->|5| A4
+    A4 -.->|6| A5
+
+    %% 下段タイミングチャートの時間関係
+    subgraph 時間関係
+        direction LR
+        B1[FW-JOG-C入力 ON/OFF] --> B2[PLS-RDY出力 ON/OFF]
+        B2 --> B3[READY出力 ON/OFF (5ms以下)]
+        B3 --> B4[MOVE出力 ON/OFF (5ms以下)]
+        B4 --> B5[モーター動作]
+    end
+
+    classDef signal fill:#f9f,stroke:#333,stroke-width:1px;
+    classDef motor fill:#ccf,stroke:#333,stroke-width:1px;
+```
+
+**図の説明:**  
+- FW-JOG-C入力（またはRV-JOG-C入力）がONになるとREADY出力がOFFになり、MOVE出力がONとなりモーターが動作開始。  
+- 「JOG-C連続運転移行時間」経過後にJOG運転開始。  
+- 「JOG-C高速連続運転移行時間」経過後に高速JOG運転開始。  
+- FW-JOG-C入力がOFFになるとモーターが減速停止し、停止後READY出力がON、MOVE出力がOFFになる。  
+- 下段のタイミングチャートは信号のON/OFF切り替えの時間的な関係を示し、5ms以下の遅延があることを示している。
+</contents>

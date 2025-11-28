@@ -1,0 +1,19 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page51
+
+<overview>
+このページは「CC-Link用CSP+ファイル」に関する説明で構成されています。テキスト部分では、CC-Link用CSP+ファイルの入手方法について記載されています。表やグラフはなく、主に説明文とダウンロードページのURLが記載された枠で構成されています。
+</overview>
+
+<contents>
+### テキスト
+#### 2.1.5 CC-Link用CSP+ファイル
+CC-Link用CSP+ファイルが必要な場合は、当社ホームページからダウンロードして使用してください。
+
+##### ダウンロードページ
+```
+フィールドネットワーク設定用ファイル ダウンロードページ
+https://www.iai-robot.co.jp/knowledge/support/network/index.html
+```
+
+必要なファイルをアクセス先のリストから選択し、ダウンロードしてください。
+</contents>

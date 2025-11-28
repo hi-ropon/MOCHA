@@ -1,0 +1,54 @@
+ファイル名: HM-60252J_page198
+
+<overview>
+本ページは「入力信号」に関する説明で構成されています。テキスト部分では座標プリセット信号の概要と各入力信号（P-PRESET入力、EL-PRST入力）の動作説明が記載されています。図部分には信号のON/OFF状態のタイミングや座標系の切り替わりを示すタイムチャートが2つあります。表はなく、図は信号の状態遷移を示すフローチャート的なタイムチャート形式です。
+</overview>
+
+<contents>
+### テキスト
+#### 座標プリセット信号
+機械原点または電気原点のプリセットを行う信号について説明しています。
+
+##### P-PRESET入力
+- P-PRESET入力をONにすると、指令位置および検出位置が「プリセット位置」パラメータの設定値に書き換えられ、同時にNVメモリに書き込まれます。
+- モーターの動作中はプリセットを実行できません。
+- 【重要】
+  - PAUSE入力による一時停止中はプリセットを実行できません。
+  - モーターが停止中でも指令位置と検出位置の位置偏差が大きい場合（TLC出力がONのとき）はプリセットを実行できません。
+- プリセット実行中はINFO-PR-REQ出力がONになり、プリセット完了後はHOME-END出力がONになります。
+
+##### EL-PRST入力
+- EL-PRST入力をONにしている間、電気原点を原点とする座標系に切り替わります。
+- EL-PRST入力をOFFからONにしたときの座標位置が電気原点となり、モーターは電気原点座標系で運転します。
+- EL-PRST入力をOFFにすると機械原点を原点とする座標系に戻ります。
+- 機械原点とは別の原点（電気原点）を設定することで、一時的に別座標でモーターを制御可能です。
+- 【memo】
+  - 運転中にEL-PRST入力をONにすると、その時点の指令位置と検出位置が電気原点座標に設定されます。ただし、運転目標位置は機械原点座標系のままなので、電気原点座標系での運転は運転停止後に実行してください。
+  - EL-PRST入力がONの間は高速原点復帰運転を実行できません。
+
+### 図
+#### P-PRESET入力の信号タイミング
+```mermaid
+flowchart LR
+    P_PRESET_ON[ON] -->|P-PRESET入力ON| INFO_PR_REQ_ON[INFO-PR-REQ出力 ON]
+    P_PRESET_OFF[OFF] -->|P-PRESET入力OFF| INFO_PR_REQ_OFF[INFO-PR-REQ出力 OFF]
+    INFO_PR_REQ_ON -->|プリセット実行中| HOME_END_ON[HOME-END出力 ON]
+    INFO_PR_REQ_OFF --> HOME_END_OFF[HOME-END出力 OFF]
+```
+
+#### EL-PRST入力の信号タイミングと座標系切替
+```mermaid
+flowchart LR
+    EL_PRST_ON[EL-PRST入力 ON] -->|2ms以下| ELPRST_MON_ON[ELPRST-MON出力 ON]
+    EL_PRST_OFF[EL-PRST入力 OFF] -->|2ms以下| ELPRST_MON_OFF[ELPRST-MON出力 OFF]
+
+    ELPRST_MON_OFF -->|座標| 機械原点座標
+    ELPRST_MON_ON -->|座標| 電気原点座標
+    ELPRST_MON_OFF -->|座標| 機械原点座標
+```
+
+**図の説明:**
+- P-PRESET入力がONになるとINFO-PR-REQ出力がONとなりプリセット実行中を示し、完了するとHOME-END出力がONになる。
+- EL-PRST入力のON/OFFによりELPRST-MON出力が切り替わり、座標系が機械原点座標と電気原点座標の間で切り替わる。切り替えは2ms以内に行われる。
+
+</contents>

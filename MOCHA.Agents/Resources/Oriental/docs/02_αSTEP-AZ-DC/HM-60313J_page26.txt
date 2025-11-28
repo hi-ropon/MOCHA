@@ -1,0 +1,122 @@
+<overview>
+ページ26: EMC指令/規則への配線・配設例を示すページ。位置決め機能内蔵タイプ（RS-485通信付きパルス列入力タイプ）とパルス列入力タイプの2つの配線図が詳細に記載されており、各ケーブルの接続方法と接地方法が図示されている。
+</overview>
+
+<contents>
+### ● 配線・配設例
+
+この配線例は、当社の接続ケーブルを使用してください。詳細は51ページをご確認ください。
+図は、ケーブルタイプの電磁ブレーキ付きモーターの場合です。
+
+**重要** ドライバは、静電気に敏感な部品を使用しています。静電気によってドライバが故障したり接続する恐れがある
+         ますので、取り扱いの際は静電気対策を十分行ってください。
+
+## 位置決め機能内蔵タイプ、RS-485 通信付きパルス列入力タイプの場合
+
+```mermaid
+graph TB
+    subgraph "上位システム"
+        A[制御装置]
+    end
+
+    subgraph "ドライバ"
+        D[ドライバ本体]
+    end
+
+    subgraph "電源系統"
+        AC[ACライン<br/>フィルタ] --> E[電磁開閉器]
+        E --> F[シールド<br/>ケーブル]
+        F --> G[ケーブル<br/>クランプ]
+    end
+
+    subgraph "信号系統"
+        A --> B[エンコーダケーブル]
+        A --> C[モータ用ケーブル]
+        A --> H[電磁ブレーキケーブル]
+        A --> I[入出力信号用<br/>ケーブル]
+    end
+
+    B --> D
+    C --> D
+    H --> D
+    I --> D
+    G --> D
+
+    D --> J[モーター]
+
+    subgraph "接地系統"
+        K[接地] --> AC
+        L[接地] --> E
+        M[接地] --> G
+        N[接地] --> D
+        O[接地] --> J
+        P[接地] --> Q[グランドパネル]
+        Q --> R[接地]
+    end
+
+    classDef shielded fill:#f9f,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    classDef ground fill:#ff9,stroke:#333,stroke-width:2px
+
+    class B,C,H,I,F shielded
+    class K,L,M,N,O,P,Q,R ground
+```
+
+凡例：
+- --- はシールドボックスです。
+- ⊕ は当社のケーブルです。
+
+## パルス列入力タイプの場合
+
+```mermaid
+graph TB
+    subgraph "上位システム"
+        A[制御装置]
+    end
+
+    subgraph "ドライバ"
+        D[ドライバ本体]
+    end
+
+    subgraph "電源系統"
+        AC[ACライン<br/>フィルタ] --> E[電磁開閉器]
+        E --> F[シールド<br/>ケーブル]
+        F --> G[ケーブル<br/>クランプ]
+    end
+
+    subgraph "信号系統"
+        A --> B[エンコーダ線ケーブル]
+        A --> C[モーター用ケーブル]
+        A --> H[電磁ブレーキケーブル]
+        A --> I[入出力信号用<br/>ケーブル]
+    end
+
+    B --> D
+    C --> D
+    H --> D
+    I --> D
+    G --> D
+
+    D --> J[モーター]
+
+    subgraph "接地系統"
+        K[接地] --> AC
+        L[接地] --> E
+        M[接地] --> G
+        N[接地] --> D
+        O[接地] --> J
+        P[接地] --> Q[グランドパネル]
+        Q --> R[接地]
+        S[シールド<br/>ケーブル] --> Q
+    end
+
+    classDef shielded fill:#f9f,stroke:#333,stroke-width:2px,stroke-dasharray: 5 5
+    classDef ground fill:#ff9,stroke:#333,stroke-width:2px
+
+    class B,C,H,I,F,S shielded
+    class K,L,M,N,O,P,Q,R ground
+```
+
+凡例：
+- --- はシールドボックスです。
+- ⊕ は当社のケーブルです。
+</contents>

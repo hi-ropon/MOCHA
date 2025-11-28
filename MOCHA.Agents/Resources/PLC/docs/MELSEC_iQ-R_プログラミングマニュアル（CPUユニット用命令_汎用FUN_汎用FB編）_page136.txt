@@ -1,0 +1,24 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page136
+
+<overview>
+このページは主に表形式で構成されており、WORD型やDWORD型、INT型などのデータ型変換に関する汎用ファンクションの一覧を示しています。テキスト部分は少なく、各変換のファンクション記号、処理内容、参照先ページが表で整理されています。グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### データ型変換用汎用ファンクション一覧
+
+| 変換種類 | ファンクション記号 | 処理内容 | 参照先 |
+| :--- | :--- | :--- | :--- |
+| WORD型→INT型/DINT型変換 | WORD_TO_INT / WORD_TO_INT_E / WORD_TO_DINT / WORD_TO_DINT_E | WORD型データをINT型またはDINT型データへ変換する。 | 1323～1324ページ |
+| WORD型→TIME型変換 | WORD_TO_TIME / WORD_TO_TIME_E | WORD型データをTIME型データへ変換する。 | 1326ページ |
+| WORD型→STRING型変換 | WORD_TO_STRING / WORD_TO_STRING_E | WORD型データをSTRING型データへ変換する。 | 1327ページ |
+| DWORD型→BOOL型変換 | DWORD_TO_BOOL / DWORD_TO_BOOL_E | DWORD型データをBOOL型データへ変換する。 | 1328ページ |
+| DWORD型→WORD型変換 | DWORD_TO_WORD / DWORD_TO_WORD_E | DWORD型データをWORD型データへ変換する。 | 1329ページ |
+| DWORD型→INT型/DINT型変換 | DWORD_TO_INT / DWORD_TO_INT_E / DWORD_TO_DINT / DWORD_TO_DINT_E | DWORD型データをINT型またはDINT型データへ変換する。 | 1331～1333ページ |
+| DWORD型→TIME型変換 | DWORD_TO_TIME / DWORD_TO_TIME_E | DWORD型データをTIME型データへ変換する。 | 1334ページ |
+| DWORD型→STRING型変換 | DWORD_TO_STRING / DWORD_TO_STRING_E | DWORD型データをSTRING型データへ変換する。 | 1335ページ |
+| INT型→BOOL型変換 | INT_TO_BOOL / INT_TO_BOOL_E | INT型データをBOOL型データへ変換する。 | 1336ページ |
+
+各ファンクションは、対応するデータ型の変換を行うものであり、詳細な使用方法や仕様は参照先のページに記載されています。
+</contents>

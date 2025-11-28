@@ -1,0 +1,57 @@
+ファイル名: RSEL(MJ0392-4M)_page468
+
+<overview>
+本ページは「7.1 座標系概要」に関する内容で構成されています。テキスト部分では直交型6軸ロボットのベース座標系の定義と原点位置について説明しています。図部分では4種類のロボットタイプ（CRS-XB、CRS-XG、CRS-XZ□Y、CRS-XZ□Z）のベース座標系の方向を示す3Dイラストが掲載されており、それぞれのXb, Yb, Zb軸の向きが矢印で示されています。表はなく、グラフもありません。
+</overview>
+
+<contents>
+### テキスト
+#### 7.1 座標系概要
+（1）ベース座標系  
+直交型6軸ロボット各タイプでのベース座標系は以下の通りです。  
+ベース座標の原点は、各軸座標で（C1、C2、C3）＝（0, 0, 0）の位置のときのP点位置（B軸回転軸とT軸回転軸の交点）となります。
+
+### 図
+```mermaid
+flowchart TD
+    subgraph CRS-XB（XYベース固定）
+        direction TB
+        O_XB((O))
+        Xb_XB --> O_XB
+        Yb_XB --> O_XB
+        Zb_XB --> O_XB
+    end
+
+    subgraph CRS-XG（XYベース固定＋ガントリー）
+        direction TB
+        O_XG((O))
+        Xb_XG --> O_XG
+        Yb_XG --> O_XG
+        Zb_XG --> O_XG
+    end
+
+    subgraph CRS-XZ□Y（XZベース固定＋水平アプローチ）
+        direction TB
+        O_XZY((O))
+        Xb_XZY --> O_XZY
+        Yb_XZY --> O_XZY
+        Zb_XZY --> O_XZY
+    end
+
+    subgraph CRS-XZ□Z（XZベース固定＋垂直アプローチ）
+        direction TB
+        O_XZZ((O))
+        Xb_XZZ --> O_XZZ
+        Yb_XZZ --> O_XZZ
+        Zb_XZZ --> O_XZZ
+    end
+```
+
+**図の説明:**  
+- CRS-XB、CRS-XGはXY平面をベースに固定されており、Xb軸とYb軸が水平面に沿い、Zb軸が垂直上向き。  
+- CRS-XZ□Y、CRS-XZ□ZはXZ平面をベースに固定されており、Xb軸とZb軸が水平面と垂直面に沿い、Yb軸が水平方向に向いている。  
+- 矢印は各軸の正方向を示す。
+
+### 注記
+- 矢印は正方向を示しています。
+</contents>

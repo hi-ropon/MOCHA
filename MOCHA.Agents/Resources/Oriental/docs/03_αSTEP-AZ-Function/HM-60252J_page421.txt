@@ -1,0 +1,34 @@
+ファイル名: HM-60252J_page421
+
+<overview>
+このページは「入出力信号 割り付け一覧」というタイトルのもと、割り付け番号と対応する信号名の一覧表で構成されています。テキスト部分はタイトルのみで、ページの大部分は2つの表で占められており、グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### 入出力信号 割り付け一覧
+
+| 割付No. | 信号名       | 割付No. | 信号名       |
+|---------|--------------|---------|--------------|
+| 211     | M-ACT3       | 230     | INFO-OLTIME  |
+| 212     | M-ACT4       | 232     | INFO-SPD     |
+| 213     | M-ACT5       | 233     | INFO-START   |
+| 214     | M-ACT6       | 234     | INFO-ZHOME   |
+| 215     | M-ACT7       | 235     | INFO-PR-REQ  |
+| 216     | D-END0       | 237     | INFO-EGR-E   |
+| 217     | D-END1       | 238     | INFO-RND-E   |
+| 218     | D-END2       | 239     | INFO-NET-E   |
+| 219     | D-END3       | 240     | INFO-FW-OT   |
+| 220     | D-END4       | 241     | INFO-RV-OT   |
+| 221     | D-END5       | 242     | INFO-CULD0   |
+| 222     | D-END6       | 243     | INFO-CULD1   |
+| 223     | D-END7       | 244     | INFO-TRIP    |
+| 224     | INFO-USRIO   | 245     | INFO-ODO     |
+| 225     | INFO-POSERR  | 252     | INFO-DSLMTD  |
+| 226     | INFO-DRVTMP | 253     | INFO-IOTEST  |
+| 227     | INFO-MTRTMP | 254     | INFO-CFG     |
+| 228     | INFO-OVOLT   | 255     | INFO-RBT     |
+| 229     | INFO-UVOLT   |         |              |
+
+※割付No.は連続していない部分もあり、信号名は英数字とハイフンを含む形式で表記されています。
+</contents>

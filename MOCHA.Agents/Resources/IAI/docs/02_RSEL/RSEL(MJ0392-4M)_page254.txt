@@ -1,0 +1,70 @@
+ファイル名: RSEL(MJ0392-4M)_page254
+
+<overview>
+本ページは「4.4 配線方法」に関する内容で、RSEL接続ケーブルの配線図を中心に構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：配線図の対象機種やケーブル種類の説明
+- 図（配線図）部分：4種類（A～D）の配線パターンを示す図解
+- 表部分はなく、図解とテキスト説明が主体
+</overview>
+
+<contents>
+### テキスト
+#### 4.4 配線方法
+RSEL接続ケーブル配線図（簡易アブソユニット接続の場合）について説明しています。
+
+対象機種ごとに配線図が分類されており、以下の通りです。
+
+- 配線図A  
+  対象機種：RCP4 グリッパー（GR＊）、ST4525E、SA3/RA3  
+  その他：RCP2CR/RCP2Wのロータリー（RT＊）およびGRS/GRM/GR3SS/GR3SM、RCA2/RCA2CR/RCA2W（CNSオプション）
+
+- 配線図B  
+  対象機種：RCP4/RCP4CR/RCP4W（GR＊、ST4525E、SA3/RA3）
+
+- 配線図C  
+  対象機種：RCP3、RCP2/RCP2CR/RCP2W-GRSS/GRLS/GRST/GRHM/GRHB、RCP2-SRA4R/SRGS4R/SRGD4R、RCA2/RCA2CR/RCA2W、RCL、RCA全長ショートタイプ（RCA-SRA4R/SRGS4R/SRGD4R）
+
+- 配線図D  
+  対象機種：RCP2-RTBS/RTBSL/RTCS/RTCSL、RCP2/RCP2CR/RCP2W一部除く（詳細は前ページ一覧表参照）、RCA/RCA CR/RCAW（RCA-SRA4R/SRGS4R/SRGD4R以外）
+
+### 図（配線図）
+#### 配線図A
+```mermaid
+flowchart LR
+    A[ドライバーユニット] --> B[簡易アブソユニット（CB-ADPC-MPA005）]
+    B --> C[CB-ADPC(2)-MPA□□□(-RB)]
+    C --> D[アクチュエーター]
+```
+
+#### 配線図B
+```mermaid
+flowchart LR
+    A[ドライバーユニット] --> B[簡易アブソユニット（CB-ADPC-MPA005）]
+    B --> C[CB-ADPC(2)-MPA□□□(-RB)]
+    C --> D[変換ケーブル（CB-CAN-AJ002）]
+    D --> E[アクチュエーター]
+```
+
+#### 配線図C
+```mermaid
+flowchart LR
+    A[ドライバーユニット] --> B[簡易アブソユニット（CB-ADPC-MPA005）]
+    B --> C[CB-RCAPC-MPA□□□(-RB)]
+    C --> D[アクチュエーター]
+```
+
+#### 配線図D
+```mermaid
+flowchart LR
+    A[ドライバーユニット] --> B[簡易アブソユニット（CB-ADPC-MPA005）]
+    B --> C[CB-ADPC(2)-MPA□□□(-RB)]
+    C --> D[変換ユニット（RCM-CV-APCS）]
+    D --> E[各アクチュエーター接続ケーブル]
+    E --> F[アクチュエーター]
+```
+
+### 図の説明
+- 各配線図はドライバーユニットから簡易アブソユニットを経由し、機種に応じて異なるケーブルや変換ユニットを介してアクチュエーターに接続される構成を示しています。
+- 配線図BとDでは変換ケーブルや変換ユニットが別途注文となっています。
+- 配線図Cは全長ショートタイプのRCA系機種向けの配線例です。
+</contents>

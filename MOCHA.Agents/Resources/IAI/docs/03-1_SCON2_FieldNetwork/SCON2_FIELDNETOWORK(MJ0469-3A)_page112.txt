@@ -1,0 +1,31 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page112
+
+<overview>
+このページは「PROFINET IO」に関する説明で構成されています。主にテキスト部分と図（イラスト）部分で構成されており、PROFINET IOの各部名称と機能について説明しています。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.7.2 各部の名称と機能
+PROFINET IOに関連する各部の名称を示しています。
+
+- （1）ステータスLED  
+  - NS（ネットワークステータス）  
+  - MS（モジュールステータス）
+
+- （2）PROFINET通信ポート
+
+注：その他のLEDやスイッチの名称・機能説明の詳細は、「SCON2取扱説明書（MJ0458）」を参照してください。
+
+### 図
+```mermaid
+flowchart LR
+    A[PROFINET IO機器外観] --> B[ステータスLED]
+    B --> B1[NS（ネットワークステータス）]
+    B --> B2[MS（モジュールステータス）]
+    A --> C[PROFINET通信ポート]
+```
+
+**図の説明:**  
+PROFINET IO機器の外観図において、ステータスLED（NS、MS）とPROFINET通信ポートの位置を示しています。
+</contents>

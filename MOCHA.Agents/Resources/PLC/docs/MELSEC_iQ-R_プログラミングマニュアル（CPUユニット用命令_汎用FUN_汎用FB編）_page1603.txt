@@ -1,0 +1,59 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1603
+
+<overview>
+本ページは「付6 他形式プロジェクトからの置換え」という章の一部で、GX Works2形式プロジェクトをGX Works3形式プロジェクトとして使用する際の命令の置換えについて説明しています。ページ構成は以下の通りです。
+- テキスト部分：GX Works2形式プロジェクトからGX Works3形式プロジェクトへの置換えの概要説明
+- 表部分：GX Works2の基本命令/応用命令と、それに対応するGX Works3の互換用命令の対応表
+- グラフ部分：なし
+</overview>
+
+<contents>
+### テキスト
+#### 他形式プロジェクトからの置換え
+GX Works2形式プロジェクトをGX Works3のプロジェクトとして使用する場合、特定の命令は自動的に互換用命令やファンクション/ファンクションブロック（FB）に置き換えられます。  
+- 互換用命令/ファンクションはGX Works3のバージョンが「1.047Z」以降で置き換えられる。  
+- 互換用ファンクションブロックはGX Works3のバージョンが「1.055H」以降で置き換えられる。  
+- 引数のデータ型や順番はGX Works2と同じ。
+
+#### 互換用命令（基本命令/応用命令）
+ST（インラインST含む）、構造化ラダー/FBDのプログラムで使用されている基本命令や応用命令が互換用命令に置き換えられます。
+
+### 表
+#### GX Works2命令名と互換用命令名の対応表（一部抜粋）
+| GX Works2命令名 | 互換用命令名 | 使用プログラム | 参照先 |
+| :--- | :--- | :---: | :--- |
+| * | MULTI_M2 | ST:× FBD:〇 | 248ページ *(P)(_U) |
+| *P | MULTIP_M2 | ST:× FBD:〇 |  |
+| + | PLUS_M2 | ST:× FBD:〇 | 234ページ +(P)(_U) [オペランドが3個の場合] |
+| +P | PLUSP_M2 | ST:× FBD:〇 |  |
+| - | MINUS_M2 | ST:× FBD:〇 | 238ページ -(P)(_U) [オペランドが3個の場合] |
+| -P | MINUSP_M2 | ST:× FBD:〇 |  |
+| / | DIVISION_M2 | ST:× FBD:〇 | 250ページ /(P)(_U) |
+| /P | DIVISIONP_M2 | ST:× FBD:〇 |  |
+| ABRST1_M | Z_ABRST1_M2 | ST:〇 FBD:〇 | MELSEC iQ-R プログラミングマニュアル(ユニット専用命令編) |
+| ABRST2_M | Z_ABRST2_M2 | ST:〇 FBD:〇 |  |
+| ABRST3_M | Z_ABRST3_M2 | ST:〇 FBD:〇 |  |
+| ABRST4_M | Z_ABRST4_M2 | ST:〇 FBD:〇 |  |
+| ACOS | ACOS_M2 | ST:〇 FBD:〇 | 1426ページ ACOS(_E) |
+| ACOS_MD |  | ST:〇 FBD:〇 |  |
+| ACOS_E_MD |  | ST:〇 FBD:〇 |  |
+| ACOSD | ACOSD_M2 | ST:〇 FBD:〇 |  |
+| ACOSD_MD |  | ST:〇 FBD:〇 |  |
+| ACOSD_E_MD |  | ST:〇 FBD:〇 |  |
+| AND< | AND_LT_M2 | ST:× FBD:〇 | 214ページ LD□(_U)、AND□(_U)、OR□(_U) |
+| AND<= | AND_LE_M2 | ST:× FBD:〇 |  |
+| AND<> | AND_NE_M2 | ST:× FBD:〇 |  |
+| AND= | AND_EQ_M2 | ST:× FBD:〇 |  |
+| AND> | AND_GT_M2 | ST:× FBD:〇 |  |
+| AND>= | AND_GE_M2 | ST:× FBD:〇 |  |
+| AND_EQ_M | AND_EQ_M2 | ST:〇 FBD:〇 |  |
+| AND_GE_M | AND_GE_M2 | ST:〇 FBD:〇 |  |
+| AND_GT_M | AND_GT_M2 | ST:〇 FBD:〇 |  |
+| AND_LE_M | AND_LE_M2 | ST:〇 FBD:〇 |  |
+| AND_LT_M | AND_LT_M2 | ST:〇 FBD:〇 |  |
+| AND_NE_M | AND_NE_M2 | ST:〇 FBD:〇 |  |
+
+- 「使用プログラム」欄はST（構造化テキスト）とFBD（ファンクションブロック）での使用可否を示す。  
+- 「参照先」は詳細説明があるページ番号やマニュアル名を示す。
+
+</contents>

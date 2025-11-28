@@ -1,0 +1,70 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page340
+
+<overview>
+本ページは「4.2 運転方法」に関する内容で、ハーフ直値モードでの運転（位置決め動作）について説明しています。ページ構成は以下の通りです。
+- テキスト部分：運転方法の説明と注意事項
+- 図（グラフ）部分：タイミングチャート形式で、PLCとコントローラー間の信号のやり取りや動作の流れを示す
+- 表はなし
+</overview>
+
+<contents>
+### テキスト
+#### ハーフ直値モードでの運転（位置決め動作）
+PLCからコントローラーへ送る各種設定値（目標位置データ、位置決め幅データ、速度データ、加減速度データ）と、位置決め指令（DSTR）をタイミングよく送信し、コントローラーからPLCへ位置決め完了（PEND）や現在位置データを受信しながら、アクチュエーターの動作を制御する流れを示しています。
+
+##### 注意事項
+- T1：上位コントローラーのスキャンタイムを考慮し、間隔を空ける必要がある。
+- tdpfの時間幅は、Yt+Xt ≦ tdpf ≦ Yt+Xt+3 [ms] の範囲である。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph PLC_to_Controller
+        n1[目標位置データ設定値 (PLC→コントローラー)]
+        v1[位置決め幅データ設定値 (PLC→コントローラー)]
+        m1[速度データ設定値 (PLC→コントローラー)]
+        t1[加減速度データ設定値 (PLC→コントローラー)]
+        DSTR[位置決め指令 DSTR (PLC→コントローラー)]
+    end
+
+    subgraph Controller_to_PLC
+        PEND[位置決め完了 PEND (コントローラー→PLC)]
+        n1_current[現在位置データ (コントローラー→PLC)]
+        MOVE[移動中 MOVE (コントローラー→PLC)]
+    end
+
+    n1 -->|1)| n2[目標位置データ]
+    v1 -->|2)| v2[位置決め幅データ]
+    m1 -->|3)| m2[速度データ]
+    t1 -->|4)| t2[加減速度データ]
+
+    DSTR -->|5)| DSTR_high[指令ON]
+    PEND -->|6)| PEND_low[完了信号OFF]
+    DSTR_high -->|7)| DSTR_low[指令OFF]
+    PEND_low -->|10)| PEND_high[完了信号ON]
+
+    n1_current -->|8)| MOVE_high[移動中ON]
+    MOVE_high -->|9)| n2_plus_v2[現在位置変化]
+
+    %% 時間軸
+    classDef timeLine fill:#f9f,stroke:#333,stroke-width:2px;
+    timeLine1((位置決め開始)):::timeLine
+    timeLine2((位置決め停止)):::timeLine
+
+    %% 速度変化グラフ（イメージ）
+    subgraph Speed
+        direction LR
+        Start[速度上昇] --> Const[速度一定] --> Dec[速度減少]
+    end
+
+    timeLine1 --> Speed --> timeLine2
+```
+
+**図の説明:**
+- PLCからコントローラーへは、目標位置、位置決め幅、速度、加減速度の各設定値が送られる。
+- 位置決め指令（DSTR）がONになると位置決め開始。
+- コントローラーは位置決め完了（PEND）信号をPLCに返し、現在位置データを送信。
+- 移動中（MOVE）信号もPLCに送られ、アクチュエーターの速度は開始から一定速度を保ち、停止時に減速する。
+- タイミングの間隔（T1）やtdpfの時間幅に注意が必要。
+
+</contents>

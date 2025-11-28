@@ -1,0 +1,74 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page42
+
+<overview>
+本ページは「システム構成（XSEL-RAXD/SAXD）」についての説明であり、以下の構成で成り立っています。
+- テキスト部分：システム構成の概要説明、各機器の型式や接続に関する注意事項
+- 図部分：システム全体の構成図（各機器の接続関係を示すブロック図）
+- 表部分：ノイズフィルターやクランプフィルターなど推奨機種のリスト（箇条書き形式）
+グラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### システム構成（XSEL-RAXD/SAXD）
+- パソコン専用ティーチングソフト（型式：IA-101-X-MW、IA-101-X-USBMW、IA-101-N）対応。USB、RS-232、Ethernet接続に対応。
+- タッチパネルティーチングボックス（型式：TB-02(D)-□）
+- ダミープラグ（型式：DP-2）
+- スカラロボット（XSEL-RAXD/SAXD）との組み合わせに制限あり。
+- AC電源コネクター（型式：GMSTB2.56-STF-7.62）
+- 制御電源・単相AC200V/230V、モーター電源三相/単相AC200V/230V
+- 拡張モーション（ケーブルはお客様用意）
+- 対応フィールドネットワーク：EtherCAT、EtherNet/IP、DeviceNet、CC-Link、PROFIBUS-DP、CC-Link IE Field
+- フィールドネットワークケーブルはお客様用意
+- PIOケーブル（型式：CB-X-PIO□□（標準）、CB-X-PIOH（PIO仕様コントローラー付属））
+- I/O用24V DC電源（お客様用意）
+- ブレーキ電源コネクター（型式：FMC1.5/2-ST-3.5-RF）
+- ブレーキ解除用24V DC電源（お客様用意）
+- システムI/O短絡コネクター（型式：FMC1.5/10-ST-3.5(XSEL)）
+- システムI/O：DC24V、非常停止回路、イネーブル回路、駆動接点出力など
+- 駆動源遮断回路（お客様用意）
+- 回生抵抗ユニット：回生抵抗ユニットの必要数の目安については「2.4.5 回生抵抗ユニット：RESU-1、RESUD-1」を参照
+- 回生抵抗ユニットケーブル（型式：CB-ST-REU010）
+
+#### 注意事項
+- 電源接続時は必ず指定のフィルター相当品を取り付けること。
+- 推奨ノイズフィルター、リングコア、クランプフィルターのメーカーと型式が記載されている。
+
+### 図
+```mermaid
+flowchart LR
+    PC[パソコン専用ティーチングソフト] --> TP[タッチパネルティーチングボックス]
+    TP -->|非常停止スイッチ| Controller[コントローラー]
+    Dummy[ダミープラグ] --> Controller
+    Controller --> Robot[スカラロボット]
+    Controller --> AC_Power[AC電源コネクター]
+    Controller --> Control_Power[制御電源・単相 AC200V/230V]
+    Controller --> Motor_Power[モーター電源 三相/単相 AC200V/230V]
+    Controller --> Ext_Motion[拡張モーション (ケーブルはお客様用意)]
+    Controller --> Field_Network[対応フィールドネットワーク]
+    Field_Network --> PLC[PLC]
+    Controller --> Field_Network_Cable[フィールドネットワークケーブル (お客様用意)]
+    Controller --> PIO_Cable[PIOケーブル]
+    Controller --> IO_24V[ I/O用 24V DC電源 (お客様用意)]
+    Controller --> Brake_Connector[ブレーキ電源コネクター]
+    Controller --> Brake_24V[ブレーキ解除用 24V DC電源 (お客様用意)]
+    Controller --> Sys_IO_Short[システムI/O短絡コネクター]
+    Controller --> Sys_IO[システムI/O]
+    Controller --> Drive_Cutoff[駆動源遮断回路 (お客様用意)]
+    Drive_Cutoff --> Regen_Resistor[回生抵抗ユニット]
+    Regen_Resistor --> Regen_Cable[回生抵抗ユニットケーブル]
+```
+
+### 表
+#### 推奨フィルター・部品一覧
+| 種類           | 推奨機種・メーカー                         |
+| -------------- | ---------------------------------------- |
+| ノイズフィルター（三相電源） | TAC-20-683（メーカー：COSEL）           |
+| ノイズフィルター（単相電源） | NBH-20-432（メーカー：COSEL）           |
+| リングコア       | ESD-R-25（メーカー：トーキン）             |
+| クランプフィルター（制御回路用） | ZCAT3035-1330（メーカー：TDK）           |
+| クランプフィルター（モーター電源用） | RFC-H13（メーカー：北川工業）             |
+| サージプロテクター（三相） | A・V-781BXZ-4（メーカー：岡谷電機産業）   |
+| サージプロテクター（単相） | R・A・V-781BWZ-2A（メーカー：岡谷電機産業） |
+
+</contents>

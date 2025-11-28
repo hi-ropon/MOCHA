@@ -1,0 +1,48 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1609
+
+<overview>
+本ページは表形式で構成されており、主にGX Works2の命令名とその互換用命令名、使用可能なプログラム種類、参照先ページを一覧化しています。テキスト部分は表の見出しや注釈程度で、内容はほぼ表に集約されています。グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### GX Works2命令名と互換用命令名一覧
+
+| GX Works2命令名 | 互換用命令名 | 使用プログラム（ST） | 使用プログラム（FBD） | 参照先 |
+| :--- | :--- | :---: | :---: | :--- |
+| EXP | EXP_M2 | ○ | ○ | 1421ページ EXP(_E) |
+| EXP_MD |  | ○ | ○ |  |
+| EXP_E_MD |  | ○ | ○ |  |
+| EXPD | EXPD_M2 | ○ | ○ |  |
+| EXPD_MD |  | ○ | ○ |  |
+| EXPD_E_MD |  | ○ | ○ |  |
+| G_BIDIN | G_BIDIN_M2 | ○ | ○ | MELSEC iQ-Rプログラミングマニュアル（ユニット専用命令編） |
+| G_BIDOUT | G_BIDOUT_M2 | ○ | ○ |  |
+| G_CCPASET | G_CCPASET_M2 | ○ | ○ |  |
+| G_CPRTCL | G_CPRTCL_M2 | ○ | ○ |  |
+| G_GETE | G_GETE_M2 | ○ | ○ |  |
+| G_INPUT | G_INPUT_M2 | ○ | ○ |  |
+| G_OGLOAD | G_OGLOAD_M2 | ○ | ○ |  |
+| G_OGSTOR | G_OGSTOR_M2 | ○ | ○ |  |
+| G_ONDEMAND | G_ONDEMAND_M2 | ○ | ○ |  |
+| G_OUTPUT | G_OUTPUT_M2 | ○ | ○ |  |
+| G_PRR | G_PRR_M2 | ○ | ○ |  |
+| G_PUTE | G_PUTE_M2 | ○ | ○ |  |
+| G_RDMSG | G_RDMSG_M2 | ○ | ○ |  |
+| G_REQ | G_REQ_M2 | ○ | ○ |  |
+| G_RIRCV | G_RIRCV_M2 | ○ | ○ |  |
+| G_RIRD | G_RIRD_M2 | ○ | ○ |  |
+| G_RISEND | G_RISEND_M2 | ○ | ○ |  |
+| G_RITO | G_RITO_M2 | ○ | ○ |  |
+| G_RIWT | G_RIWT_M2 | ○ | ○ |  |
+| G_RLPASET | G_RLPASET_M2 | ○ | ○ |  |
+| G_SPBUSY | G_SPBUSY_M2 | ○ | ○ |  |
+| GBIN | GBIN_M2 | ○ | ○ | 462ページ GBIN(P)(_U) |
+| GBIN_M |  | ○ | ○ |  |
+| GBINP | GBINP_M2 | ○ | ○ |  |
+| GBINP_M |  | ○ | ○ |  |
+
+- 「使用プログラム」欄はST（Structured Text）とFBD（Function Block Diagram）の両方で使用可能な命令を○で示しています。
+- 参照先は詳細説明が記載されているマニュアルのページ番号や名称を示しています。
+- 一部の命令は互換用命令名が空欄となっており、互換命令が存在しないか未記載です。
+</contents>

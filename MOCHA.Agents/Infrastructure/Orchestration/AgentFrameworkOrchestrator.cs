@@ -1,4 +1,7 @@
 using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
@@ -9,6 +12,7 @@ using Microsoft.Extensions.Options;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
 using MOCHA.Agents.Infrastructure.Clients;
+using MOCHA.Agents.Infrastructure.Tools;
 using MOCHA.Agents.Infrastructure.Options;
 
 namespace MOCHA.Agents.Infrastructure.Orchestration;
@@ -19,6 +23,7 @@ namespace MOCHA.Agents.Infrastructure.Orchestration;
 public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
 {
     private readonly ChatClientAgent _agent;
+    private readonly OrganizerToolset _tools;
     private readonly LlmOptions _options;
     private readonly ILogger<AgentFrameworkOrchestrator> _logger;
     private readonly ConcurrentDictionary<string, AgentThread> _threads = new();
@@ -30,27 +35,38 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
 
     public AgentFrameworkOrchestrator(
         ILlmChatClientFactory chatClientFactory,
+        OrganizerToolset tools,
         IOptions<LlmOptions> optionsAccessor,
         ILogger<AgentFrameworkOrchestrator> logger)
     {
         _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
         this._logger = logger;
+        _tools = tools;
 
         var chatClient = chatClientFactory.Create();
-        _agent = new ChatClientAgent(chatClient, new ChatClientAgentOptions
-        {
-            Name = _options.AgentName ?? "mocha-agent",
-            Description = _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
-            Instructions = _options.Instructions ?? "You are a helpful assistant for MOCHA.",
-        });
+        _agent = new ChatClientAgent(
+            chatClient,
+            name: _options.AgentName ?? "mocha-agent",
+            description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
+            instructions: _options.Instructions ?? OrganizerInstructions.Default,
+            tools: tools.All.ToList());
     }
 
-    public async Task<AgentReply> ReplyAsync(ChatTurn userTurn, ChatContext context, CancellationToken cancellationToken = default)
+    public Task<IAsyncEnumerable<AgentEvent>> ReplyAsync(ChatTurn userTurn, ChatContext context, CancellationToken cancellationToken = default)
     {
         var conversationId = string.IsNullOrWhiteSpace(context.ConversationId)
             ? Guid.NewGuid().ToString("N")
             : context.ConversationId;
 
+        return Task.FromResult<IAsyncEnumerable<AgentEvent>>(ReplyStreamAsync(conversationId, userTurn, context, cancellationToken));
+    }
+
+    private async IAsyncEnumerable<AgentEvent> ReplyStreamAsync(
+        string conversationId,
+        ChatTurn userTurn,
+        ChatContext context,
+        [EnumeratorCancellation] CancellationToken cancellationToken)
+    {
         var thread = _threads.GetOrAdd(conversationId, _ => _agent.GetNewThread());
 
         var messages = new List<ChatMessage>(context.History.Select(MapMessage))
@@ -58,18 +74,48 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
             new ChatMessage(MapRole(userTurn.Role), userTurn.Content)
         };
 
-        var response = await _agent.RunAsync<string>(
-            messages,
-            thread,
-            _serializerOptions,
-            options: new AgentRunOptions(),
-            useJsonSchemaResponseFormat: false,
-            cancellationToken);
+        var toolEvents = new List<AgentEvent>();
+        using var _ = _tools.UseContext(conversationId, toolEvents.Add);
 
-        var rawText = response.Result ?? response.Text ?? string.Empty;
+        ChatClientAgentRunResponse<string>? response = null;
+        string? errorMessage = null;
+        try
+        {
+            response = await _agent.RunAsync<string>(
+                messages,
+                thread,
+                _serializerOptions,
+                options: new AgentRunOptions(),
+                useJsonSchemaResponseFormat: false,
+                cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "エージェント応答の取得に失敗しました。");
+            errorMessage = ex.Message;
+        }
+
+        if (errorMessage is not null)
+        {
+            yield return AgentEventFactory.Error(conversationId, errorMessage);
+            yield break;
+        }
+
+        var rawText = ExtractResultSafe(response);
+
         var replyText = ExtractPlainText(rawText);
 
-        return new AgentReply(conversationId, replyText, Array.Empty<ToolCall>(), Array.Empty<string>());
+        foreach (var ev in toolEvents)
+        {
+            yield return ev;
+        }
+
+        if (!string.IsNullOrWhiteSpace(replyText))
+        {
+            yield return AgentEventFactory.Message(conversationId, replyText);
+        }
+
+        yield return AgentEventFactory.Completed(conversationId);
     }
 
     private static ChatMessage MapMessage(ChatTurn turn) =>
@@ -126,6 +172,30 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         }
 
         return raw;
+    }
+
+    private string ExtractResultSafe(ChatClientAgentRunResponse<string>? response)
+    {
+        if (response is null)
+        {
+            return string.Empty;
+        }
+
+        var text = response.Text;
+        if (!string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        try
+        {
+            return response.Result ?? string.Empty;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Result を読み取れなかったため空文字を返します。");
+            return string.Empty;
+        }
     }
 
 }

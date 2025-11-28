@@ -1,0 +1,63 @@
+ファイル名: HM-60252J_page337
+
+<overview>
+このページは、EtherCAT通信による制御手順の一部を説明しています。構成は以下の通りです。
+- テキスト部分：STEP 4およびSTEP 5の説明、注意事項のメモ
+- 図部分：AC電源ドライバ、DC電源ドライバ、ネットワークコンバータのLED状態を示す図
+- 表部分：EtherCAT通信のリモートI/Oの初期値を示すCoEインデックス表
+グラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### STEP 4 電源を投入し、LEDを確認します
+ドライバとNETC01-ECTのLEDが図の状態になっていることを確認してください。
+
+- ドライバのC-DAT/C-ERR（赤）が点灯、またはNETC01-ECTのC-ERR（赤）が点灯しているときは、RS-485通信の通信速度や号機番号を確認してください。
+- NETC01-ECTのERR（赤）が点滅しているときはEtherCAT通信エラーが発生しています。エラー内容を確認してください。
+
+#### STEP 5 EtherCAT通信のリモートI/Oで連続運転を実行します
+EtherCAT通信のリモートI/Oで、号機番号0のFW-POSをONにします。運転データNo.0の初期速度1,000Hzで連続運転が始まります。
+表にリモートI/Oの初期値を示します。
+
+---
+
+### 図
+#### LED状態（AC電源ドライバ、DC電源ドライバ、ネットワークコンバータ）
+
+```mermaid
+flowchart LR
+    subgraph AC電源ドライバ
+        A1[Oriental motor AZD-CD]
+        A1 -->|緑 点灯| A2[PWR/ALM]
+        A1 -->|緑 点灯| A3[C-DAT/C-ERR]
+    end
+
+    subgraph DC電源ドライバ
+        D1[AZD-KD]
+        D1 -->|緑 点灯| D2[POWER/ALARM]
+        D1 -->|緑 点灯| D3[C-DAT/C-ERR]
+    end
+
+    subgraph ネットワークコンバータ
+        N1[NETC01-ECT]
+        N1 -->|緑 点灯| N2[POWER]
+        N1 -->|緑 点灯| N3[RUN]
+        N1 -->|緑 点灯| N4[ALARM]
+        N1 -->|緑 点灯| N5[ERR]
+        N1 -->|緑 点滅| N6[ECAT ID]
+    end
+```
+
+---
+
+### 表
+#### EtherCAT通信リモートI/O 初期値（Mainデバイス→NETC01-ECT）
+
+| CoE Index | Sub-index | 名称                | 型  | アクセス | 内容                                                                                         |
+| :-------- | :-------- | :------------------ | :-- | :------- | :------------------------------------------------------------------------------------------- |
+| 2600h     | 0         | －                  | U8  | R        | Sub-index数: 2                                                                              |
+|           | 1         | I/O Command (lower) | U8  | RW       | bit[7]: R-IN7, bit[6]: R-IN6, bit[5]: R-IN5, bit[4]: R-IN4, bit[3]: R-IN3, bit[2]: R-IN2, bit[1]: R-IN1, bit[0]: R-IN0<br>ALM-RST, FREE, STOP, ZHOME, START, M2, M1, M0 |
+|           | 2         | I/O Command (upper) | U8  | RW       | bit[7]: R-IN15, bit[6]: R-IN14, bit[5]: R-IN13, bit[4]: R-IN12, bit[3]: R-IN11, bit[2]: R-IN10, bit[1]: R-IN9, bit[0]: R-IN8<br>RV-POS, FW-POS, RV-JOG-P, FW-JOG-P, SSTART, D-SEL2, D-SEL1, D-SEL0 |
+
+</contents>

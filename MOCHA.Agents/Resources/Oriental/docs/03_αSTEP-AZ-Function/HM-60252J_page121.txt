@@ -1,0 +1,189 @@
+ファイル名: HM-60252J_page121
+
+<overview>
+このページは「原点復帰運転」に関する説明で構成されています。  
+テキスト部分では、SLIT入力、TIM信号、ZSG信号を併用した場合の原点復帰運転の動作について説明しています。  
+表部分は、原点検出信号ごとに「原点復帰運転の開始方向（＋側、－側）」に分けて、RVS側メカ端とFWD側メカ端の動作を示す図が配置されています。  
+図部分は、各信号のON/OFF状態とメカ端の動きの関係を示すタイミングチャート形式のグラフが複数掲載されています。
+</overview>
+
+<contents>
+### テキスト
+#### SLIT入力、TIM信号、ZSG信号を併用する場合の原点復帰運転
+原点復帰運転が終了した後も、外部信号が検出されるまで運転を続けます。  
+外部信号が検出されると、原点復帰運転が完了します。
+
+---
+
+### 表
+| 原点検出信号 | 原点復帰運転の開始方向：＋側 | 原点復帰運転の開始方向：－側 |
+| :--- | :--- | :--- |
+| SLIT入力 | 図1 | 図2 |
+| TIM信号またはZSG信号 | 図3 | 図4 |
+| SLIT入力とTIM信号またはSLIT入力とZSG信号 | 図5 | 図6 |
+
+---
+
+### 図（タイミングチャート）
+
+#### 図1: SLIT入力（＋側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    SLIT_ON[SLIT入力 ON]
+    SLIT_OFF[SLIT入力 OFF]
+
+    VR -->|実線| FWD側メカ端
+    VS -->|実線| FWD側メカ端
+    VL -->|実線| FWD側メカ端
+    nVL -->|点線| FWD側メカ端
+    nVS -->|点線| FWD側メカ端
+    nVR -->|点線| FWD側メカ端
+    SLIT_OFF --> SLIT_ON
+```
+
+#### 図2: SLIT入力（－側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    SLIT_ON[SLIT入力 ON]
+    SLIT_OFF[SLIT入力 OFF]
+
+    nVL -->|実線| FWD側メカ端
+    nVS -->|実線| FWD側メカ端
+    nVR -->|実線| FWD側メカ端
+    VR -->|点線| FWD側メカ端
+    VS -->|点線| FWD側メカ端
+    VL -->|点線| FWD側メカ端
+    SLIT_OFF --> SLIT_ON
+```
+
+#### 図3: TIM信号またはZSG信号（＋側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    TIM_ON[TIM出力(またはZSG出力) ON]
+    TIM_OFF[TIM出力(またはZSG出力) OFF]
+
+    VR -->|実線| FWD側メカ端
+    VS -->|実線| FWD側メカ端
+    VL -->|実線| FWD側メカ端
+    nVL -->|点線| FWD側メカ端
+    nVS -->|点線| FWD側メカ端
+    nVR -->|点線| FWD側メカ端
+    TIM_OFF --> TIM_ON
+```
+
+#### 図4: TIM信号またはZSG信号（－側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    TIM_ON[TIM出力(またはZSG出力) ON]
+    TIM_OFF[TIM出力(またはZSG出力) OFF]
+
+    nVL -->|実線| FWD側メカ端
+    nVS -->|実線| FWD側メカ端
+    nVR -->|実線| FWD側メカ端
+    VR -->|点線| FWD側メカ端
+    VS -->|点線| FWD側メカ端
+    VL -->|点線| FWD側メカ端
+    TIM_OFF --> TIM_ON
+```
+
+#### 図5: SLIT入力とTIM信号またはSLIT入力とZSG信号（＋側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    SLIT_ON[SLIT入力 ON]
+    SLIT_OFF[SLIT入力 OFF]
+    TIM_ON[TIM出力(またはZSG出力) ON]
+    TIM_OFF[TIM出力(またはZSG出力) OFF]
+
+    VR -->|実線| FWD側メカ端
+    VS -->|実線| FWD側メカ端
+    VL -->|実線| FWD側メカ端
+    nVL -->|点線| FWD側メカ端
+    nVS -->|点線| FWD側メカ端
+    nVR -->|点線| FWD側メカ端
+    SLIT_OFF --> SLIT_ON
+    TIM_OFF --> TIM_ON
+```
+
+#### 図6: SLIT入力とTIM信号またはSLIT入力とZSG信号（－側開始）
+```mermaid
+flowchart LR
+    subgraph RVS側メカ端
+        VR[+VR]
+        VS[+VS]
+        VL[+VL]
+        nVL[-VL]
+        nVS[-VS]
+        nVR[-VR]
+    end
+    subgraph FWD側メカ端
+    end
+    SLIT_ON[SLIT入力 ON]
+    SLIT_OFF[SLIT入力 OFF]
+    TIM_ON[TIM出力(またはZSG出力) ON]
+    TIM_OFF[TIM出力(またはZSG出力) OFF]
+
+    nVL -->|実線| FWD側メカ端
+    nVS -->|実線| FWD側メカ端
+    nVR -->|実線| FWD側メカ端
+    VR -->|点線| FWD側メカ端
+    VS -->|点線| FWD側メカ端
+    VL -->|点線| FWD側メカ端
+    SLIT_OFF --> SLIT_ON
+    TIM_OFF --> TIM_ON
+```
+
+---
+
+### 備考
+- メカ端から「(HOME)押し当て原点復帰戻り量」だけ移動します。
+</contents>

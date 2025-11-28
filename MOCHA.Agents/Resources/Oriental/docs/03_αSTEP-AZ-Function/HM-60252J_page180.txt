@@ -1,0 +1,66 @@
+ファイル名: HM-60252J_page180
+
+<overview>
+本ページは「4 入力信号」章の一部で、「4-1 運転制御」セクションに属しています。構成は以下の通りです。
+- テキスト部分：励磁切替信号の説明、FREE入力の動作と注意点、モーター励磁状態の説明
+- グラフ部分：FREE入力、PLS-RDY出力、READY出力、モーター励磁、電磁ブレーキの状態遷移を示すタイミングチャートが2つ掲載されている
+- 表や表形式のデータはなし
+</overview>
+
+<contents>
+### テキスト
+#### 4-1 運転制御
+■ 励磁切替信号  
+モーターの励磁/無励磁を切り替える信号です。
+
+● FREE入力  
+FREE入力をONにすると、モーターの電流が遮断されて無励磁になります。  
+モーターの保持力がなくなるため、手動でモーター出力軸を動かせるようになります。電磁ブレーキ付モーターの場合は、電磁ブレーキも解放されます。
+
+**重要**  
+負荷を垂直に設置しているときは、FREE入力をONにしないでください。保持力がなくなって負荷が落下する原因になります。
+
+##### モーターが励磁している場合  
+1. FREE入力をONにすると、PLS-RDY出力とREADY出力がOFFになり、モーターが無励磁になります。  
+2. FREE入力をOFFにすると、モーターが励磁し、PLS-RDY出力とREADY出力がONになります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph チャート1
+        direction LR
+        FREE_ON_OFF[FREE入力 ON/OFF]
+        PLS_RDY_ON_OFF[PLS-RDY出力 ON/OFF]
+        READY_ON_OFF[READY出力 ON/OFF]
+        MOTOR[モーター励磁 無励磁]
+        BRAKE[電磁ブレーキ 保持/解放]
+    end
+
+    FREE_ON_OFF -->|1| PLS_RDY_ON_OFF
+    FREE_ON_OFF -->|1| READY_ON_OFF
+    PLS_RDY_ON_OFF -->|1| MOTOR
+    READY_ON_OFF -->|1| MOTOR
+    MOTOR --> BRAKE
+
+    subgraph チャート2
+        direction LR
+        FREE_ON_OFF2[FREE入力 ON/OFF]
+        PLS_RDY_ON_OFF2[PLS-RDY出力 ON/OFF]
+        READY_ON_OFF2[READY出力 ON/OFF]
+        MOTOR2[モーター励磁 無励磁]
+        BRAKE2[電磁ブレーキ 保持/解放]
+    end
+
+    FREE_ON_OFF2 -->|2ms以下| PLS_RDY_ON_OFF2
+    FREE_ON_OFF2 -->|2ms以下| READY_ON_OFF2
+    PLS_RDY_ON_OFF2 -->|250ms以下| MOTOR2
+    READY_ON_OFF2 -->|250ms以下| MOTOR2
+    MOTOR2 -->|200ms以下| BRAKE2
+```
+
+**図の説明:**  
+- 上段チャートはFREE入力のON/OFFに伴うPLS-RDY出力、READY出力、モーター励磁状態の変化を示す。  
+- 下段チャートは各信号の遅延時間（2ms以下、250ms以下、200ms以下）を示し、タイミングの制約を表している。  
+- 電磁ブレーキはFREE入力ONで解放、OFFで保持される。
+
+</contents>

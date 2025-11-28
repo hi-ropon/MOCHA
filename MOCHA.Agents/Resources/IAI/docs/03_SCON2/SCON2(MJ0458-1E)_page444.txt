@@ -1,0 +1,138 @@
+ファイル名: SCON2(MJ0458-1E)_page444
+
+<overview>
+本ページは「10.2 基本シーケンス例（PIOパターン0～3）」の一部であり、SCON2を用いた1軸3ポジションへの連続移動操作例を示しています。ページ構成は以下の通りです。
+- テキスト部分：章タイトル、説明文、注釈
+- 図部分：操作BOX、PLCの入出力信号対応図（I/O割付け）
+- 表部分はなく、図内に信号名称と説明が記載されている
+</overview>
+
+<contents>
+### テキスト
+#### 10.2 基本シーケンス例（PIOパターン0～3）
+SCON2で1軸3ポジションへの連続移動を簡単な操作ボックスで行う例を示しています。
+
+##### 10.2.1 I/O割付け
+操作BOXの各信号とPLCの入力・出力信号の対応関係を示しています。
+
+*注釈*  
+「*」は負論理の信号を表し、入力信号はOFF時に処理され、出力信号は電源が入っている状態で通常ON、信号出力時にOFFされます。
+
+---
+
+### 図
+```mermaid
+flowchart LR
+    subgraph 操作BOX（入力）
+        EMGRST[非常停止解除（リレー回路）]
+        START[RC運転]
+        STOP[RC停止]
+        HOLD[一時停止]
+        HOME[原点復帰]
+        PM1[完了ポジション番号1]
+        PM2[完了ポジション番号2]
+        PM4[完了ポジション番号4]
+        MOVE[移動中]
+        ZONE1[ゾーン1]
+        PZONE[ポジションゾーン]
+        RMDS[運転モード]
+        HEND[原点復帰完了]
+        PEND[位置決め完了]
+        SV[運転準備完了]
+        ALM[*アラーム]
+    end
+
+    subgraph PLC
+        IN0[IN0]
+        IN1[IN1]
+        IN2[IN2]
+        IN3[IN3]
+        IN4[IN4]
+        IN5[IN5]
+        IN6[IN6]
+        IN7[IN7]
+        IN8[IN8]
+        IN9[IN9]
+        IN10[IN10]
+        IN11[IN11]
+        IN12[IN12]
+        IN13[IN13]
+        IN14[IN14]
+        IN15[IN15]
+        OUT0[OUT0]
+        OUT1[OUT1]
+        OUT2[OUT2]
+        OUT3[OUT3]
+        OUT4[OUT4]
+        OUT5[OUT5]
+        OUT6[OUT6]
+        OUT7[OUT7]
+        OUT8[OUT8]
+        OUT9[OUT9]
+        OUT10[OUT10]
+        OUT11[OUT11]
+        OUT12[OUT12]
+        OUT13[OUT13]
+        OUT14[OUT14]
+        OUT15[OUT15]
+    end
+
+    subgraph 操作BOX（出力）
+        EMRSTL[非常停止解除表示]
+        STARTL[RC運転表示]
+        STOPL[RC停止表示]
+        HOLDL[一時停止表示]
+        HOMEL[原点復帰表示]
+        ZONE1L[ゾーン1表示]
+        PZONEL[ポジションゾーン表示]
+        RMDL[マニュアルモード表示]
+        PC1[指令ポジション番号1]
+        PC2[指令ポジション番号2]
+        PC4[指令ポジション番号4]
+        HOME2[原点復帰]
+        STP[*一時停止]
+        CSTR[スタート]
+        SON[サーボオン]
+        RES[リセット]
+    end
+
+    EMGRST --> IN0
+    START --> IN1
+    STOP --> IN2
+    HOLD --> IN3
+    HOME --> IN4
+    PM1 --> IN5
+    PM2 --> IN6
+    PM4 --> IN7
+    MOVE --> IN8
+    ZONE1 --> IN9
+    PZONE --> IN10
+    RMDS --> IN11
+    HEND --> IN12
+    PEND --> IN13
+    SV --> IN14
+    ALM --> IN15
+
+    OUT0 --> EMRSTL
+    OUT1 --> STARTL
+    OUT2 --> STOPL
+    OUT3 --> HOLDL
+    OUT4 --> HOMEL
+    OUT5 --> ZONE1L
+    OUT6 --> PZONEL
+    OUT7 --> RMDL
+    OUT8 --> PC1
+    OUT9 --> PC2
+    OUT10 --> PC4
+    OUT11 --> HOME2
+    OUT12 --> STP
+    OUT13 --> CSTR
+    OUT14 --> SON
+    OUT15 --> RES
+```
+
+**図の説明**  
+- 左側の操作BOX（入力）は非常停止解除、RC運転、停止、一時停止、原点復帰などの操作信号をPLCの入力信号（IN0～IN15）に割り当てています。  
+- 右側の操作BOX（出力）はPLCの出力信号（OUT0～OUT15）に対応し、各種表示や指令ポジション番号、サーボオン、リセットなどの状態を示します。  
+- 信号名の前に「*」が付くものは負論理信号です。
+</contents>

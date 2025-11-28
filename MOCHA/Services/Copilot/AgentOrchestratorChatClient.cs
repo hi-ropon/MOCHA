@@ -1,5 +1,7 @@
+using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
 using MOCHA.Models.Chat;
@@ -15,11 +17,11 @@ namespace MOCHA.Services.Copilot;
 /// </summary>
 public sealed class AgentOrchestratorChatClient : ICopilotChatClient
 {
-    private readonly IAgentOrchestrator orchestrator;
+    private readonly IAgentOrchestrator _orchestrator;
 
     public AgentOrchestratorChatClient(IAgentOrchestrator orchestrator)
     {
-        this.orchestrator = orchestrator;
+        this._orchestrator = orchestrator;
     }
 
     public Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurnModel turn, CancellationToken cancellationToken = default)
@@ -48,14 +50,44 @@ public sealed class AgentOrchestratorChatClient : ICopilotChatClient
         var userTurn = history.LastOrDefault() ?? DomainChatTurn.User(string.Empty);
         var context = new ChatContext(conversationId, history);
 
-        var reply = await orchestrator.ReplyAsync(userTurn, context, cancellationToken);
+        var events = await _orchestrator.ReplyAsync(userTurn, context, cancellationToken);
 
-        if (!string.IsNullOrWhiteSpace(reply.Text))
+        await foreach (var ev in events.WithCancellation(cancellationToken))
         {
-            yield return ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, reply.Text!));
+            switch (ev.Type)
+            {
+                case AgentEventType.Message when !string.IsNullOrWhiteSpace(ev.Text):
+                    yield return ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, ev.Text!));
+                    break;
+                case AgentEventType.ToolCallRequested when ev.ToolCall is not null:
+                    yield return new ChatStreamEvent(
+                        ChatStreamEventType.ActionRequest,
+                        ActionRequest: new CopilotActionRequest(
+                            ev.ToolCall.Name,
+                            ev.ConversationId,
+                            ParsePayload(ev.ToolCall.ArgumentsJson)));
+                    break;
+                case AgentEventType.ToolCallCompleted when ev.ToolResult is not null:
+                    yield return new ChatStreamEvent(
+                        ChatStreamEventType.ToolResult,
+                        ActionResult: new CopilotActionResult(
+                            ev.ToolResult.Name,
+                            ev.ConversationId,
+                            ev.ToolResult.Success,
+                            ParsePayload(ev.ToolResult.PayloadJson),
+                            ev.ToolResult.Error));
+                    break;
+                case AgentEventType.ProgressUpdated when !string.IsNullOrWhiteSpace(ev.Text):
+                    yield return ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, ev.Text!));
+                    break;
+                case AgentEventType.Error:
+                    yield return ChatStreamEvent.Fail(ev.Error ?? "agent error");
+                    break;
+                case AgentEventType.Completed:
+                    yield return ChatStreamEvent.Completed(ev.ConversationId);
+                    break;
+            }
         }
-
-        yield return ChatStreamEvent.Completed(conversationId);
     }
 
     private static DomainAuthorRole MapRole(ChatRole role) =>
@@ -66,4 +98,26 @@ public sealed class AgentOrchestratorChatClient : ICopilotChatClient
             ChatRole.Tool => DomainAuthorRole.Tool,
             _ => DomainAuthorRole.User
         };
+
+    private static IReadOnlyDictionary<string, object?> ParsePayload(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return new Dictionary<string, object?>();
+        }
+
+        try
+        {
+            var dict = JsonSerializer.Deserialize<Dictionary<string, object?>>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true
+            });
+
+            return dict ?? new Dictionary<string, object?>();
+        }
+        catch (JsonException)
+        {
+            return new Dictionary<string, object?> { ["raw"] = json };
+        }
+    }
 }

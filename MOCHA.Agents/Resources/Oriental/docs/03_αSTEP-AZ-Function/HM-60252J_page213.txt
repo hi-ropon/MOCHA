@@ -1,0 +1,61 @@
+ファイル名: HM-60252J_page213
+
+<overview>
+このページは主に3つのセクションで構成されています。  
+1. テキスト部分：PLS-LOST出力の説明と無効条件の列挙、関連パラメータの説明。  
+2. 表部分：PLS-LOST判定方式のパラメータ詳細表。  
+3. 表部分：レスポンス出力に関する入力信号と出力信号の対応表。  
+グラフや図は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### PLS-LOST出力
+- PLS-RDY出力がOFF（パルス入力が無効）のときにパルスが入力されると、PLS-LOST出力がONになる。  
+- LAT-CLR入力をOFFからONにすると、PLS-LOST出力がOFFになる。  
+- パルス入力が無効になる条件は以下の通り：  
+  ・無励磁のとき  
+  ・運転停止信号がONのとき  
+  ・PLS-DIS入力がONのとき  
+
+#### 関連するパラメータ
+| MEXE02ツリー表示 | パラメータ名       | 内容                                                                                                                                                                                                                      | 初期値 |
+|------------------|--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|
+| I/O動作・機能    | PLS-LOST判定方式   | 無効になったパルスの数をカウントするときに、回転方向に応じてカウントを増減するか選択する。<br>「符号付き検出」にすると、FWD方向のパルスは正、RVS方向のパルスは負でカウントされる。<br>【設定範囲】<br>0:符号無し検出<br>1:符号付き検出 | 0      |
+
+### 表
+#### 5-4 レスポンス出力
+レスポンス出力は、対応する入力信号のON/OFF状態を出力する信号。  
+入力信号と出力信号の対応表は以下の通り。
+
+| 入力信号     | 出力信号       | 入力信号     | 出力信号       | 入力信号     | 出力信号       |
+|--------------|----------------|--------------|----------------|--------------|----------------|
+| FREE         | FREE_R         | NEXT         | NEXT_R        | M3           | M3_R           |
+| C-ON         | C-ON_R         | HOME         | HOME_R        | M4           | M4_R           |
+| CLR          | CLR_R          | ZHOME        | ZHOME_R       | M5           | M5_R           |
+| STOP-COFF    | STOP-COFF_R    | D-SEL0       | D-SEL0_R      | M6           | M6_R           |
+| STOP         | STOP_R         | D-SEL1       | D-SEL1_R      | M7           | M7_R           |
+| PAUSE        | PAUSE_R        | D-SEL2       | D-SEL2_R      | TEACH        | TEACH_R        |
+| BREAK-ATSQ   | BREAK-ATSQ_R   | D-SEL3       | D-SEL3_R      | MON-REQ0     | MON-REQ0_R     |
+| ALM-RST      | ALM-RST_R      | D-SEL4       | D-SEL4_R      | MON-REQ1     | MON-REQ1_R     |
+| P-PRESET     | P-PRESET_R     | D-SEL5       | D-SEL5_R      | MON-CLK      | MON-CLK_R      |
+| EL-PRST      | EL-PRST_R      | D-SEL6       | D-SEL6_R      | PLSM-REQ     | PLSM-REQ_R     |
+| ETO-CLR      | ETO-CLR_R      | D-SEL7       | D-SEL7_R      | R0           | R0_R           |
+| LAT-CLR      | LAT-CLR_R      | FW-JOG       | FW-JOG_R      | R1           | R1_R           |
+| INFO-CLR     | INFO-CLR_R     | RV-JOG       | RV-JOG_R      | R2           | R2_R           |
+| HMI          | HMI_R          | FW-JOG-H     | FW-JOG-H_R    | R3           | R3_R           |
+| CCM          | CCM_R          | RV-JOG-H     | RV-JOG-H_R    | R4           | R4_R           |
+| PLS-XMODE    | PLS-XMODE_R    | FW-JOG-P     | FW-JOG-P_R    | R5           | R5_R           |
+| PLS-DIS      | PLS-DIS_R      | RV-JOG-P     | RV-JOG-P_R    | R6           | R6_R           |
+| T-MODE       | T-MODE_R       | FW-JOG-C     | FW-JOG-C_R    | R7           | R7_R           |
+| CRNT-LMT     | CRNT-LMT_R     | RV-JOG-C     | RV-JOG-C_R    | R8           | R8_R           |
+| SPD-LMT      | SPD-LMT_R      | FW-POS       | FW-POS_R      | R9           | R9_R           |
+| FW-BLK       | FW-BLK_R       | RV-POS       | RV-POS_R      | R10          | R10_R          |
+| RV-BLK       | RV-BLK_R       | FW-SPD       | FW-SPD_R      | R11          | R11_R          |
+| FW-LS        | FW-LS_R        | RV-SPD       | RV-SPD_R      | R12          | R12_R          |
+| RV-LS        | RV-LS_R        | FW-PSH       | FW-PSH_R      | R13          | R13_R          |
+| HOMES        | HOMES_R        | RV-PSH       | RV-PSH_R      | R14          | R14_R          |
+| SLIT         | SLIT_R         | M0           | M0_R          | R15          | R15_R          |
+| START        | START_R        | M1           | M1_R          |              |                |
+| SSTART       | SSTART_R       | M2           | M2_R          |              |                |
+</contents>

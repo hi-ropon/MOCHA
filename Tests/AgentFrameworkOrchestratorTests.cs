@@ -7,9 +7,11 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
+using MOCHA.Agents.Infrastructure.Agents;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Options;
 using MOCHA.Agents.Infrastructure.Orchestration;
+using MOCHA.Agents.Infrastructure.Tools;
 
 namespace MOCHA.Tests;
 
@@ -21,6 +23,14 @@ public class AgentFrameworkOrchestratorTests
     {
         var fakeChatClient = new FakeChatClient();
         var factory = new FakeLlmChatClientFactory(fakeChatClient);
+        var catalog = new AgentCatalog(new ITaskAgent[]
+        {
+            new PlcTaskAgent(),
+            new IaiTaskAgent(),
+            new OrientalTaskAgent()
+        });
+        var manualStore = new InMemoryManualStore();
+        var tools = new OrganizerToolset(manualStore, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -29,17 +39,24 @@ public class AgentFrameworkOrchestratorTests
 
         IAgentOrchestrator orchestrator = new AgentFrameworkOrchestrator(
             factory,
+            tools,
             options,
             NullLogger<AgentFrameworkOrchestrator>.Instance);
 
         var userTurn = ChatTurn.User("ping");
         var context = ChatContext.Empty("conv-1");
 
-        var reply = await orchestrator.ReplyAsync(userTurn, context);
+        var events = await orchestrator.ReplyAsync(userTurn, context);
 
-        Assert.IsNotNull(reply);
-        Assert.AreEqual("echo: ping", reply.Text);
-        Assert.AreEqual("conv-1", reply.ConversationId);
+        var list = new List<AgentEvent>();
+        await foreach (var ev in events)
+        {
+            list.Add(ev);
+        }
+
+        Assert.IsTrue(list.Any());
+        Assert.IsTrue(list.Any(e => e.Type == AgentEventType.Message && e.Text == "echo: ping"));
+        Assert.IsTrue(list.Any(e => e.Type == AgentEventType.Completed && e.ConversationId == "conv-1"));
     }
 
     [TestMethod]
@@ -66,21 +83,21 @@ public class AgentFrameworkOrchestratorTests
         Assert.IsNotNull(azureFactory.Create());
     }
 
-        private sealed class FakeLlmChatClientFactory : ILlmChatClientFactory
+    private sealed class FakeLlmChatClientFactory : ILlmChatClientFactory
+    {
+        private readonly IChatClient _client;
+
+        public FakeLlmChatClientFactory(IChatClient client)
         {
-            private readonly IChatClient _client;
-
-            public FakeLlmChatClientFactory(IChatClient client)
-            {
-                _client = client;
-            }
-
-            public IChatClient Create() => _client;
+            _client = client;
         }
 
-        private sealed class FakeChatClient : IChatClient
-        {
-            private const string _conversationId = "conv-1";
+        IChatClient ILlmChatClientFactory.Create() => _client;
+    }
+
+    private sealed class FakeChatClient : IChatClient
+    {
+        private const string _conversationId = "conv-1";
 
         public Task<ChatResponse> GetResponseAsync(
             IEnumerable<ChatMessage> messages,
@@ -115,6 +132,23 @@ public class AgentFrameworkOrchestratorTests
 
         public void Dispose()
         {
+        }
+    }
+
+    private sealed class InMemoryManualStore : IManualStore
+    {
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy", 5));
+        }
+
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<ManualHit> hits = new List<ManualHit>
+            {
+                new("dummy", "path", 1)
+            };
+            return Task.FromResult(hits);
         }
     }
 }

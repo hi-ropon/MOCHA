@@ -1,0 +1,76 @@
+<overview>
+ページ46は、10-6章「タイミングチャート」の位置決め運転について説明している。位置決め機能内蔵タイプの場合の入力信号と出力信号のON/OFFタイミングを示すタイミングチャートが記載されている。
+</overview>
+
+<contents>
+## 10-6 タイミングチャート
+
+入力信号と出力信号のON/OFFのタイミングを示します。
+詳細はAZシリーズ 機能編でご確認ください。
+
+### ■ 位置決め運転
+
+#### ● 位置決め機能内蔵タイプの場合
+
+運転データを選択して、位置決め運転を行なっています。
+
+**運転シーケンス:**
+
+1. 主電源と制御電源を投入します。
+   READY出力がONになります。
+
+2. READY出力がONであることを確認し、M0～M2入力で運転データNo.を選択して、START入力をONにします。
+   モーターが位置決め運転を始めます。
+
+3. READY出力がOFFになったことを確認し、START入力をOFFにします。
+   運転が終了すると、READY出力がONになります。
+
+**タイミングチャート:**
+
+```mermaid
+gantt
+    title 位置決め運転タイミングチャート
+    dateFormat X
+    axisFormat %s
+
+    section 制御電源
+    ON  :done, power, 0, 10
+
+    section 主電源
+    ON  :done, main, 0, 10
+
+    section M0～M2入力
+    OFF->ON->OFF :crit, m0m2, 2, 4
+
+    section START入力
+    OFF->ON->OFF :active, start, 3, 4
+
+    section READY出力
+    OFF->ON->OFF->ON :ready, 1, 10
+
+    section MOVE出力
+    OFF->ON->OFF :move, 3, 6
+
+    section IN-POS出力
+    OFF->ON :inpos, 6, 10
+```
+
+**信号タイミング詳細:**
+
+| 信号名 | 状態変化 | タイミング |
+|--------|----------|------------|
+| 制御電源 | OFF→ON | ① |
+| 主電源 | OFF→ON | ① |
+| M0～M2入力 | OFF→ON→OFF | ② |
+| START入力 | OFF→ON→OFF | ③ |
+| READY出力 | OFF→ON→OFF→ON | ①③③ |
+| MOVE出力 | OFF→ON→OFF | 運転中 |
+| IN-POS出力 | OFF→ON | 位置決め完了 |
+| モーター動作 | 停止→動作→停止 | START信号に同期 |
+
+**動作説明:**
+- ①: 電源投入でREADY出力がONになる
+- ②: 運転データ選択（M0～M2入力）
+- ③: 運転開始/終了（START入力とREADY出力の連動）
+- 運転中はMOVE出力がON、完了後はIN-POS出力がONになる
+</contents>

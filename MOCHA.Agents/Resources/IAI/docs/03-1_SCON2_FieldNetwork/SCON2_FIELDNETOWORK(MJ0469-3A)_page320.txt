@@ -1,0 +1,53 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page320
+
+<overview>
+このページは「入出力信号の制御と機能」に関する内容で構成されています。  
+テキスト部分では停止モード選択（ASO0、ASO1）に関する説明があり、PLC出力信号の動作概要と省電力化のための自動サーボOFF機能について記載されています。  
+表部分ではASO1、ASO0の組み合わせによる各停止モードの機能と備考がまとめられています。  
+グラフ部分では移動指令からサーボOFFまでの動作タイミングを示す波形図が掲載されており、サーボON/OFF状態やアクチュエーター動作の時間的関係が視覚的に説明されています。
+</overview>
+
+<contents>
+### テキスト
+#### 停止モード選択（ASO0、ASO1）PLC出力信号
+位置決め完了後、次のポジションへ移動するまでの待機時の停止モードを選択します。  
+停止時間が長い場合は、自動的にサーボOFFして電力消費量を低減します。  
+詳細は「SCON2取扱説明書（MJ0458）」を参照してください。
+
+### 表
+| ASO1 | ASO0 | 機能                             | 備考         |
+| :--- | :--- | :------------------------------- | :----------- |
+| OFF  | OFF  | 無効                             | 出荷時設定   |
+| OFF  | ON   | 自動サーボOFF方式<br>下図のTは、パラメーターNo.36が有効 |              |
+| ON   | OFF  | 自動サーボOFF方式<br>下図のTは、パラメーターNo.37が有効 |              |
+| ON   | ON   | 自動サーボOFF方式<br>下図のTは、パラメーターNo.38が有効 |              |
+
+### 図
+```mermaid
+flowchart LR
+    A[移動指令 (PLC → SCON2)] --> B[サーボON状態 (PLC → SCON2)]
+    B --> C[アクチュエーター動作]
+    C --> D[目標位置]
+    D --> E[自動サーボOFF中 (緑色LEDが点滅)]
+    E --> F[サーボOFF]
+
+    style A fill:#f9f,stroke:#333,stroke-width:1px
+    style B fill:#bbf,stroke:#333,stroke-width:1px
+    style C fill:#bfb,stroke:#333,stroke-width:1px
+    style E fill:#fbb,stroke:#333,stroke-width:1px
+
+    %% 遅延時間Tの表示
+    D ---|T 注1| E
+
+    classDef note fill:#fff,stroke:#000,stroke-width:0px,font-style:italic,font-size:12px;
+    class Tnote note;
+```
+
+**図の説明:**  
+- 移動指令がPLCからSCON2に送られ、サーボがON状態になる。  
+- アクチュエーターが動作し目標位置に到達。  
+- 位置決め完了後、遅延時間Tの間サーボON状態を維持し、その後自動的にサーボOFFとなる。  
+- 自動サーボOFF中は緑色LEDが点滅する。  
+
+※注1：Tは位置決め完了後にサーボOFFするまでの遅延時間（秒）を示す。
+</contents>

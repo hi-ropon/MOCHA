@@ -1,0 +1,50 @@
+ファイル名: HM-60252J_page419
+
+<overview>
+本ページは「15 入出力信号 割り付け一覧」の章の一部で、主に「15-1 入力信号」に関する内容です。ページ構成は以下の通りです。
+- テキスト部分：章タイトル、節タイトル、簡単な説明文（ネットワークで信号を割り付ける際の注意）
+- 表部分：割付No.と信号名の対応表が3列に分かれて一覧表示されている
+- グラフや図はなし
+</overview>
+
+<contents>
+### テキスト
+#### 15 入出力信号 割り付け一覧
+##### 15-1 入力信号
+ネットワークで信号を割り付けるときは、信号名ではなく表の「割付No.」を使用してください。
+
+### 表
+#### 入力信号 割付No.一覧
+
+| 割付No. | 信号名       | 割付No. | 信号名       | 割付No. | 信号名       |
+| :------ | :----------- | :------ | :----------- | :------ | :----------- |
+| 0       | 未使用       | 33      | SSTART       | 66      | M2           |
+| 1       | FREE         | 35      | NEXT         | 67      | M3           |
+| 2       | C-ON         | 36      | HOME         | 68      | M4           |
+| 3       | CLR          | 37      | ZHOME        | 69      | M5           |
+| 4       | STOP-COFF    | 40      | D-SEL0       | 70      | M6           |
+| 5       | STOP         | 41      | D-SEL1       | 71      | M7           |
+| 6       | PAUSE        | 42      | D-SEL2       | 75      | TEACH        |
+| 7       | BREAK-ATSQ   | 43      | D-SEL3       | 76      | MON-REQ0     |
+| 8       | ALM-RST      | 44      | D-SEL4       | 77      | MON-REQ1     |
+| 9       | P-PRESET     | 45      | D-SEL5       | 78      | MON-CLK      |
+| 10      | EL-PRST      | 46      | D-SEL6       | 79      | PLSM-REQ     |
+| 12      | ETO-CLR      | 47      | D-SEL7       | 80      | R0           |
+| 13      | LAT-CLR      | 48      | FW-JOG       | 81      | R1           |
+| 14      | INFO-CLR     | 49      | RV-JOG       | 82      | R2           |
+| 16      | HMI          | 50      | FW-JOG-H     | 83      | R3           |
+| 18      | CCM          | 51      | RV-JOG-H     | 84      | R4           |
+| 19      | PLS-XMODE    | 52      | FW-JOG-P     | 85      | R5           |
+| 20      | PLS-DIS     | 53      | RV-JOG-P     | 86      | R6           |
+| 21      | T-MODE       | 54      | FW-JOG-C     | 87      | R7           |
+| 22      | CRNT-LMT     | 55      | RV-JOG-C     | 88      | R8           |
+| 23      | SPD-LMT      | 56      | FW-POS       | 89      | R9           |
+| 26      | FW-BLK      | 57      | RV-POS       | 90      | R10          |
+| 27      | RV-BLK      | 58      | FWV-SPD      | 91      | R11          |
+| 28      | FW-LS       | 59      | RV-SPD       | 92      | R12          |
+| 29      | RV-LS       | 60      | FW-PSH       | 93      | R13          |
+| 30      | HOMES       | 61      | RV-PSH       | 94      | R14          |
+| 31      | SLIT        | 64      | M0           | 95      | R15          |
+| 32      | START       | 65      | M1           |         |              |
+
+</contents>

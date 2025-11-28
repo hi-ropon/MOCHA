@@ -1,0 +1,18 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page100
+
+<overview>
+このページはテキスト部分のみで構成されており、EtherNet/IP用のEDSファイルに関する説明が記載されています。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.5.5 EtherNet/IP用EDSファイル
+EtherNet/IP用のEDSファイルが必要な場合は、当社ホームページからダウンロードして使用するよう案内しています。
+
+##### ダウンロードページURL
+```
+https://www.iai-robot.co.jp/knowledge/support/network/index.html
+```
+
+必要なファイルはアクセス先のリストから選択し、ダウンロードしてください。
+</contents>

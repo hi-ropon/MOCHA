@@ -1,0 +1,62 @@
+ファイル名: RCON(MJ0384-8D)_page57
+
+<overview>
+本ページは「1.5.3 SCONシリーズ（RCON接続仕様）を接続する場合」というセクションで構成されています。  
+主にシステムブロック図が中心で、SCONシリーズの各ユニット（ゲートウェイユニット、拡張ユニット、ドライバーユニット、ターミナルユニット）と、それらの接続関係が図示されています。  
+テキストは図の説明と注釈が含まれており、図の構成要素や接続仕様についての補足説明が記載されています。  
+ページ全体は図（システムブロック図）がメインで、テキストは図の補足説明に限定されています。
+</overview>
+
+<contents>
+### テキスト
+#### 1.5.3 SCONシリーズ（RCON接続仕様）を接続する場合
+SCONシリーズのRCON接続仕様に基づく接続例を示しています。
+
+（注）  
+上図はSCON-CBを接続する場合の図です。  
+RCONシステムは、SCON拡張ユニット経由で接続したSCONシリーズ（SCON2またはSCON-CBのRCON接続仕様）とRCON-SCの混在も可能です。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph "SCONシリーズ構成"
+        GW[ゲートウェイユニット\nRCON-GW (RCON-GWG)]
+        EXT[SCON拡張ユニット\nRCON-EXT]
+        D1[ドライバーユニット]
+        D2[ドライバーユニット]
+        Dn[ドライバーユニット\n・・・]
+        Dlast[ドライバーユニット]
+        TRM[ターミナルユニット\nRCON-GW-TR または RCON-GW-TRS]
+    end
+
+    GW --> EXT --> D1 --> D2 --> Dn --> Dlast --> TRM
+
+    GW -.->|MP, CP信号| "ティーチングツール"
+    GW -->|STOP信号入力回路| EXT
+
+    subgraph "SCON-CB接続例"
+        CB1[SCON-CB (SCON-CGB)]
+        CB2[SCON-CB (SCON-CGB)]
+        CB3[SCON-CB (SCON-CGB)]
+    end
+
+    EXT --> CB1 --> CB2 --> CB3 --> TRM
+
+    CB1 -.->|AC100V/AC200V\nL1,L2,L1C,L2C| "電源"
+    CB2 -.->|AC100V/AC200V\nL1,L2,L1C,L2C| "電源"
+    CB3 -.->|AC100V/AC200V\nL1,L2,L1C,L2C| "電源"
+
+    CB1 -->|MPG| "駆動源遮断回路\nRCSシリーズアクチュエーター"
+    CB2 -->|MPG| "駆動源遮断回路\nRCSシリーズアクチュエーター"
+    CB3 -->|MPG| "駆動源遮断回路\nRCSシリーズアクチュエーター"
+```
+
+**図の説明:**  
+- ゲートウェイユニット（RCON-GW）がシステムの起点となり、SCON拡張ユニット（RCON-EXT）を介して複数のドライバーユニットが接続される。  
+- 最終的にターミナルユニット（RCON-GW-TRまたはRCON-GW-TRS）で終端される。  
+- ゲートウェイユニットはティーチングツールとMP、CP信号で接続されている。  
+- SCON-CB（SCON-CGB）ユニットはAC100V/AC200Vの電源供給を受け、駆動源遮断回路を介してRCSシリーズアクチュエーターに接続されている。  
+- 複数のSCON-CBユニットが直列に接続され、最後にターミナルコネクター（RCON-EXT-TR）で終端される。  
+- STOP信号入力回路がSCON拡張ユニットに接続されている。  
+- RCONシステムはSCON拡張ユニット経由で接続したSCONシリーズ（SCON2またはSCON-CBのRCON接続仕様）とRCON-SCの混在も可能である。
+</contents>

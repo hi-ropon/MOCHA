@@ -1,0 +1,29 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page412
+
+<overview>
+このページは「7.2.3 通信形体」に関する説明で構成されています。テキスト部分ではModbus/TCP通信の基本的な通信形態について解説しています。図部分には、Modbusマスター（TCPクライアント）とModbusスレーブ（TCPサーバー）間の通信の流れを示すイラストが配置されています。表やグラフはありません。
+</overview>
+
+<contents>
+### テキスト
+#### 7.2.3 通信形体
+TCP/IP上ではクライアント／サーバー方式で通信を行うが、Modbus/TCPにおいてはModbusマスターがTCPクライアント、ModbusスレーブがTCPサーバーとなる。
+
+Modbus通信は、Modbusマスターからの「要求メッセージ」に対してModbusスレーブが応答を返すことで1回の通信が完結する。  
+Modbus/TCPではTCP/IP通信と同様に送受信を行う前に接続を確立する必要があり、ModbusスレーブはModbusマスターからの接続要求を受けて接続が確立する。
+
+### 図
+```mermaid
+flowchart LR
+    PC[パソコン] -- 要求メッセージ --> SCON2[SCON2 (EtherNet/IP仕様)]
+    SCON2 -- 応答メッセージ --> TouchPanel[タッチパネル]
+    PC --- Ethernet --- TouchPanel
+    TouchPanel ---|Modbusマスター (TCPクライアント)| SCON2
+    SCON2 ---|Modbusスレーブ (TCPサーバー)| Ethernet
+```
+
+**図の説明:**  
+- パソコンがEthernet経由でSCON2に要求メッセージを送信  
+- SCON2はModbusスレーブ（TCPサーバー）として要求を受け、応答メッセージを返す  
+- タッチパネルはModbusマスター（TCPクライアント）として通信を行う  
+</contents>

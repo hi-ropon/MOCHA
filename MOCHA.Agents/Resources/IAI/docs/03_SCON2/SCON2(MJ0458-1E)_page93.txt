@@ -1,0 +1,68 @@
+ファイル名: SCON2(MJ0458-1E)_page93
+
+<overview>
+本ページは「3.1 ポジショナーモード（PIOモード）」に関する内容で、以下の構成となっています。
+- テキスト部分：対応モーターケーブル型式の説明と注釈
+- 表部分：アクチュエーターシリーズ名と対応ケーブルの一覧表
+- 図部分：単軸ロボットの接続例およびRCS2-RA13R、NSタイプのブレーキ付きの場合の接続図の2つの配線図
+</overview>
+
+<contents>
+### テキスト
+- 対応モーターケーブル型式の注記として、「□□□：ケーブル長 例）030＝3m」と記載。
+- 単軸ロボットの接続に関して、RCS2-RA13Rブレーキ付き/ロードセル付き、NSシリーズブレーキ付きは除く旨の注意書き。
+
+### 表
+#### 対応モーターケーブル型式一覧
+
+| アクチュエーターシリーズ名               | ケーブル               |
+| :-------------------------------------- | :--------------------- |
+| 単軸ロボット                            | CB-X2-MA□□□            |
+| DD、DDA高トルクタイプ、LSA大型タイプ   | CB-XMC1-MA□□□          |
+| RCSシリーズ                            | CB-RCC1-MA□□□          |
+| RCSシリーズ（ロボットケーブル）        | CB-X2-MA□□□            |
+| ISWA                                  | CB-XEU1-MA□□□          |
+
+### 図
+#### 1. 単軸ロボットの接続（RCS2-RA13Rブレーキ付き/ロードセル付き、NSシリーズブレーキ付き除く）
+
+```mermaid
+flowchart LR
+    subgraph SCON2
+        PG[PG エンコーダーコネクター]
+        MOT[MOT モーターコネクター]
+    end
+    PG ---|エンコーダーケーブル(注1)| EncoderCable[エンコーダーケーブル]
+    MOT ---|モーターケーブル(注2)| MotorCable[モーターケーブル]
+    EncoderCable --> Actuator[アクチュエーター]
+    MotorCable --> Actuator
+```
+
+#### 2. RCS2-RA13R、NSタイプのブレーキ付きの場合の接続
+
+```mermaid
+flowchart LR
+    DC24V1[DC24V] -->|BK+ PWR-| BrakePowerConnector[ブレーキ電源コネクター]
+    BrakePowerConnector --> SCON2[SCON2]
+    SCON2 --> PG[PG エンコーダーコネクター]
+    SCON2 --> MOT[MOT モーターコネクター]
+    PG --- CB_RCS2_PLA1[CB-RCS2-PLA□□□]
+    MOT --- CB_RCC1_MA[CB-RCC1-MA□□□]
+    
+    DC24V2[DC24V] --> CONTROLLER1[CONTROLLER1]
+    CONTROLLER1 ---|24VIN 0V| CONTROLLER2[CONTROLLER2]
+    CONTROLLER2 --> ACTUATOR2_ENCODER[ACTUATOR2 エンコーダーコネクター]
+    CONTROLLER2 --- CB_RCS2_PLA2[CB-RCS2-PLA□□□]
+    
+    CB_RCS2_PLA1 --- CB_RCS2_PLA2
+    CB_RCS2_PLA2 --> Actuator[アクチュエーター]
+    
+    0V1[0V] -.-> SCON2
+    0V2[0V] -.-> CONTROLLER1
+    0V3[0V] -.-> Actuator
+```
+
+**図の説明:**
+- 単軸ロボット接続図は、SCON2のPG（エンコーダーコネクター）とMOT（モーターコネクター）から、それぞれエンコーダーケーブルとモーターケーブルを介してアクチュエーターに接続されている。
+- ブレーキ付きRCS2-RA13R、NSタイプの接続図は、ブレーキ電源コネクター、SCON2、コントローラー1・2、エンコーダーコネクター、各種ケーブルが複雑に接続されている構成を示している。
+</contents>

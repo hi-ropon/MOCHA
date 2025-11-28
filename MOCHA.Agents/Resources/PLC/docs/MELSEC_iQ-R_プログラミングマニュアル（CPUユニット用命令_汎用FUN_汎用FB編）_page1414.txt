@@ -1,0 +1,45 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1414
+
+<overview>
+本ページは「32.69 先頭データの取得」という機能説明で構成されています。ページ全体はテキスト説明が中心で、機能の概要、設定データの説明、演算処理の内容、演算結果、エラー情報が段落ごとに整理されています。表が2つあり、1つは引数の内容・種別・データ型を示す設定データ表、もう1つは汎用ファンクションごとの入力・出力データ型を示す表です。図はラダー回路とST言語の対応を示す簡単なブロック図が1つあります。グラフはありません。
+</overview>
+
+<contents>
+### テキスト
+#### 32.69 先頭データの取得
+GET_BOOL_ADDR、GET_INT_ADDR、GET_WORD_ADDRの3つの関数について説明しています。これらは指定した配列の先頭データをBOOL型、INT型、WORD型として出力する機能です。
+
+- 対応CPU: RnCPU、RnENCPU、RnFSPCPU（プロセス、二重化、一般、安全）など。
+- 指定した配列の先頭データをそれぞれBOOL、INT、WORD型で取得可能。
+
+#### 機能
+- GET_BOOL_ADDRは指定配列から先頭データをBOOL型で出力。
+- GET_INT_ADDRは指定配列から先頭データをINT型で出力。32ビット以上のデータ型の場合は下位16ビットを取得可能。
+- GET_WORD_ADDRは指定配列から先頭データをWORD型で出力。32ビット以上のデータ型の場合は下位16ビットを取得可能。
+
+#### 演算結果
+- 演算処理を実行し、出力変数(d)に演算結果が出力される。
+
+#### エラー
+- 演算エラーは発生しない。
+
+### 図
+- ラダー回路とST言語の対応図
+  - ラダー回路ではs（入力）とd（出力）を持つブロックで表現。
+  - ST言語ではd:=GET_BOOL_ADDR(s)、d:=GET_INT_ADDR(s)、d:=GET_WORD_ADDR(s)の形式。
+
+### 表
+#### 設定データ（内容、種別、データ型）
+| 引数 | 内容 | 種別 | データ型 |
+| :--- | :--- | :--- | :--- |
+| s | 入力 | 入力変数 | ANY |
+| d | 出力 | 出力変数 | BOOL/INT/WORD |
+
+#### 汎用ファンクション（入力データ型、出力データ型）
+| 汎用ファンクション | 入力データ型 | 出力データ型 |
+| :--- | :--- | :--- |
+| GET_BOOL_ADDR | BOOL、ARRAY OF BOOL | BOOL |
+| GET_INT_ADDR | INT、DINT、WORD、REAL、TIME、STRING、ARRAY OF INT、ARRAY OF DINT、ARRAY OF WORD、ARRAY OF DWORD、ARRAY OF REAL、ARRAY OF TIME | INT |
+| GET_WORD_ADDR | 上記GET_INT_ADDRと同様 | WORD |
+
+</contents>

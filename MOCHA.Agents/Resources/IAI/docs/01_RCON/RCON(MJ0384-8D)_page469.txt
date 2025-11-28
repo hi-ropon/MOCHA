@@ -1,0 +1,108 @@
+ファイル名: RCON(MJ0384-8D)_page469
+
+<overview>
+このページは「ポジショナー1モードの割付け」に関する技術資料の一部であり、以下の構成で成り立っています。
+- テキスト部分：ポジショナー1モードのPLC出力およびPLC入力の軸制御信号と軸状態信号の割付け説明。
+- 表部分：各通信規格（CC-Link、DeviceNet、PROFIBUS-DP、PROFINET-IOなど）におけるアドレスの割付け関係を示す表。
+- 図部分：1ワード16ビットのビット割付けを示すビットマップ形式の図が2つ（PLC出力信号用、PLC入力信号用）。
+</overview>
+
+<contents>
+### テキスト
+#### 6.2.4 ポジショナー1モードの割付け
+ポジショナー1モードの割付けは以下の通り。
+
+- PLC出力は軸制御信号として割付けられている。
+- PLC入力は軸状態信号として割付けられている。
+
+mは各軸の先頭レジスターアドレス、nは各軸の先頭の相対アドレス、pは各軸の先頭のモジュールアドレスを示す。
+
+通信規格ごとのアドレスの種類：
+- CC-Link、CC-Link IE Field、CC-Link IE TSN、DeviceNetはワードアドレス
+- PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス
+- PROFINET-IOは4ワードモジュールのアドレス
+
+---
+
+### 表
+#### PLC出力＝軸制御信号のアドレス割付け
+
+| 通信規格 | CC-Link, CC-Link IE Field, CC-Link IE TSN | DeviceNet | PROFIBUS-DP, EtherNet/IP, EtherCAT | PROFINET-IO |
+| :--- | :--- | :--- | :--- | :--- |
+| アドレス (上位バイト) | m+0, m+1, m+2, m+3 | n+0, n+1, n+2, n+3 | p+0, p+1, p+2, p+3 | 1ワード=16ビット |
+
+---
+
+#### PLC入力＝軸状態信号のアドレス割付け
+
+| 通信規格 | CC-Link, CC-Link IE Field, CC-Link IE TSN | DeviceNet | PROFIBUS-DP, EtherNet/IP, EtherCAT | PROFINET-IO |
+| :--- | :--- | :--- | :--- | :--- |
+| アドレス (上位バイト) | m+0, m+1, m+2, m+3 | n+0, n+1, n+2, n+3 | p+0, p+1, p+2, p+3 | 1ワード=16ビット |
+
+---
+
+### 図
+#### PLC出力＝軸制御信号のビット割付け（1ワード16ビット）
+
+```mermaid
+flowchart LR
+    subgraph ビット15b〜0b
+        direction LR
+        BKR[ BKR L ] --> MODE[ MODE ]
+        MODE --> PWRT[ PWRT ]
+        PWRT --> DOG+[ DOG+ ]
+        DOG+ --> DOG-[ DOG- ]
+        DOG- --> JYEL[ JYEL ]
+        JYEL --> JISL[ JISL ]
+        JISL --> SON[ SON ]
+        SON --> RES[ RES ]
+        RES --> STP[ STP ]
+        STP --> HOME[ HOME ]
+        HOME --> CSTR[ CSTR ]
+    end
+    指令ポジションNo. --> BKR
+```
+
+- 上位2ワード（m+0, m+1）は使用不可。
+- m+2のワードは指令ポジションNo.のビット割付け。
+- m+3のワードは制御信号のビット割付け。
+
+---
+
+#### PLC入力＝軸状態信号のビット割付け（1ワード16ビット）
+
+```mermaid
+flowchart LR
+    subgraph ビット15b〜0b
+        direction LR
+        EMGS[ EMGS ] --> CRDY[ CRDY ]
+        CRDY --> ZONE1[ ZONE1 ]
+        ZONE1 --> ZONE2[ ZONE2 ]
+        ZONE2 --> PZONE1[ PZONE1 ]
+        PZONE1 --> MODES[ MODES ]
+        MODES --> WEND[ WEND ]
+        WEND --> MEND[ MEND ]
+        MEND --> ALML[ ALML ]
+        ALML --> LOAD[ LOAD ]
+        LOAD --> PSFL[ PSFL ]
+        PSFL --> SV[ SV ]
+        SV --> ALM[ ALM ]
+        ALM --> MOVE[ MOVE ]
+        MOVE --> HEND[ HEND ]
+        HEND --> PEND[ PEND ]
+    end
+    完了ポジションNo. --> EMGS
+```
+
+- 上位2ワード（m+0, m+1）は現在位置データ（符号付整数）。
+- m+2のワードは完了ポジションNo.のビット割付け。
+- m+3のワードは状態信号のビット割付け。
+
+---
+
+### 注釈
+- mは各軸の先頭レジスターアドレス。
+- nは各軸の先頭の相対アドレス。
+- pは各軸の先頭のモジュールアドレス。
+- 各通信規格によりアドレスの単位が異なる。
+</contents>

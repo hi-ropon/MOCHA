@@ -1,0 +1,68 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1616
+
+<overview>
+このPDFページは主に表形式で構成されており、「互換用ファンクション（汎用ファンクション）」に関する情報を提供しています。ページ全体はテキスト説明と表の2つのセクションに分かれており、グラフや図は含まれていません。テキスト部分では互換用ファンクションの概要が説明されており、表部分ではGX Works2のファンクション名とそれに対応する互換用ファンクション名、使用可能なプログラム種別（ST、FBD）、および参照先ページが一覧で示されています。
+</overview>
+
+<contents>
+### テキスト
+#### 互換用ファンクション（汎用ファンクション）
+ST（インラインST含む）、構造化ラダー/FBDのプログラムで使用されている汎用ファンクションが互換用ファンクションに置き換えられます。
+
+### 表
+#### 互換用ファンクション一覧
+| GX Works2ファンクション名 | 互換用ファンクション名 | 使用プログラム | 参照先 |
+|---------------------------|------------------------|----------------|---------|
+| ABS_E                     | ABS_E_M2               | ST:〇 / FBD:×  | 1415ページ ABS(_E) |
+| ACOS_E                    | ACOS_E_M2              | ST:〇 / FBD:×  | 1426ページ ACOS(_E) |
+| ADD_E                     | ADD_E_M2               | ST:〇 / FBD:×  | 1428ページ ADD(_E) |
+| ADD_TIME_E                | ADD_TIME_E_M2          | ST:〇 / FBD:×  | 1486ページ ADD_TIME(_E) |
+| AND_E                     | AND_E_M2               | ST:〇 / FBD:×  | 1451ページ AND(_E), OR(_E), XOR(_E) |
+| ASIN_E                    | ASIN_E_M2              | ST:〇 / FBD:×  | 1425ページ ASIN(_E) |
+| ATAN_E                    | ATAN_E_M2              | ST:〇 / FBD:×  | 1427ページ ATAN(_E) |
+| BCD_TO_DINT_E             | BCD_TO_DINT_E_M2       | ST:〇 / FBD:×  | 1362ページ BCD_TO_DINT(_E) |
+| BCD_TO_INT_E              | BCD_TO_INT_E_M2        | ST:〇 / FBD:×  | 1360ページ BCD_TO_INT(_E) |
+| BCD_TO_STR_E              | BCD_TO_STR_E_M2        | ST:〇 / FBD:×  | 1365ページ BCD_TO_STRING(_E) |
+| BITARR_TO_DINT_E          | BITARR_TO_DINT_E_M2    | ST:〇 / FBD:×  | 1404ページ BITARR_TO_DINT(_E) |
+| BITARR_TO_INT_E           | BITARR_TO_INT_E_M2     | ST:〇 / FBD:×  | 1403ページ BITARR_TO_INT(_E) |
+| BOOL_TO_DINT_E            | BOOL_TO_DINT_E_M2      | ST:〇 / FBD:×  | 1318ページ BOOL_TO_DINT(_E) |
+| BOOL_TO_DWORD_E           | BOOL_TO_DWORD_E_M2     | ST:〇 / FBD:×  | 1316ページ BOOL_TO_DWORD(_E) |
+| BOOL_TO_INT_E             | BOOL_TO_INT_E_M2       | ST:〇 / FBD:×  | 1317ページ BOOL_TO_INT(_E) |
+| BOOL_TO_STR_E             | BOOL_TO_STR_E_M2       | ST:〇 / FBD:×  | 1320ページ BOOL_TO_STRING(_E) |
+| BOOL_TO_TIME_E            | BOOL_TO_TIME_E_M2      | ST:〇 / FBD:×  | 1319ページ BOOL_TO_TIME(_E) |
+| BOOL_TO_WORD_E            | BOOL_TO_WORD_E_M2      | ST:〇 / FBD:×  | 1314ページ BOOL_TO_WORD(_E) |
+| CONCAT_E                  | CONCAT_E_M2            | ST:〇 / FBD:×  | 1475ページ CONCAT(_E) |
+| COS_E                     | COS_E_M2               | ST:〇 / FBD:×  | 1423ページ COS(_E) |
+| CPY_BITARR_E              | CPY_BITARR_E_M2        | ST:〇 / FBD:×  | 1407ページ CPY_BITARR(_E) |
+| CPY_BIT_OF_INT_E          | CPY_BIT_OF_INT_E_M2    | ST:〇 / FBD:×  | 1412ページ CPY_BIT_OF_INT(_E) |
+| DELETE_E                  | DELETE_E_M2            | ST:〇 / FBD:×  | 1479ページ DELETE(_E) |
+| DINT_TO_BCD_E             | DINT_TO_BCD_E_M2       | ST:〇 / FBD:×  | 1353ページ DINT_TO_BCD(_E) |
+| DINT_TO_BITARR_E          | DINT_TO_BITARR_E_M2    | ST:〇 / FBD:×  | 1406ページ DINT_TO_BITARR(_E) |
+| DINT_TO_BOOL_E            | DINT_TO_BOOL_E_M2      | ST:〇 / FBD:×  | 1348ページ DINT_TO_BOOL(_E) |
+| DINT_TO_DWORD_E           | DINT_TO_DWORD_E_M2     | ST:〇 / FBD:×  | 1351ページ DINT_TO_DWORD(_E) |
+| DINT_TO_INT_E             | DINT_TO_INT_E_M2       | ST:〇 / FBD:×  | 1352ページ DINT_TO_INT(_E) |
+| DINT_TO_LREAL_E           | DINT_TO_LREAL_E_M2     | ST:〇 / FBD:×  | 1356ページ DINT_TO_LREAL(_E) |
+| DINT_TO_REAL_E            | DINT_TO_REAL_E_M2      | ST:〇 / FBD:×  | 1355ページ DINT_TO_REAL(_E) |
+| DINT_TO_STR_E             | DINT_TO_STR_E_M2       | ST:〇 / FBD:×  | 1358ページ DINT_TO_STRING(_E) |
+| DINT_TO_TIME_E            | DINT_TO_TIME_E_M2      | ST:〇 / FBD:×  | 1357ページ DINT_TO_TIME(_E) |
+| DINT_TO_WORD_E            | DINT_TO_WORD_E_M2      | ST:〇 / FBD:×  | 1349ページ DINT_TO_WORD(_E) |
+| DIV_E                     | DIV_E_M2               | ST:〇 / FBD:×  | 1436ページ DIV(_E) |
+| DIV_TIME_E                | DIV_TIME_E_M2          | ST:〇 / FBD:×  | 1492ページ DIV_TIME(_E) |
+| DWORD_TO_BOOL_E           | DWORD_TO_BOOL_E_M2     | ST:〇 / FBD:×  | 1328ページ DWORD_TO_BOOL(_E) |
+| DWORD_TO_DINT_E           | DWORD_TO_DINT_E_M2     | ST:〇 / FBD:×  | 1333ページ DWORD_TO_DINT(_E) |
+| DWORD_TO_INT_E            | DWORD_TO_INT_E_M2      | ST:〇 / FBD:×  | 1331ページ DWORD_TO_INT(_E) |
+| DWORD_TO_STR_E            | DWORD_TO_STR_E_M2      | ST:〇 / FBD:×  | 1335ページ DWORD_TO_STRING(_E) |
+| DWORD_TO_TIME_E           | DWORD_TO_TIME_E_M2     | ST:〇 / FBD:×  | 1334ページ DWORD_TO_TIME(_E) |
+| DWORD_TO_WORD_E           | DWORD_TO_WORD_E_M2     | ST:〇 / FBD:×  | 1329ページ DWORD_TO_WORD(_E) |
+| EQ_E                      | EQ_E_M2                | ST:〇 / FBD:×  | 1464ページ GT(_E), GE(_E), EQ(_E), LE(_E), LT(_E) |
+| EXP_E                     | EXP_E_M2               | ST:〇 / FBD:×  | 1421ページ EXP(_E) |
+| EXPT_E                    | EXPT_E_M2              | ST:〇 / FBD:×  | 1440ページ EXPT(_E) |
+| FIND_E                    | FIND_E_M2              | ST:〇 / FBD:×  | 1484ページ FIND(_E) |
+| GE_E                      | GE_E_M2                | ST:〇 / FBD:×  | 1464ページ GT(_E), GE(_E), EQ(_E), LE(_E), LT(_E) |
+| GET_BIT_OF_INT_E          | GET_BIT_OF_INT_E_M2    | ST:〇 / FBD:×  | 1408ページ GET_BIT_OF_INT(_E) |
+| GT_E                      | GT_E_M2                | ST:〇 / FBD:×  | 1464ページ GT(_E), GE(_E), EQ(_E), LE(_E), LT(_E) |
+
+- 「使用プログラム」欄はST（構造化テキスト）での使用が可能（〇）、FBD（ファンクションブロックダイアグラム）では使用不可（×）を示しています。
+- 「参照先」欄は各ファンクションの詳細説明が記載されているページ番号とファンクション名を示しています。
+
+</contents>

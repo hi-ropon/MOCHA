@@ -1,0 +1,29 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page103
+
+<overview>
+このページはMECHATROLINK-Ⅲに関連する機器の各部名称と機能を説明しています。構成は以下の通りです。
+- テキスト部分：MECHATROLINK-Ⅲの各部名称の説明と注記
+- 図部分：機器の前面パネルのイラストに各部名称を示した図
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 2.6.2 各部の名称と機能
+MECHATROLINK-Ⅲに関連する各部の名称を示しています。
+
+注：その他のLEDやスイッチの名称・機能説明の詳細は、[SCON2取扱説明書（MJ0458）]を参照してください。
+
+### 図
+```mermaid
+flowchart TD
+    A[Status LED] --> A1[CON (緑色LED)]
+    A --> A2[ERR (橙色LED)]
+    B[MECHATROLINK-Ⅲ通信コネクター] --> B1[LK1]
+    B --> B2[LK2]
+```
+
+**図の説明:**
+- Status LEDはCON（通信状態表示）とERR（エラー表示）の2つのLEDで構成されている。
+- MECHATROLINK-Ⅲ通信コネクターは2つあり、それぞれLK1、LK2と呼ばれる。
+</contents>

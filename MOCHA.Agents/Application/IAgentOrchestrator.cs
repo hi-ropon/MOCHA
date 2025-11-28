@@ -7,5 +7,5 @@ namespace MOCHA.Agents.Application;
 /// </summary>
 public interface IAgentOrchestrator
 {
-    Task<AgentReply> ReplyAsync(ChatTurn userTurn, ChatContext context, CancellationToken cancellationToken = default);
+    Task<IAsyncEnumerable<AgentEvent>> ReplyAsync(ChatTurn userTurn, ChatContext context, CancellationToken cancellationToken = default);
 }

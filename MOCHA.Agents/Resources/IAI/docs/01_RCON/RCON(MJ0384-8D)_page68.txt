@@ -1,0 +1,63 @@
+ファイル名: RCON(MJ0384-8D)_page68
+
+<overview>
+本ページは「ユニット接続制限事項」に関する内容で構成されています。  
+テキスト部分ではRCONシステムの占有サイズ計算例の説明があり、計算方法やネットワークごとの占有サイズの違いについて記載されています。  
+図部分にはRCONシステムの構成例として、各ユニットの配置と名称が示された写真付きの構成図があります。  
+表部分にはユニット名称ごとの軸制御設定、ワード数、台数、小計をまとめた占有サイズ計算の内訳表が掲載されています。
+</overview>
+
+<contents>
+### テキスト
+#### ユニット接続制限事項
+RCONシステムの占有サイズ計算例を示す。
+
+- 計算方法  
+  固定領域：8ワード  
+  データ領域：24ワード
+
+- ネットワーク別占有サイズ  
+  ● CC-Link、CC-Link IE Field、CC-Link IE TSN、EtherNet/IP（フロントポート）の場合  
+  占有サイズ = “データ領域” = 24 = 24ワード  
+
+  ● DeviceNet、EtherCAT、EtherNet/IP、PROFIBUS-DP、PROFINET IOの場合  
+  占有サイズ = “固定領域” + “データ領域” = 8 + 24 = 32ワード  
+
+よって、本事例の場合はどのネットワークにおいても占有サイズ制限内に収まる。
+
+### 図
+#### RCONシステム構成例
+- 各ユニットの名称と接続モードが示されている。
+
+```mermaid
+flowchart LR
+    A[RCON-GW-**] --> B[RCON-EXT-NP]
+    B --> C[RCON-NP]
+    C --> D[RCON-EC-4]
+    C --> E[RCON-EC-4]
+    D --> F[RCON-PC-1<br>(直接数値指定モード)]
+    E --> G[SCON-CB-*-RC<br>(ポジショナー1モード)]
+    H[RCON-SC-1<br>(直接数値指定モード)]
+
+    style A fill:#f9f,stroke:#333,stroke-width:1px
+    style B fill:#bbf,stroke:#333,stroke-width:1px
+    style C fill:#bbf,stroke:#333,stroke-width:1px
+    style D fill:#bfb,stroke:#333,stroke-width:1px
+    style E fill:#bfb,stroke:#333,stroke-width:1px
+    style F fill:#ffb,stroke:#333,stroke-width:1px
+    style G fill:#ffb,stroke:#333,stroke-width:1px
+    style H fill:#bff,stroke:#333,stroke-width:1px
+```
+
+### 表
+#### ユニット占有サイズ計算内訳
+
+| ユニット名称           | 軸制御設定           | ワード数 | 台数 | 小計 |
+|------------------------|----------------------|----------|------|------|
+| ドライバーユニット     | 直接数値指定モード   | 8        | 2    | 16   |
+|                        | ポジショナー1モード  | 4        | 1    | 4    |
+| EC接続ユニット         |                      | 1        | 2    | 2    |
+| PIO/SIO/SCON拡張ユニット |                      | 1        | 1    | 1    |
+| PIOユニット            |                      | 1        | 1    | 1    |
+| **合計**               |                      |          |      | 24   |
+</contents>

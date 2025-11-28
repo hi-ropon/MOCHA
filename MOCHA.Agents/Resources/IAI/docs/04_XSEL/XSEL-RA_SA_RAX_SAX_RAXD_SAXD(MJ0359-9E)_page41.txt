@@ -1,0 +1,102 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page41
+
+<overview>
+本ページは「システム構成（XSEL-RAX/SAX）」についての説明であり、以下の構成で成り立っています。
+- テキスト部分：各機器やケーブルの名称、型式、仕様、注意事項などの説明文
+- 図部分：システム全体の構成図（コントローラーを中心に接続される各種機器やケーブルの接続関係を示す）
+- 表的要素：ノイズフィルター推奨機種やクランプフィルター推奨機種などのリスト（箇条書き形式）
+グラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### システム構成（XSEL-RAX/SAX）
+- パソコン専用ティーチングソフトは、RS-232（P型、C型）、USB（P型、C型）、USB/Ethernetに対応（型式例：IA-101-X-MW、IA-101-X-USBMW、IA-101-N）。
+- タッチパネルティーチングボックス（型式：TB-02(D)-□）には非常停止スイッチが付属。
+- モーターケーブル、モーターロボットケーブル、エンコーダーケーブル、エンコーダーロボットケーブルは別途参照。
+- スカラロボットや接続可能なアクチュエーターについては別章参照。
+- AC電源コネクター（型式：GMSTB2.56-STF-7.62）、制御電源・単相AC200V/230V、モーター電源三相/単相AC200V/230Vを使用。
+- 拡張モーションはPCON/ACON/DCON/SCON-CBMCON（MECHATROLINK-III仕様）に対応。
+- 対応フィールドネットワークはEtherCAT、EtherNet/IP、DeviceNet、CC-Link、PROFIBUS-DP、CC-Link IE Field。
+- フィールドネットワークケーブルはお客様用意。
+- PIOケーブル（型式：CB-X-PIO□□□（標準）、CB-X-PIOH（PIO仕様コントローラー付属））を使用。
+- I/O用24V DC電源、ブレーキ電源コネクター（型式：FMC1.5/2-ST-3.5-RF）、ブレーキ解除用24V DC電源はお客様用意。
+- システムI/O短絡コネクター（型式：FMC1.5/10-ST-3.5(XSEL)）を使用。
+- システムI/OはDC24Vで非常停止回路、イネーブル回路、駆動接点出力などを含む。
+- 回生抵抗ユニットケーブル（型式：CB-ST-REU010）を使用。
+- 回生抵抗ユニットの必要数の目安は別章参照。
+
+##### 注意事項
+- 電源接続時は必ず指定のフィルター相当品を取り付けること。
+- ノイズフィルター推奨機種：
+  - 三相電源：TAC-20-683（メーカー：COSEL）
+  - 単相電源：NBH-20-432（メーカー：COSEL）
+- リングコア推奨機種：
+  - ESD-R-25（メーカー：トーキン）
+- クランプフィルター推奨機種：
+  - 制御電源用：ZCAT3035-1330（メーカー：TDK）
+  - モーター電源用：RFC-H13（メーカー：北川工業）
+  - サージプロテクター：
+    - 三相R・A・V-781BXZ-4（メーカー：岡谷電機産業）
+    - 単相R・A・V-781BWZ-2A（メーカー：岡谷電機産業）
+
+### 図
+```mermaid
+flowchart LR
+    PC[パソコン専用ティーチングソフト]
+    TP[タッチパネルティーチングボックス]
+    EP[非常停止スイッチ]
+    DP[ダミープラグ]
+    CONT[コントローラー]
+    MOTC[モーターケーブル/モーターロボットケーブル/エンコーダーケーブル/エンコーダーロボットケーブル]
+    SCARA[スカラロボット]
+    ACT[接続可能なアクチュエーター]
+    AC_PWR[AC電源コネクター\n(型式: GMSTB2.56-STF-7.62)]
+    CTRL_PWR[制御電源・単相 AC200V/230V]
+    MOT_PWR[モーター電源 三相/単相 AC200V/230V]
+    EXT_MOTION[拡張モーション\n(ケーブルはお客様用意)]
+    FIELD_NET[対応フィールドネットワーク\nEtherCAT, EtherNet/IP, DeviceNet, CC-Link, PROFIBUS-DP, CC-Link IE Field]
+    FIELD_CABLE[フィールドネットワークケーブル\n(お客様用意)]
+    PIO_CABLE[PIOケーブル\n(型式: CB-X-PIO□□□, CB-X-PIOH)]
+    I24V_PWR[I/O用24V DC電源\n(お客様用意)]
+    BRAKE_PWR[ブレーキ電源コネクター\n(型式: FMC1.5/2-ST-3.5-RF)]
+    BRAKE_REL_PWR[ブレーキ解除用24V DC電源\n(お客様用意)]
+    SYS_IO_SHORT[システムI/O短絡コネクター\n(型式: FMC1.5/10-ST-3.5(XSEL))]
+    SYS_IO[システムI/O\nDC24V, 非常停止回路, イネーブル回路, 駆動接点出力など]
+    REGEN_RES[回生抵抗ユニットケーブル\n(型式: CB-ST-REU010)]
+    REGEN_UNIT[回生抵抗ユニット\n(必要数は別途確認)]
+
+    PC --> CONT
+    TP --> CONT
+    EP --> TP
+    DP --> CONT
+    MOTC --> CONT
+    SCARA --> MOTC
+    ACT --> MOTC
+    AC_PWR --> CONT
+    CTRL_PWR --> CONT
+    MOT_PWR --> CONT
+    EXT_MOTION --> CONT
+    FIELD_NET --> CONT
+    FIELD_CABLE --> FIELD_NET
+    PIO_CABLE --> CONT
+    I24V_PWR --> CONT
+    BRAKE_PWR --> CONT
+    BRAKE_REL_PWR --> CONT
+    SYS_IO_SHORT --> CONT
+    SYS_IO --> SYS_IO_SHORT
+    REGEN_RES --> CONT
+    REGEN_UNIT --> REGEN_RES
+```
+
+### 表（リスト形式）
+| 種類 | 推奨機種・型式 | メーカー |
+| :--- | :--- | :--- |
+| ノイズフィルター（三相電源） | TAC-20-683 | COSEL |
+| ノイズフィルター（単相電源） | NBH-20-432 | COSEL |
+| リングコア | ESD-R-25 | トーキン |
+| クランプフィルター（制御電源用） | ZCAT3035-1330 | TDK |
+| クランプフィルター（モーター電源用） | RFC-H13 | 北川工業 |
+| サージプロテクター（三相） | R・A・V-781BXZ-4 | 岡谷電機産業 |
+| サージプロテクター（単相） | R・A・V-781BWZ-2A | 岡谷電機産業 |
+</contents>

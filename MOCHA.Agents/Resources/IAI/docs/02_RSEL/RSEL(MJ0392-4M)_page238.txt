@@ -1,0 +1,75 @@
+ファイル名: RSEL(MJ0392-4M)_page238
+
+<overview>
+本ページは「4.4 配線方法」に関する内容で、RCON接続ケーブルの配線図を中心に構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：配線図の対象機種や注意事項の説明
+- 図部分：ドライバーユニットからアクチュエーターまでの接続を示す複数の配線図（配線図A～D）
+- 注釈部分：高推力用パルスモーター使用時の注意点
+表はなく、グラフもありません。図は接続構成を示す配線図で、各配線図ごとに対応機種が記載されています。
+</overview>
+
+<contents>
+### テキスト
+#### 4.4 配線方法
+RCON接続ケーブル配線図（24Vドライバーユニット接続ケーブル）
+
+- 配線図A対象機種：
+  - RCP6/RCP6CR/RCP6W/RCP5/RCP5CR/RCP5W（高推力タイプ以外）
+  - RCP4 グリッパー（GR＊）、ST4525E、SA3/RA3
+  - RCP2CR/RCP2Wのロータリー（RT＊）およびGRS/GRM/GR3SS/GR3SM
+  - RCA2/RCA2CR/RCA2W（CNSオプション）
+  - RCD-RA1DA、RCD-GRSNA
+  - WU-S/M
+
+- 配線図B対象機種：
+  - RCP6/RCP6CR/RCP6W/RCP5/RCP5W 高推力タイプ
+  - RCP4/RCP4W 高推力タイプ
+  - RCP4/RCP4CR/RCP4W（GR＊、ST4525E、SA3/RA3、高推力タイプ）
+
+- 配線図C対象機種：
+  - RCP3
+  - RCP2/RCP2CR/RCP2W-GRSS/GRLS/GRST/GRHM/GRHB
+  - RCP2-SRA4R/SRGS4R/SRGD4R
+  - RCA2/RCA2CR/RCA2W、RCL
+  - RCA 全長ショートタイプ（RCA-SRA4R/SRGS4R/SRGD4R）
+
+- 配線図D対象機種：
+  - RCP2-RTBS/RTBSL/RTCS/RTCSL
+  - RCP2/RCP2CR/RCP2W 高推力タイプ
+  - RCP2/RCP2CR/RCP2W 一部除く（詳細は前ページ一覧表参照）
+  - RCA/RCACR/RCAW（RCA-SRA4R/SRGS4R/SRGD4R以外）
+
+注1：高推力用パルスモーター（56SP、60P、86P）を使用しているアクチュエーター
+
+### 図
+#### 配線図A
+```mermaid
+flowchart LR
+    DU_A[ドライバーユニット] -->|CB-ADPC(2)-MPA□□□(-RB)| ACT_A[アクチュエーター]
+```
+
+#### 配線図B
+```mermaid
+flowchart LR
+    DU_B[ドライバーユニット] -->|CB-ADPC(2)-MPA□□□(-RB)| SAU[簡易アブソユニット]
+    SAU -->|変換ケーブル CB-CAN-AJ002| ACT_B[アクチュエーター]
+```
+
+#### 配線図C
+```mermaid
+flowchart LR
+    DU_C[ドライバーユニット] -->|CB-RCAPC-MPA□□□(-RB)| ACT_C[アクチュエーター]
+```
+
+#### 配線図D
+```mermaid
+flowchart LR
+    DU_D[ドライバーユニット] -->|変換ケーブル CB-ADPC-MPA002| CONV[変換ユニット RCM-CV-APCS]
+    CONV -->|各アクチュエーター接続ケーブル| ACT_D[アクチュエーター]
+```
+
+### 図の説明
+- 各配線図はドライバーユニットからアクチュエーターまでの接続を示している。
+- 配線図BとDは中間に変換ユニットや簡易アブソユニットが入る構成。
+- 配線図AとCはドライバーユニットから直接アクチュエーターへ接続されている。
+</contents>

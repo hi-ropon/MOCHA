@@ -1,0 +1,76 @@
+ファイル名: SCON2(MJ0458-1E)_page63
+
+<overview>
+本ページは「2.5 I/O仕様」セクションの一部であり、PIO入出力インターフェイスに関する内容で構成されています。構成は以下の通りです。
+- テキスト部分：PIO入出力インターフェイスの仕様説明（入力電圧、入力電流、ON/OFF電圧、絶縁方式など）
+- 表部分：入力部と出力部の仕様をまとめた表
+- 図部分：NPNおよびPNPトランジスタの入出力回路図とピン配列図
+</overview>
+
+<contents>
+### テキスト
+#### 2.5.1 PIO入出力インターフェイス
+PIO入出力インターフェイスの仕様について説明しています。
+
+### 表
+|  | 入力部 | 出力部 |
+| :--- | :--- | :--- |
+| 仕様 | 入力電圧 | DC24V±10% | 負荷電圧 | DC24V |
+|  | 入力電流 | 4mA 1回路 | 最大負荷電流 | 50mA 1回路 |
+|  | ON/OFF電圧 | ON電圧 Min. DC18V<br>OFF電圧 Max. DC6V | 漏れ電流 | Max. 0.1mA/1点 |
+|  | 絶縁 | フォトカプラーによる絶縁 |  |
+
+### 図
+#### NPN入出力回路図
+```mermaid
+flowchart LR
+    subgraph 入力部
+        A[外部電源 DC24V ±10%] --> B[680Ω抵抗] --> C[5.6kΩ抵抗] --> D[入力端子] --> E[フォトカプラー] --> F[内部回路]
+    end
+    subgraph 出力部
+        G[内部回路] --> H[フォトカプラー] --> I[10Ω抵抗] --> J[出力端子] --> K[負荷] --> L[外部電源 DC24V ±10%]
+    end
+```
+
+#### PNP入出力回路図
+```mermaid
+flowchart LR
+    subgraph 入力部
+        A[外部電源 DC24V ±10%] --> B[680Ω抵抗] --> C[5.6kΩ抵抗] --> D[入力端子] --> E[フォトカプラー] --> F[内部回路]
+    end
+    subgraph 出力部
+        G[内部回路] --> H[フォトカプラー] --> I[10Ω抵抗] --> J[出力端子] --> K[負荷] --> L[外部電源 DC24V ±10%]
+    end
+```
+
+#### NPN仕様ピン配列図
+```mermaid
+flowchart LR
+    subgraph NPN仕様
+        direction TB
+        V0[0V]
+        P24[24V]
+        PinsA[1A, 2A, 3A, 4A, 5A, 6A, ..., 20A]
+        PinsB[1B, 2B, ..., 16B, 17B, 18B, 19B, 20B]
+        Load[負荷]
+        V0 --> PinsB
+        PinsA --> P24
+        PinsB --> Load --> P24
+    end
+```
+
+#### PNP仕様ピン配列図
+```mermaid
+flowchart LR
+    subgraph PNP仕様
+        direction TB
+        P24[24V]
+        V0[0V]
+        PinsA[1A, 2A, 3A, 4A, 5A, 6A, ..., 20A]
+        PinsB[1B, 2B, ..., 16B, 17B, 18B, 19B, 20B]
+        Load[負荷]
+        P24 --> PinsA
+        PinsB --> Load --> V0
+    end
+```
+</contents>

@@ -1,0 +1,32 @@
+ファイル名: HM-60252J_page372
+
+<overview>
+本ページは「モニタコマンド」に関する説明で、主にI/Oステータスの内部I/Oのbit配置を示しています。構成は以下の通りです。
+- テキスト部分：I/Oステータスの説明と入力信号の概要
+- 表部分：Modbus通信レジスタアドレスごとのbit配置と内容、対応するFAネットワーク命令コードの一覧表
+- グラフ部分：なし
+</overview>
+
+<contents>
+### テキスト
+#### I/Oステータス
+内部I/Oのbitの配置を示しています。
+
+#### 入力信号
+Modbus通信レジスタアドレスごとにbit15からbit0までの各bitの意味が表形式で示されています。
+
+### 表
+#### Modbus通信レジスタアドレス別bit配置一覧
+
+| Modbus通信レジスタアドレス | bit15 | bit14 | bit13 | bit12 | bit11 | bit10 | bit9 | bit8 | bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | FAネットワーク命令コード |
+| :------------------------- | :---- | :---- | :---- | :---- | :---- | :---- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :----------------------- |
+| 368 (0170h)                | SLIT  | HOMES | RV-LS | FW-LS | RV-BLK| FW-BLK| -    | -    | SPD-LMT | CRNT-LMT | T-MODE | PLS-DIS | PLS-XMODE | CCM | - | HMI | 8376 (2088h) |
+| 369 (0171h)                | -     | INFO-CLR | LAT-CLR | ETO-CLR | - | EL-PRST | P-PRESET | ALM-RST | BREAK-ATSQ | PAUSE | STOP | STOP-COFF | CLR | C-ON | FREE | 未使用 |  |
+| 370 (0172h)                | -     | -     | RV-PSH | FW-PSH | RV-SPD | FW-SPD | RV-POS | FW-POS | RV-JOG-C | FW-JOG-C | RV-JOG-P | FW-JOG-P | RV-JOG-H | FW-JOG-H | RV-JOG | FW-JOG | 8377 (20B9h) |
+| 371 (0173h)                | D-SEL7 | D-SEL6 | D-SEL5 | D-SEL4 | D-SEL3 | D-SEL2 | D-SEL1 | D-SELO | - | - | ZHOME | HOME | NEXT | - | SSTART | START |  |
+| 372 (0174h)                | R15 | R14 | R13 | R12 | R11 | R10 | R9 | R8 | R7 | R6 | R5 | R4 | R3 | R2 | R1 | R0 | 8378 (20BAh) |
+| 373 (0175h)                | PLSM-REQ | MON-CLK | MON-REQ1 | MON-REQ0 | TEACH | - | - | - | M7 | M6 | M5 | M4 | M3 | M2 | M1 | M0 |  |
+| 374 (0176h)                | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | 8379 (20BBh) |
+| 375 (0177h)                | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - | - |  |
+
+</contents>

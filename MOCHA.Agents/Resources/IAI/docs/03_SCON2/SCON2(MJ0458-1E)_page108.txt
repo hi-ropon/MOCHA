@@ -1,0 +1,48 @@
+ファイル名: SCON2(MJ0458-1E)_page108
+
+<overview>
+このページは「3.2 パルス列制御モード」の一部であり、RCS2-RA13R、NSタイプのブレーキ付きの場合の接続方法について説明しています。ページ構成は以下の通りです。
+- テキスト部分：接続対象の説明文（RCS2-RA13R、NSタイプのブレーキ付きの場合の接続）
+- 図部分：接続構成図（ブレーキボックス、コントローラー、モーター、エンコーダーなどの接続図）
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 3.2 パルス列制御モード
+2. RCS2-RA13R、NSタイプのブレーキ付きの場合の接続
+
+### 図
+```mermaid
+flowchart LR
+    subgraph SCON2
+        BKPWR[ブレーキ電源コネクター\n(BK+ PWR-)]
+        PG[PG エンコーダーコネクター]
+        MOT[モーターコネクター]
+    end
+
+    subgraph ブレーキボックス (RCB-110-RA13)
+        CONTROLLER1[CONTROLLER1]
+        CONTROLLER2[CONTROLLER2]
+        ACTUATOR2[ACTUATOR2 エンコーダーコネクター]
+    end
+
+    DC24V1[DC24V] --> BKPWR
+    0V1[0V] --> BKPWR
+    BKPWR --> CB_RCS2_PLA1[CB-RCS2-PLA□□□]
+    CB_RCS2_PLA1 --> CONTROLLER1
+    DC24V2[DC24V] --> CONTROLLER1
+    0V2[0V] --> CONTROLLER1
+    CONTROLLER1 --> CB_RCS2_PLA2[CB-RCS2-PLA□□□]
+    CB_RCS2_PLA2 --> モーター[モーター]
+
+    MOT --> CB_RCC1_MA[CB-RCC1-MA□□□] --> CONTROLLER2
+    CONTROLLER2 --> ACTUATOR2
+```
+
+**図の説明:**
+- SCON2ユニットのブレーキ電源コネクター、エンコーダーコネクター、モーターコネクターが示されている。
+- ブレーキボックス（RCB-110-RA13）内にCONTROLLER1、CONTROLLER2、ACTUATOR2エンコーダーコネクターが配置されている。
+- DC24Vと0Vの電源が各コネクターに供給されている。
+- 各コネクターは指定されたケーブル（CB-RCS2-PLA□□□、CB-RCC1-MA□□□）で接続されている。
+</contents>

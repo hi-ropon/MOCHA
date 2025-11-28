@@ -1,0 +1,70 @@
+ファイル名: RSEL(MJ0392-4M)_page442
+
+<overview>
+このページは「6.4.2 PROFIBUS-DP」に関する説明で構成されています。  
+テキスト部分では、PROFIBUS-DPのコンフィグレーションデータフォーマットが標準識別フォーマットと特殊識別フォーマットの両方に対応していること、そのサイズ調整の必要性について説明しています。  
+表部分はなく、図部分として2つのフォーマットのビット構成を示す図（標準識別フォーマットと特殊識別フォーマット）が掲載されています。
+</overview>
+
+<contents>
+### テキスト
+#### 6.4.2 PROFIBUS-DP
+コンフィグレーションデータフォーマットは標準/特殊識別の両フォーマットに対応します。ただし、コンフィグレーションデータのサイズとRSELシステムのPROFIBUS-DP使用I/Oサイズを一致させる必要があります。
+
+### 図
+#### 標準識別フォーマット
+```mermaid
+flowchart TD
+    A[Byte (octet) 1: 7 6 5 4 3 2 1 0]
+    A --> B[Bit 0-1: ID defines only Input configuration]
+    A --> C[Bit 1-2: ID defines only Output configuration]
+    A --> D[Bit 2-3: ID defines Input and Output configuration]
+    A --> E[Bit 3-4: Special ID format (use decoding table for special format)]
+    A --> F[Bits 4-7: Number of configured data (inputs/outputs)]
+    F --> G[00₁₆ (0_F₁₆) = 1 Unit (Byte/Word)]
+    F --> H[15₁₆ (F₁₆) = 16 Units (Byte/Word)]
+    A --> I[Unit = Word / Unit = Byte]
+    A --> J[Consistency over the whole configured data block (Module)]
+    A --> K[Consistency over one Unit (Byte/Word)]
+```
+
+#### 特殊識別フォーマット
+```mermaid
+flowchart TD
+    A[Special Configuration ID]
+    A --> B[Previous ID]
+    A --> C[ID Header]
+    A --> D[Length OUTP.]
+    A --> E[Length INPUT]
+    A --> F[Vendor spec. Data (optional)]
+    A --> G[next ID]
+
+    subgraph Decoding table for special format
+        H[Byte (octet) 1: Configuration ID header]
+        H --> I[Bits 0-1: Special ID format]
+        H --> J[Bits 2-3: Number of vendor specific config ID data at the end]
+        J --> K[00₁₆ = no vendor specific data]
+        J --> L[14₁₆ = 14 vendor specific data]
+        J --> M[15₁₆ = no vendor specific data]
+        H --> N[Empty module, module has no input or output configuration]
+        H --> O[One length byte for Inputs follows]
+        H --> P[One length byte for Outputs follows]
+        H --> Q[One length byte for each Outputs and Inputs follows]
+
+        R[Following Byte(s): one length byte for outputs followed by length byte for inputs, if both are defined]
+        R --> S[Bits 0-1: Number of configured data (inputs/outputs)]
+        S --> T[00₁₆ = 1 Unit (Byte/Word)]
+        S --> U[63₁₆ = 64 Unit (Byte/Word)]
+        S --> V[Unit = Word / Unit = Byte]
+        S --> W[Consistency over the whole configured data block (Module)]
+        S --> X[Consistency over one Unit (Byte/Word)]
+
+        Y[Following Byte(s): Vendor spec. data]
+        Y --> Z[00-255₁₆ = Vendor specific config ID, defined by the device vendor]
+    end
+```
+
+**図の説明:**  
+- 標準識別フォーマットは1バイトのIDフォーマットで、入力/出力の設定やデータ数、単位、整合性をビットで表現。  
+- 特殊識別フォーマットは拡張IDフォーマットで、複数バイトにわたり、前ID、ヘッダー、入出力長、ベンダー固有データなどを含む構造を持つ。  
+</contents>

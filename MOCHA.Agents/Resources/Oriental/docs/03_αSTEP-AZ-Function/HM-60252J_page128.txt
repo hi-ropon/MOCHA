@@ -1,0 +1,55 @@
+ファイル名: HM-60252J_page128
+
+<overview>
+このページは「マクロ運転」に関する説明で構成されています。主にテキスト部分とタイミングチャート（グラフ部分）で構成されており、テキストで動作手順を説明し、複数の信号のON/OFF状態を示すタイミングチャートで動作の流れを視覚的に示しています。表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転 タイミングチャート
+1. READY出力がONであることを確認します。  
+2. FW-JOG-P入力（またはRV-JOG-P入力）をONにします。  
+   - IN-POS出力とREADY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。  
+3. READY出力がOFFになったことを確認し、FW-JOG-P入力（またはRV-JOG-P入力）をOFFにします。  
+4. モーターが停止すると、IN-POS出力とREADY出力がON、MOVE出力がOFFになります。  
+
+※負荷、運転速度、速度フィルタなどによって動作は異なります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 信号状態
+        direction TB
+        FWJOGP_ON[FW-JOG-P入力 ON/OFF]
+        RVJOGP_ON[RV-JOG-P入力 ON/OFF]
+        INPOS_OUT[IN-POS出力 ON/OFF]
+        PLSRDY_OUT[PLS-RDY出力 ON/OFF]
+        READY_OUT[READY出力 ON/OFF]
+        MOVE_OUT[MOVE出力 ON/OFF]
+    end
+
+    subgraph モーター動作
+        direction TB
+        MOTOR[モーター動作]
+    end
+
+    %% 上段のタイミングチャートの流れ
+    FWJOGP_ON -->|2| INPOS_OUT
+    RVJOGP_ON -->|2| INPOS_OUT
+    INPOS_OUT -->|3| READY_OUT
+    READY_OUT -->|1| MOVE_OUT
+    MOVE_OUT -->|4| MOTOR
+
+    %% 下段のタイミングチャートの流れ（2ms以下の遅延を示す）
+    FWJOGP_ON -.->|2ms以下| INPOS_OUT
+    RVJOGP_ON -.->|2ms以下| INPOS_OUT
+    INPOS_OUT -.->|2ms以下| PLSRDY_OUT
+    PLSRDY_OUT -.->|2ms以下| READY_OUT
+    READY_OUT -.->|2ms以下| MOVE_OUT
+    MOVE_OUT -.->|2ms以下| MOTOR
+```
+
+**図の説明:**  
+- 複数の信号（FW-JOG-P入力、RV-JOG-P入力、IN-POS出力、PLS-RDY出力、READY出力、MOVE出力）のON/OFF状態が時間軸に沿って変化し、モーターの動作開始・停止を示しています。  
+- 2ms以下の遅延が各信号間に存在することが示されています。  
+</contents>

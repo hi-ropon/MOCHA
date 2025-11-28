@@ -1,0 +1,54 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page142
+
+<overview>
+本ページは「3.3 非常停止回路（システムI/O）の配線」に関する内容で構成されています。  
+テキスト部分では、非常停止回路の信号選択やモードスイッチの動作説明、各信号の役割や動作条件について詳細に記述されています。  
+図部分には、AUTO1、AUTO2信号間の2極双投スイッチの配線図が示されています。  
+表はなく、主にテキスト説明と配線図で構成されています。
+</overview>
+
+<contents>
+### テキスト
+#### 3.3 非常停止回路（システムI/O）の配線
+
+- DETIN、DETOUT信号かAUTO1IN、AUTO1OUT信号のいずれかをパラメーターで選択可能。  
+  - IOパラメーターNo.24 bit24-27: DET_RAUTO1機能選択(0:DET、1:RAUTO1)で設定。  
+  - 出荷時はDETIN、DETOUT信号設定。  
+  - XSEL-RA/RAX/RAXDコントローラーではDETIN、DETOUT信号は未使用信号。
+
+- AUTO1IN、AUTO1OUT信号およびAUTO2IN、AUTO2OUT信号  
+  - モードスイッチがAUTOの時、AUTO1IN、AUTO1OUT信号間およびAUTO2IN、AUTO2OUT信号間に外部スイッチを接続し、外部スイッチでAUTO/MANUモードの切替が可能。  
+  - スイッチで短絡するとAUTOモード、開放するとMANUモードになる。  
+  - 外部スイッチ未接続時は9ピンと10ピン間、19ピンと20ピン間を短絡する。
+
+- 各信号の説明  
+  1. EMGin (IN) / EMGin (+24V)間が切断されると、アクチュエーターの減速停止、サーボOFF動作を実施し、モーター駆動用電源が切断される。  
+  2. EMG1 (line+) / (line-) は非常停止の接点出力。  
+  3. SDN (OUT+) / SDN (OUT-) 接点出力は、コントローラーが外部からのモーター電源供給を禁止している場合のブレーキ状態の接点。  
+  4. ENBin (IN) / ENBin (+24V)間が切断されると、アクチュエーターの減速停止、サーボOFF動作を実施し、モーター駆動用電源が切断される。  
+  5. ENB1 (line+) / (line-) はイネーブル信号の接点出力。  
+  6. RDY (OUT+) / RDY (OUT-) 接点出力は、コントローラーが正常動作中にメークする接点で、システム全体の健全性確認に使用可能。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph AUTO1
+        A1(1ピン)
+        A9(9ピン)
+    end
+    subgraph AUTO2
+        B2(2ピン)
+        B1(1ピン)
+    end
+    A1 ---|2極双投スイッチ| A9
+    B2 ---|2極双投スイッチ| B1
+    note1[スイッチ電気的定格<br>DC30V、10mA以上]:::note
+
+    classDef note fill:#f9f,stroke:#333,stroke-width:1px,color:#000,font-size:12px;
+```
+
+**図の説明:**  
+- AUTO1、AUTO2信号間に2極双投スイッチが接続されている。  
+- スイッチの電気的定格はDC30V、10mA以上。
+
+</contents>

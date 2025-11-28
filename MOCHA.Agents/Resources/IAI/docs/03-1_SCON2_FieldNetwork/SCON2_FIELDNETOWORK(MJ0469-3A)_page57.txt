@@ -1,0 +1,39 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page57
+
+<overview>
+本ページは「2.2.3 配線」に関する内容で構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：CC-Link IE Fieldの配線例の説明、通信ケーブルの仕様や注意事項の記載
+- 図部分：CC-Link IE Fieldの配線例を示す接続図（PLC、スレーブ機器、SCON2、アース接続、Ethernetケーブルの配線）
+- 表部分はなし
+- グラフ部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### 2.2.3 配線
+##### 〈1〉CC-Link IE Fieldの配線例
+- 通信ケーブルはカテゴリー5e以上のEthernetケーブルを使用すること。
+- スレーブ側の終端コネクターには何も接続しない（終端抵抗は不要）。
+- マスター側の配線については「CC-Link IE Fieldマスターの取扱説明書」を参照。
+- Ethernetケーブルは1000BASE-T対応（カテゴリー5e以上、二重シールド付・STP）を使用すること。
+- 推奨ケーブル：SC-E5EW-SxMシリーズ（xは長さ、メーカーは三菱電機システムサービス株式会社）
+
+### 図
+```mermaid
+flowchart LR
+    PLC[PLC\n(CC-Link IE Field マスターユニット)] -->|Ethernet ケーブル| Slave1[その他スレーブ機器]
+    Slave1 -->|Ethernet ケーブル| SCON2_1[SCON2]
+    SCON2_1 -->|Ethernet ケーブル| SCON2_2[SCON2]
+
+    Slave1 --- Ground1[接地]
+    SCON2_1 --- Ground2[D種接地\n(旧第3種、接地抵抗100Ω以下)]
+    SCON2_2 --- Ground3[D種接地\n(旧第3種、接地抵抗100Ω以下)]
+```
+
+**図の説明:**
+- PLC（CC-Link IE Fieldマスターユニット）からEthernetケーブルでその他スレーブ機器へ接続
+- さらにスレーブ機器からSCON2機器へEthernetケーブルで接続し、SCON2同士も接続
+- 各スレーブ機器およびSCON2はアース（接地）されている
+- D種接地は旧第3種で接地抵抗は100Ω以下と規定されている
+
+</contents>

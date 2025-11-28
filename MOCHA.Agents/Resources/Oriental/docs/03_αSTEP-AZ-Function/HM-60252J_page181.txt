@@ -1,0 +1,63 @@
+ファイル名: HM-60252J_page181
+
+<overview>
+本ページは「入力信号」に関する内容で構成されている。テキスト部分ではモーターの無励磁時の動作説明とC-ON入力の動作説明が記載されている。表はなく、グラフ部分としてはモーターの各信号（FREE入力、PLS-RDY出力、READY出力、モーター励磁、電磁ブレーキ）のON/OFF状態の時間変化を示すタイミングチャートが2つ掲載されている。1つ目はモーターが無励磁の場合の信号変化、2つ目はC-ON入力時の信号変化を示している。
+</overview>
+
+<contents>
+### テキスト
+#### モーターが無励磁の場合
+1. FREE入力をONにすると、電磁ブレーキが解放される。
+2. FREE入力をOFFにすると、電磁ブレーキが保持される。
+
+#### C-ON入力
+- C-ON入力をONにするとモーターが励磁し、OFFにすると無励磁になる。
+- 電磁ブレーキ付きの場合は、モーターが励磁した後に電磁ブレーキを解放する。
+
+**重要**
+- C-ON入力は、ダイレクトI/OやリモートI/Oに割り付けないときは常時ONになる。
+- ダイレクトI/OとリモートI/Oの両方に割り付けた場合は、両方ともONにならないと機能しない。
+
+1. C-ON入力をOFFにすると、PLS-RDY出力とREADY出力がOFFになり、モーターは無励磁になる。モーターはダイナミックブレーキ状態となり、電磁ブレーキが保持される。
+   - ダイナミックブレーキとは、ドライバ内部でモーター巻線が短絡された状態で、大きなトルクが発生すること。
+2. C-ON入力をONにすると、モーターが励磁し、PLS-RDY出力とREADY出力がONになる。電磁ブレーキは解放される。
+
+### 図（タイミングチャート）
+
+```mermaid
+flowchart TD
+    subgraph モーター無励磁の場合
+        direction LR
+        FREE_ON_OFF[FREE入力 ON/OFF] -->|① ON| 電磁ブレーキ解放
+        FREE_ON_OFF -->|② OFF| 電磁ブレーキ保持
+        PLS_RDY[PLS-RDY出力 ON/OFF]
+        READY[READY出力 ON/OFF]
+        MOTOR[モーター励磁 無励磁]
+        BRAKE[電磁ブレーキ 保持/解放]
+    end
+
+    subgraph タイミング詳細
+        FREE_ON_OFF -->|60ms以下| BRAKE
+        BRAKE -->|250ms以下| FREE_ON_OFF
+    end
+```
+
+```mermaid
+flowchart TD
+    subgraph C-ON入力時
+        direction LR
+        C_ON[ C-ON入力 ON/OFF ] -->|① OFF| PLS_RDY_OFF
+        C_ON -->|① OFF| READY_OFF
+        C_ON -->|① OFF| MOTOR_無励磁
+        C_ON -->|① OFF| BRAKE_保持
+        C_ON -->|② ON| PLS_RDY_ON
+        C_ON -->|② ON| READY_ON
+        C_ON -->|② ON| MOTOR_励磁
+        C_ON -->|② ON| BRAKE_解放
+    end
+```
+
+**図の説明:**
+- モーター無励磁時はFREE入力のON/OFFにより電磁ブレーキの解放・保持が切り替わる。
+- C-ON入力のON/OFFによりモーター励磁状態とPLS-RDY出力、READY出力、電磁ブレーキの状態が変化する。
+</contents>

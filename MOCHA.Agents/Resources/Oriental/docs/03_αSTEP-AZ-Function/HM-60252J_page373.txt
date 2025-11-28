@@ -1,0 +1,27 @@
+ファイル名: HM-60252J_page373
+
+<overview>
+このページは「モニタコマンド」に関する内容で、主に表形式で構成されています。内容はModbus通信のレジスタアドレスごとに、各ビットの名称と対応するFAネットワークの命令コードが一覧化されています。テキスト部分はほとんどなく、表が中心で、グラフや図はありません。
+</overview>
+
+<contents>
+### 表
+#### 出力信号のModbus通信レジスタアドレスとビット内容一覧
+
+| Modbus通信レジスタアドレス | bit15 | bit14 | bit13 | bit12 | bit11 | bit10 | bit9 | bit8 | bit7 | bit6 | bit5 | bit4 | bit3 | bit2 | bit1 | bit0 | FAネットワーク命令コード |
+|-----------------------------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|-------|----------------------------|
+| 376 (0178h)                 | MAREA | -     | TIM   | RND-ZERO | ZSG   | RV-SLS | FW-SLS | RND-OVF | ORGN-STLD | PRST-STLD | PRST-DIS | -     | -     | ELPRST-MON | ABSPEN | HOME-END | 8380 (20BCh)               |
+| 377 (0179h)                 | AUTO-CD | CRNT | VA    | TLC   | -     | IN-POS | ETO-MON | SYS-BSY | INFO  | MOVE  | PLS-RDY | READY | SYS-RDY | ALM-B | ALM-A | CONST-OFF |                            |
+| 378 (017Ah)                 | -     | -     | -     | -     | -     | -     | -     | -     | -     | -     | USR-OUT1 | USR-OUT0 | -     | -     | PLS-OUTR | MON-OUT | 8381 (20BDh)               |
+| 379 (017Bh)                 | -     | -     | HWTOIN-MON | EDM-MON | -     | RG    | MBC   | MPS   | AREA7 | AREA6 | AREA5 | AREA4 | AREA3 | AREA2 | AREA1 | AREA0 |                            |
+| 380 (017Ch)                 | D-END7 | D-END6 | D-END5 | D-END4 | D-END3 | D-END2 | D-END1 | D-END0 | M-ACT7 | M-ACT6 | M-ACT5 | M-ACT4 | M-ACT3 | M-ACT2 | M-ACT1 | M-ACT0 | 8382 (20BEh)               |
+| 381 (017Dh)                 | M-CHG | -     | DCMD-FULL | DCMD-RDY | PLS-LOST | NEXT-LAT | JUMP1-LAT | JUMP0-LAT | DELAY-BSY | SEQ-BSY | PAUSE-BSY | OPE-BSY | -     | -     | SPD-LMTD | CRNT-LMTD |                            |
+| 382 (017Eh)                 | INFO-RBT | INFO-CFG | INFO-IOTEST | INFO-DSLMTD | -     | -     | -     | -     | -     | INFO-ODO | INFO-TRIP | INFO-CULD1 | INFO-CULD0 | INFO-RV-OT | INFO-FW-OT |                            | 8383 (20BFh)               |
+| 383 (017Fh)                 | INFO-NET-E | INFO-RND-E | INFO-EGR-E | -     | INFO-PR-REQ | INFO-ZHOME | INFO-START | INFO-SPD | -     | INFO-OLTIME | INFO-UVOLT | INFO-OVOLT | INFO-MTRTMP | INFO-DRVTMP | INFO-POSERR | INFO-USRIO |                            |
+
+**説明:**
+- 各レジスタアドレスに対応する16ビットの各ビットが何を示すかが記載されている。
+- FAネットワークの命令コードも併記されているため、Modbus通信とFAネットワークの対応関係がわかる。
+- 一部ビットは未使用（"-"）となっている。
+
+</contents>

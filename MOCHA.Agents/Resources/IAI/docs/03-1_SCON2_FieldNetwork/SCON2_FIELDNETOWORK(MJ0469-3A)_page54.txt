@@ -1,0 +1,30 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page54
+
+<overview>
+このページは「CC-Link IE Field」に関する説明で構成されています。テキスト部分では「各部の名称と機能」についての説明があり、図部分ではCC-Link IE Fieldの通信コネクター周辺のLEDやスイッチの名称を示すイラストが掲載されています。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 2.2.2 各部の名称と機能
+CC-Link IE Fieldに関連する各部の名称を示しています。
+
+- ステータスLEDにはNS、MS、L.ER、LINKの4種類があり、それぞれの位置が図で示されています。
+- CC-Link IE Fieldの通信コネクターも図示されています。
+
+注記として、その他のLEDやスイッチの名称・機能説明の詳細は「SCON2取扱説明書（MJ0458）」を参照するよう案内があります。
+
+### 図
+```mermaid
+flowchart LR
+    A[ステータスLED] -->|NS| B[LED位置]
+    A -->|MS| C[LED位置]
+    A -->|L.ER| D[LED位置]
+    A -->|LINK| E[LED位置]
+    F[CC-Link IE Field 通信コネクター] --> G[コネクター位置]
+```
+
+**図の説明:**
+- ステータスLEDはNS、MS、L.ER、LINKの4つがあり、それぞれが機器の特定位置に配置されている。
+- CC-Link IE Fieldの通信コネクターも示されている。
+</contents>

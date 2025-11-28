@@ -1,0 +1,65 @@
+ファイル名: HM-60252J_page252
+
+<overview>
+本ページは「10-2 出力信号」に関する内容で構成されています。ページ全体は主に表形式で構成されており、割付No.と対応する信号名の一覧が3列に分かれて掲載されています。テキスト部分はタイトルと簡単な説明文のみで、グラフや図は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 10-2 出力信号
+ネットワークで信号を割り付けるときは、信号名ではなく表の「割付No.」を使用してください。
+
+### 表
+#### 割付No.と信号名一覧
+
+| 割付No. | 信号名       | 割付No. | 信号名       | 割付No. | 信号名       |
+| :------ | :----------- | :------ | :----------- | :------ | :----------- |
+| 0       | 未使用       | 56      | FW-POS_R     | 142     | CRNT         |
+| 1       | FREE_R       | 57      | RV-POS_R     | 143     | AUTO-CD      |
+| 2       | C-ON_R       | 58      | FW-SPD_R     | 144     | HOME-END     |
+| 3       | CLR_R        | 59      | RV-SPD_R     | 145     | ABSPEN       |
+| 4       | STOP-COFF_R  | 60      | FW-PSH_R     | 146     | ELPRST-MON   |
+| 5       | STOP_R       | 61      | RV-PSH_R     | 149     | PRST-DIS     |
+| 6       | PAUSE_R      | 64      | M0_R         | 150     | PRST-STLD    |
+| 7       | BREAK-ATSQ_R | 65      | M1_R         | 151     | ORGN-STLD    |
+| 8       | ALM-RST_R    | 66      | M2_R         | 152     | RND-OVF     |
+| 9       | P-PRESET_R   | 67      | M3_R         | 153     | FW-SLS       |
+| 10      | EL-PRST_R    | 68      | M4_R         | 154     | RV-SLS       |
+| 12      | ETO-CLR_R    | 69      | M5_R         | 155     | ZSG          |
+| 13      | LAT-CLR_R    | 70      | M6_R         | 156     | RND-ZERO     |
+| 14      | INFO-CLR_R   | 71      | M7_R         | 157     | TIM          |
+| 16      | HMI_R       | 75      | TEACH_R      | 159     | MAREA        |
+| 18      | CCM_R       | 76      | MON-REQ0_R   | 160     | AREA0        |
+| 19      | PLS-XMODE_R | 77      | MON-REQ1_R   | 161     | AREA1        |
+| 20      | PLS-DIS_R   | 78      | MON-CLK_R    | 162     | AREA2        |
+| 21      | T-MODE_R   | 79      | PLSM-REQ_R   | 163     | AREA3        |
+| 22      | CRNT-LMT_R | 80      | R0_R         | 164     | AREA4        |
+| 23      | SPD-LMT_R  | 81      | R1_R         | 165     | AREA5        |
+| 26      | FW-BLK_R   | 82      | R2_R         | 166     | AREA6        |
+| 27      | RV-BLK_R   | 83      | R3_R         | 167     | AREA7        |
+| 28      | FW-LS_R    | 84      | R4_R         | 168     | MPS          |
+| 29      | RV-LS_R    | 85      | R5_R         | 169     | MBC          |
+| 30      | HOMES_R   | 86      | R6_R         | 170     | RG           |
+| 31      | SLIT_R    | 87      | R7_R         | 172     | EDM-MON      |
+| 32      | START_R   | 88      | R8_R         | 173     | HWTOIN-MON   |
+| 33      | SSTART_R  | 89      | R9_R         | 176     | MON-OUT      |
+| 35      | NEXT_R    | 90      | R10_R        | 177     | PLS-OUTR     |
+| 36      | HOME_R    | 91      | R11_R        | 180     | USR-OUT0     |
+| 37      | ZHOME_R   | 92      | R12_R        | 181     | USR-OUT1     |
+| 40      | D-SEL0_R  | 93      | R13_R        | 192     | CRNT-LMTD    |
+| 41      | D-SEL1_R  | 94      | R14_R        | 193     | SPD-LMTD     |
+| 42      | D-SEL2_R  | 95      | R15_R        | 196     | OPE-BSY      |
+| 43      | D-SEL3_R  | 128     | CONST-OFF    | 197     | PAUSE-BSY    |
+| 44      | D-SEL4_R  | 129     | ALM-A        | 198     | SEQ-BSY      |
+| 45      | D-SEL5_R  | 130     | ALM-B        | 199     | DELAY-BSY    |
+| 46      | D-SEL6_R  | 131     | SYS-RDY      | 200     | JUMP0-LAT    |
+| 47      | D-SEL7_R  | 132     | READY        | 201     | JUMP1-LAT    |
+| 48      | FW-JOG_R  | 133     | PLS-RDY      | 202     | NEXT-LAT     |
+| 49      | RV-JOG_R  | 134     | MOVE         | 203     | PLS-LOST     |
+| 50      | FW-JOG-H_R| 135     | INFO         | 204     | DCMD-RDY     |
+| 51      | RV-JOG-H_R| 136     | SYS-BSY      | 205     | DCMD-FULL    |
+| 52      | FW-JOG-P_R| 137     | ETO-MON      | 207     | M-CHG        |
+| 53      | RV-JOG-P_R| 138     | IN-POS       | 208     | M-ACT0       |
+| 54      | FW-JOG-C_R| 140     | TLC          | 209     | M-ACT1       |
+| 55      | RV-JOG-C_R| 141     | VA           | 210     | M-ACT2       |
+</contents>

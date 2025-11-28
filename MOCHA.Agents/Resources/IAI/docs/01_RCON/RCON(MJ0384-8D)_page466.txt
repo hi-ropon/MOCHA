@@ -1,0 +1,63 @@
+ファイル名: RCON(MJ0384-8D)_page466
+
+<overview>
+本ページは「簡易直値モードの割付け」に関する説明で構成されています。テキスト部分では簡易直値モードの割付けの概要とPLCの軸制御信号のアドレス割付けについて記述されています。表部分はなく、図部分としてはPLC出力（軸制御信号）とPLC入力（軸状態信号）のビット割付けを示すビットマップ形式の図が2つ掲載されています。これらの図は1ワード16ビットのビット構成を示し、各ビットの意味や信号名がラベル付けされています。
+</overview>
+
+<contents>
+### テキスト
+#### 6.2.3 簡易直値モードの割付け
+簡易直値モードの割付けは以下のようになります。
+
+PLC出力＝軸制御信号のアドレス割付けは、CC-Link、DeviceNet、PROFIBUS-DP、PROFINET-IOなどの通信方式ごとに異なり、mは各軸の先頭レジスターアドレス、nは各軸の先頭の相対アドレス、pは各軸の先頭のモジュールアドレスを示します。
+
+CC-Link、CC-Link IE Field、CC-Link IE TSN、DeviceNetはワードアドレス、PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス、PROFINET-IOは4ワードモジュールのアドレスです。
+
+PLC入力＝軸状態信号のアドレス割付けも同様に通信方式ごとに異なり、同様のアドレス指定方法が用いられています。
+
+### 図
+#### PLC出力＝軸制御信号（1ワード＝16ビット）
+```mermaid
+flowchart LR
+    subgraph ワードn+2,n+3 (p+4,p+5)
+        PC64[PC64] --> PC32[PC32] --> PC16[PC16] --> PC8[PC8] --> PC4[PC4] --> PC2[PC2] --> PC1[PC1]
+    end
+    subgraph ワードn+3,n+4 (p+6,p+7)
+        BKRL[BKRL] --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> " " --> CSTR[CSTR]
+        JOG+[JOG+] --> JOG-[JOG-] --> JYEL[JYEL] --> JISL[JISL] --> SON[SON] --> RES[RES] --> STP[STP] --> HOME[HOME]
+    end
+    subgraph ワードn+0,n+1 (p+0,p+1)
+        PosData1[位置データ指定（符号付整数）]
+        PosData2[位置データ指定（符号付整数）]
+    end
+```
+**図の説明:**
+- 1ワード16ビットのビット構成で、位置データ指定が2ワード分ある。
+- 指令ポジションNo.はPC64からPC1までのビットで表される。
+- 制御信号ビットにはBKRL、JOG+、JOG-、JYEL、JISL、SON、RES、STP、HOME、CSTRなどが割り当てられている。
+
+#### PLC入力＝軸状態信号（1ワード＝16ビット）
+```mermaid
+flowchart LR
+    subgraph ワードn+2,n+3 (p+4,p+5)
+        PM64[PM64] --> PM32[PM32] --> PM16[PM16] --> PM8[PM8] --> PM4[PM4] --> PM2[PM2] --> PM1[PM1]
+    end
+    subgraph ワードn+3,n+4 (p+6,p+7)
+        EMGS[EMGS] --> CRDY[CRDY] --> ZONE2[ZONE2] --> ZONE1[ZONE1] --> PZONE[PZONE] --> " " --> " " --> MEND[MEND] --> ALML[ALML] --> LOAD[LOAD] --> PSFL[PSFL] --> SV[SV] --> ALM[ALM] --> MOVE[MOVE] --> HEND[HEND] --> PEND[PEND]
+    end
+    subgraph ワードn+0,n+1 (p+0,p+1)
+        PosData1[現在位置データ（符号付整数）]
+        PosData2[現在位置データ（符号付整数）]
+    end
+```
+**図の説明:**
+- 1ワード16ビットのビット構成で、現在位置データが2ワード分ある。
+- 完了ポジションNo.はPM64からPM1までのビットで表される。
+- 状態信号ビットにはEMGS、CRDY、ZONE2、ZONE1、PZONE、MEND、ALML、LOAD、PSFL、SV、ALM、MOVE、HEND、PENDなどが割り当てられている。
+
+### 注釈
+- mは各軸の先頭レジスターアドレス
+- nは各軸の先頭の相対アドレス
+- pは各軸の先頭のモジュールアドレス
+- 通信方式によりアドレス単位が異なる（ワードアドレス、バイトアドレス、モジュールアドレスなど）
+</contents>

@@ -1,0 +1,56 @@
+ファイル名: SCON2(MJ0458-1E)_page102
+
+<overview>
+本ページは「3.2 パルス列制御モード」に関する内容で、主に配線に関する説明が中心です。ページ構成は以下の通りです。
+- テキスト部分：注意事項と配線の説明文
+- 図部分：2種類の配線図（RCS2-RA13R、DDAのブレーキ付き仕様）を示す配線図イラスト
+表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 注意
+- パソコン専用ティーチングソフトやタッチパネルティーチングとコントローラーの接続用コネクターの抜挿は、コントローラーの電源をOFFにしてから行うこと。
+- 電源ONのまま抜挿を行うとコントローラーの故障の原因となる。
+
+#### 配線説明
+【オプション付き RCS2-RA13R、DDAおよびNSタイプの配線（アクチュエーター～コントローラー間配線図）】
+
+1. RCS2-RA13Rのブレーキ付き・ロードセルなし、またはNSアクチュエーターのブレーキ付き仕様の場合  
+2. DDAのブレーキ付き仕様の場合
+
+---
+
+### 図
+
+#### 1. RCS2-RA13Rのブレーキ付き・ロードセルなし、またはNSアクチュエーターのブレーキ付き仕様の配線図
+
+```mermaid
+flowchart LR
+    DC24V[DC24V ブレーキ用電源] --> Controller[コントローラー]
+    Controller -->|システムI/Oコネクター| SystemIO[システムI/Oコネクター]
+    Controller -->|モーターケーブル (アクチュエーターに付属)| MotorCable[モーターケーブル]
+    Controller -->|CB-RCS2-PLL4010 (ブレーキボックスに付属)| BrakeBox[ブレーキボックス RCB-110-RA13-0]
+    BrakeBox -->|エンコーダーケーブル (アクチュエーターに付属)| EncoderCable[エンコーダーケーブル]
+    BrakeBox -->|LS(オプション)付き時| LS1[LS(オプション)]
+    EncoderCable --> NSActuator[NSアクチュエーター]
+    MotorCable --> NSActuator
+    LS1 --> NSActuator
+```
+
+#### 2. DDAのブレーキ付き仕様の配線図
+
+```mermaid
+flowchart LR
+    DC24V[DC24V ブレーキ用電源] --> Controller[コントローラー]
+    Controller -->|システムI/Oコネクター| SystemIO[システムI/Oコネクター]
+    Controller -->|モーターケーブル 型式: CB-XMC-MA□□□| MotorCable[モーターケーブル]
+    Controller -->|ブレーキケーブル CB-DD8-BK□□□ (アクチュエーターに付属)| BrakeCable[ブレーキケーブル]
+    Controller -->|エンコーダーケーブル CB-X3-PA010 (ブレーキボックスに付属)| EncoderCable1[エンコーダーケーブル]
+    BrakeBox[ブレーキボックス IA-110-DD-4] -->|エンコーダーケーブル 型式: CB-X3-PA□□ (アクチュエーターに付属)| EncoderCable2[エンコーダーケーブル]
+    BrakeBox -->|AC100～240V| AC[AC100～240V]
+    BrakeCable --> DDAActuator[DDAブレーキ付き]
+    MotorCable --> DDAActuator
+    EncoderCable2 --> DDAActuator
+```
+</contents>

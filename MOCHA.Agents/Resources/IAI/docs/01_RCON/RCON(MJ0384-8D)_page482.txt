@@ -1,0 +1,104 @@
+ファイル名: RCON(MJ0384-8D)_page482
+
+<overview>
+このページは「6.2 各アドレスの割付け内容」に関する説明で構成されています。  
+主にテキストと表形式のアドレス割付け情報、及びビット単位の割付けを示す図が含まれています。  
+テキスト部分ではアドレスの定義や注意事項が記載されており、表部分では各通信規格ごとのアドレス割付けの詳細が示されています。  
+図部分は1ワード（16ビット）をビット単位で分割し、各ビットの意味を示す構成図となっています。
+</overview>
+
+<contents>
+### テキスト
+#### 各アドレスの割付け内容
+- アドレスはm、n、pを用いて表される。  
+  - mは各軸の先頭レジスターアドレス  
+  - nは各軸の先頭の相対アドレス  
+  - pは各軸の先頭のモジュールアドレス  
+- 通信規格ごとのアドレス形式  
+  - CC-Link、CC-Link IE Field、CC-Link IE TSN、DeviceNetはワードアドレス  
+  - PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス  
+  - PROFINET-IOは4ワードモジュールのアドレス  
+- 現在電流値についての注意  
+  - パルスモーターの場合は指令電流値  
+  - ACサーボモーター（SCON接続含む）の場合はフィードバック電流値  
+- LOAD、TRQSは特定のコントローラ（RCON-PC/PCF、RCON-SC、SCON-CB-RC、SCON2-CG-RC）のみ対応
+
+### 図（1ワード＝16ビットのビット割付け）
+```mermaid
+flowchart TD
+    subgraph 1ワード=16ビット
+        direction TB
+        B15[15b] --> B14[14b] --> B13[13b] --> B12[12b] --> B11[11b] --> B10[10b] --> B9[9b] --> B8[8b] --> B7[7b] --> B6[6b] --> B5[5b] --> B4[4b] --> B3[3b] --> B2[2b] --> B1[1b] --> B0[0b]
+    end
+    subgraph 予約領域
+        direction TB
+        R1[予約（使用できません）]
+        R2[予約（使用できません）]
+    end
+    subgraph 通算移動回数
+        direction TB
+        L[通算移動回数（L）]
+        H[通算移動回数（H）]
+    end
+    subgraph 通算走行距離
+        direction TB
+        L2[通算走行距離（L）]
+        H2[通算走行距離（H）]
+    end
+    subgraph 状態信号1
+        direction TB
+        S1[状態信号1]
+        MEND[MEND]
+        ALML[ALML]
+    end
+    subgraph 状態信号2
+        direction TB
+        EMGS[EMGS]
+        CRDY[CRDY]
+        ZONE2[ZONE2]
+        ZONE1[ZONE1]
+        PZONE[PZONE]
+        LOAD[LOAD]
+        TRQS[TRQS]
+        DASH[-]
+        GHMS[GHMS]
+        PUSHS[PUSHS]
+        PSFL[PSFL]
+        SV[SV]
+        ALM[ALM]
+        MOVE[MOVE]
+        HEND[HEND]
+        PEND[PEND]
+    end
+    B15 --> R1
+    B15 --> R2
+    L --> H
+    L2 --> H2
+    S1 --> MEND --> ALML
+    EMGS --> CRDY --> ZONE2 --> ZONE1 --> PZONE --> LOAD --> TRQS --> DASH --> GHMS --> PUSHS --> PSFL --> SV --> ALM --> MOVE --> HEND --> PEND
+```
+
+### 表
+#### 各通信規格ごとのアドレス割付け例
+
+| アドレス種別 | CC-Link / CC-Link IE Field / CC-Link IE TSN | DeviceNet | PROFIBUS-DP / EtherNet/IP / EtherCAT | PROFINET-IO |
+| :--- | :--- | :--- | :--- | :--- |
+| RWr m+8 | n+8 | (上位バイト) n+16 (下位バイト) n+17 | p+2 |
+| RWr m+9 | n+9 | n+18 n+19 | p+2 |
+| RWr m+A | n+A | n+20 n+21 | p+2 |
+| RWr m+B | n+B | n+22 n+23 | p+3 |
+| RWr m+C | n+C | n+24 n+25 | p+3 |
+| RWr m+D | n+D | n+26 n+27 | p+3 |
+| RWr m+E | n+E | n+28 n+29 | p+3 |
+| RWr m+F | n+F | n+30 n+31 | p+3 |
+
+※p+4以降は次ワードからの割付け
+
+---
+
+**注釈**  
+- mは各軸の先頭レジスターアドレス、nは各軸の先頭の相対アドレス、pは各軸の先頭のモジュールアドレス。  
+- CC-Link系はワードアドレス、PROFIBUS-DP/EtherNet/IP/EtherCATはバイトアドレス、PROFINET-IOは4ワードモジュールのアドレス。  
+- 現在電流値はモーター種別により指令電流値またはフィードバック電流値となる。  
+- LOAD、TRQSは特定のコントローラのみ対応。
+</contents>

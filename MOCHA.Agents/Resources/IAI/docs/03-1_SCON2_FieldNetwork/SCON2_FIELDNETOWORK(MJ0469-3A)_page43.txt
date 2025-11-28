@@ -1,0 +1,46 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page43
+
+<overview>
+このページは「2.1.3 配線」というセクションで、CC-Linkの配線方法について説明しています。ページ構成は以下の通りです。
+- テキスト部分：CC-Linkの配線方法の説明、注意事項、ケーブルの種類と抵抗値の説明
+- 図部分：CC-Linkの配線例のイラスト（PLC、スレーブ機器、SCON2ユニット、終端抵抗の接続図）
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 2.1.3 配線
+CC-Linkの配線方法について説明しています。
+
+【1】CC-Linkの配線例  
+PLC（CC-Linkマスターユニット）からCC-Linkケーブルを用いて、その他スレーブ機器、SCON2ユニットへ接続し、両端に終端抵抗を接続する構成例を示しています。
+
+※1 CC-Linkの通信ケーブルは、CC-Link Ver1.10対応専用ケーブル（FANC-SBH、FANC-SBなど）を使用してください。
+
+※2 CC-Linkシステムの両端ユニットには終端抵抗を接続する必要があります。コネクターのDA、DB間に付属の抵抗を接続します。  
+ケーブルの型式により抵抗値は異なり、以下の通りです。  
+(1) ケーブル：FANC-SBH …… 130Ω 1/2W（CC-Link用 高性能ケーブル）  
+(2) ケーブル：FANC-SB …… 110Ω 1/2W（CC-Link専用ケーブル）  
+
+詳細は「マスターユニットの取扱説明書」を参照してください。
+
+### 図
+```mermaid
+flowchart LR
+    PLC[PLC (CC-Linkマスターユニット)]
+    SubDevice[その他スレーブ機器]
+    SCON2_1[SCON2]
+    SCON2_2[SCON2]
+    TermRes1[終端抵抗]
+    TermRes2[終端抵抗]
+
+    PLC -- CC-Linkケーブル --> SubDevice
+    SubDevice -- CC-Linkケーブル --> SCON2_1
+    SCON2_1 -- CC-Linkケーブル --> SCON2_2
+    PLC -- 終端抵抗 --> TermRes1
+    SCON2_2 -- 終端抵抗 --> TermRes2
+```
+
+**図の説明:**  
+PLCのCC-LinkマスターユニットからCC-Linkケーブルでその他スレーブ機器、SCON2ユニットへ順に接続し、システムの両端に終端抵抗を接続する配線例を示しています。
+</contents>

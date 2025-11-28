@@ -1,0 +1,88 @@
+ファイル名: HM-60252J_page453
+
+<overview>
+このページは「アラーム発生時にモーターが無励磁になる場合」について説明しています。  
+構成は以下の通りです。  
+- テキスト部分：アラーム発生時の動作手順と注意点の説明  
+- 図部分：アラーム要因から各出力信号（ALM-RST入力、PLS-RDY出力、READY出力、MOVE出力、ALM-B出力、モーター励磁、電磁ブレーキ）の状態遷移を示すタイミングチャート  
+テキストと図が連動しており、アラーム発生から解除までの信号のオンオフや時間条件を詳細に示している。
+</overview>
+
+<contents>
+### テキスト
+#### アラーム発生時にモーターが無励磁になる場合
+1. 異常が発生すると、ALM-B出力、MOVE出力、およびPLS-RDY出力がOFFになり、同時にモーターが停止します。  
+2. アラームを解除するときはパルス入力を停止してください。パルス入力をしたまま解除すると、モーターが突然起動し、けがや装置破損の原因になります。  
+3. アラームの要因を取り除いてから、ALM-RST入力をONにします。アラームが解除され、ALM-B出力、READY出力、およびPLS-RDY出力がONになります。  
+4. ALM-B出力がONになったことを確認してから、ALM-RST入力をOFFにします。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph アラーム要因
+        direction LR
+        A1[ON] -->|①| B[異常状態]
+        B -->|②| A2[OFF]
+    end
+    subgraph ALM-RST入力
+        direction LR
+        C1[ON] -->|③| C2[OFF]
+    end
+    subgraph PLS-RDY出力
+        direction LR
+        D1[ON] --> D2[OFF]
+    end
+    subgraph READY出力
+        direction LR
+        E1[ON] --> E2[OFF]
+    end
+    subgraph MOVE出力
+        direction LR
+        F1[ON] --> F2[OFF]
+    end
+    subgraph ALM-B出力
+        direction LR
+        G1[ON] --> G2[OFF]
+    end
+    subgraph モーター励磁
+        direction LR
+        H1[励磁] --> H2[無励磁]
+    end
+    subgraph 電磁ブレーキ
+        direction LR
+        I1[保持] --> I2[解放]
+    end
+
+    A1 --> B --> A2
+    A1 --> D2
+    A1 --> F2
+    A1 --> G2
+    A1 --> H2
+    A1 --> I2
+    C1 --> A2
+    C1 --> D1
+    C1 --> E1
+    C1 --> G1
+    C2 --> D2
+    C2 --> E2
+    C2 --> F1
+    C2 --> G2
+    C2 --> H1
+    C2 --> I1
+```
+
+### 図（タイミング詳細）
+| 信号名       | ON期間・OFF期間の時間条件                         |
+|--------------|--------------------------------------------------|
+| アラーム要因 | 異常状態：1秒以上、異常解除後0秒以上             |
+| ALM-RST入力  | ON：2ms以上、OFF：250ms以下                       |
+| PLS-RDY出力  | OFF：2ms以下、ON：250ms以下                       |
+| READY出力    | OFF：2ms以下、ON：250ms以下                       |
+| MOVE出力     | OFF：2ms以下、ON：100ms以下                       |
+| ALM-B出力    | OFF：200ms以下、ON：200ms以下                      |
+| モーター励磁 | 無励磁：60ms以下、励磁：250ms以下                 |
+| 電磁ブレーキ | 解放：250ms以下、保持                              |
+
+**説明:**  
+このタイミングチャートは、アラーム発生時から解除までの各信号のオンオフ状態とその時間条件を示しています。アラーム要因がONになると異常状態となり、各出力がOFFに切り替わりモーターは無励磁状態になります。アラーム解除時はALM-RST入力をONにし、各出力が順次ONに戻り、モーター励磁と電磁ブレーキの状態も復帰します。
+</contents>

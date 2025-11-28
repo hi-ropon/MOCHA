@@ -1,0 +1,65 @@
+ファイル名: HM-60252J_page187
+
+<overview>
+このページは、3入出力信号に関するタイミングチャートと動作説明で構成されています。主にテキスト説明と2つのタイミングチャート（グラフ）があり、信号のON/OFF状態やモーター動作、電磁ブレーキの状態変化を示しています。表形式のデータはなく、図はタイミングチャートのみです。
+</overview>
+
+<contents>
+### テキスト
+#### STOP・STOP-COFF入力停止方法が「減速停止」の場合の動作説明
+STOP入力がONの間にモーターが停止しない場合の動作について説明しています。
+
+1. 運転中にSTOP入力をONにすると、PLS-RDY出力がOFFになり、モーターが停止動作を開始する。
+2. STOP入力をOFFにすると、PLS-RDY出力がONになる。STOP入力がOFFになった後も、モーターは停止するまで減速運転を継続する。
+3. モーターが停止すると、READY出力がONになる。
+
+※駆動条件によって動作は異なる場合があります。
+
+### 図（タイミングチャート）
+
+#### 1つ目のタイミングチャート
+```mermaid
+flowchart TD
+    subgraph 信号タイミング
+        direction TB
+        STOP[STOP入力] -->|ON/OFF| STOP状態
+        PLSRDY[PLS-RDY出力] -->|ON/OFF| PLSRDY状態
+        READY[READY出力] -->|ON/OFF| READY状態
+        MOVE[MOVE出力] -->|ON/OFF| MOVE状態
+        MOTOR[モーター動作] -->|動作/停止| MOTOR状態
+        MOTOREXC[モーター励磁] -->|励磁/無励磁| MOTOR励磁状態
+        BRAKE[電磁ブレーキ] -->|保持/解放| ブレーキ状態
+    end
+
+    STOP状態 -.->|2ms以上ON| PLSRDY状態
+    PLSRDY状態 -.->|2ms以下OFF| READY状態
+    READY状態 -.->|2ms以下ON| MOVE状態
+    MOVE状態 -.->|2ms以下OFF| MOTOR状態
+```
+
+#### 2つ目のタイミングチャート（STOP入力がONの間にモーターが停止しない場合）
+```mermaid
+flowchart TD
+    subgraph 信号タイミング_減速停止
+        direction TB
+        STOP2[STOP入力] -->|ON/OFF| STOP状態2
+        PLSRDY2[PLS-RDY出力] -->|ON/OFF| PLSRDY状態2
+        READY2[READY出力] -->|ON/OFF| READY状態2
+        MOVE2[MOVE出力] -->|ON/OFF| MOVE状態2
+        MOTOR2[モーター動作] -->|動作/停止| MOTOR状態2
+        MOTOREXC2[モーター励磁] -->|励磁/無励磁| MOTOR励磁状態2
+        BRAKE2[電磁ブレーキ] -->|保持/解放| ブレーキ状態2
+    end
+
+    STOP状態2 -.->|2ms以上ON| PLSRDY状態2
+    PLSRDY状態2 -.->|2ms以下OFF| READY状態2
+    READY状態2 -.->|2ms以下ON| MOVE状態2
+    MOVE状態2 -.->|2ms以下OFF| MOTOR状態2
+```
+
+### 図の説明
+- 各信号（STOP入力、PLS-RDY出力、READY出力、MOVE出力）のON/OFFタイミングを示す。
+- モーター動作は減速を含む動作変化を示し、モーター励磁と電磁ブレーキの状態も併記。
+- 2つ目のチャートはSTOP入力がONの間にモーターが停止しない場合の動作を示す。
+
+</contents>

@@ -1,0 +1,51 @@
+<overview>
+このページは、JOG運転の操作手順について説明している技術ガイダンスページです。一定速運転を行うJOG運転の基本的な操作方法と、FW-JOG入力とRV-JOG入力の動作タイミング図が含まれています。
+</overview>
+
+<contents>
+# ガイダンス
+
+## JOG運転
+
+JOG運転では、一定速運転が行なえます。FW-JOG入力または RV-JOG入力が ONになっている間、モーターは連続で運転します。
+
+1. 主電源を投入します。
+   READY出力と PLS-RDY出力が ONになります。
+
+2. READY出力が ONであることを確認し、FW-JOG入力または RV-JOG入力を ONにします。
+   モーターが運転を始めます。
+   FW-JOG入力を ONにしたときは FWD方向、RV-JOG入力を ONにしたときは RVS方向へ回転します。
+
+3. 入力した信号を OFFにします。
+   モーターが減速停止します。モーターが停止すると、READY出力が ONになります。
+
+```mermaid
+sequenceDiagram
+    participant 主電源 as 主電源
+    participant FW-JOG入力またはRV-JOG入力 as FW-JOG入力またはRV-JOG入力
+    participant READY出力 as READY出力
+    participant PLS-RDY出力 as PLS-RDY出力
+    participant MOVE出力 as MOVE出力
+    participant IN-POS出力 as IN-POS出力
+    participant モーター動作 as モーター動作
+
+    主電源->>主電源: ON①
+    READY出力->>READY出力: ON
+    PLS-RDY出力->>PLS-RDY出力: ON
+
+    FW-JOG入力またはRV-JOG入力->>FW-JOG入力またはRV-JOG入力: ON②
+    READY出力->>READY出力: OFF②
+    MOVE出力->>MOVE出力: ON
+    IN-POS出力->>IN-POS出力: ON
+
+    モーター動作->>モーター動作: 連続運転中
+
+    FW-JOG入力またはRV-JOG入力->>FW-JOG入力またはRV-JOG入力: OFF③
+
+    Note over モーター動作, READY出力: モーター減速停止
+    モーター動作->>モーター動作: 停止
+    READY出力->>READY出力: ON
+    MOVE出力->>MOVE出力: OFF
+    IN-POS出力->>IN-POS出力: OFF
+```
+</contents>

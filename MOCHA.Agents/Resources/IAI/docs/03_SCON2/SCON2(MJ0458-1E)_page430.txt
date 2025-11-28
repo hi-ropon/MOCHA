@@ -1,0 +1,92 @@
+ファイル名: SCON2(MJ0458-1E)_page430
+
+<overview>
+本ページは「9.2.8 接続例」という節で構成されており、主にテキスト説明と回路図（図解）で構成されています。  
+- テキスト部分：EN ISO 13849-1およびIEC 61508に関する安全レベル（PL e、SIL3）達成のための注意事項が記載されています。  
+- 図部分：安全機能用の接続例回路図が示されており、各機器（TB-02D/TB-01D、RCB-LB-TGS、OMRON製セーフティリレーユニットG9SE-201、コントローラーSCON2、安全機能用I/Oコネクター）の接続関係が詳細に描かれています。  
+表はありません。
+</overview>
+
+<contents>
+### テキスト
+#### 9.2.8 接続例
+EN ISO 13849-1におけるPL eおよびIEC 61508におけるSIL3を満たすためには、EDM信号の監視を上位装置で行う必要があります。  
+EDM信号の監視を上位装置で行わない場合は、PL cおよびSIL1となります。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph TB-02DまたはTB-01D(R)またはダミープラグ(DP-4S)
+        A1[表示器]
+    end
+
+    subgraph RCB-LB-TGS
+        direction TB
+        ENBOUT[ENBOUT]
+        ENB1N[ENB1-]
+        ENB2N[ENB2-]
+        ENB2P[ENB2+]
+        ENB1P[ENB1+]
+        EMGOUT[EMGOUT]
+        EMGN[EMG-]
+        EMGP[EMG+]
+        EMC2N[EMC2-]
+        EMC2P[EMC2+]
+        EMG1N[EMG1-]
+        EMG1P[EMG1+]
+    end
+
+    subgraph OMRON製セーフティリレーユニット G9SE-201
+        direction TB
+        A1[A1]
+        T21[T21]
+        T22[T22]
+        T11[T11]
+        T12[T12]
+        I3[I3]
+        I23[I23]
+        A2[A2]
+        T31[T31]
+        T32[T32]
+        T33[T33]
+        X1[X1]
+        I4[14]
+        I24[24]
+        リセットスイッチ[リセットスイッチ]
+        K1[K1]
+    end
+
+    subgraph コントローラー・SCON2
+        direction TB
+        EDMプラス[EDM+]
+        EDMマイナス[EDM-]
+        SRI2プラス[/SRI2+]
+        SRI2マイナス[/SRI2-]
+        SRI1プラス[/SRI1+]
+        SRI1マイナス[/SRI1-]
+    end
+
+    subgraph 安全機能用I/Oコネクター
+        EDMプラス -->|8| EDMプラス
+        EDMマイナス -->|7| EDMマイナス
+        SRI2プラス -->|6| SRI2プラス
+        SRI2マイナス -->|5| SRI2マイナス
+        SRI1プラス -->|4| SRI1プラス
+        SRI1マイナス -->|3| SRI1マイナス
+    end
+
+    A1 -->|ケーブル| RCB-LB-TGS
+    RCB-LB-TGS -->|EMG| OMRON製セーフティリレーユニット
+    OMRON製セーフティリレーユニット -->|K1| コントローラー・SCON2
+    リセットスイッチ --> K1
+    24V電源 --> OMRON製セーフティリレーユニット
+```
+
+**図の説明:**  
+- TB-02DまたはTB-01D(R)（またはダミープラグDP-4S）からRCB-LB-TGSへ接続。  
+- RCB-LB-TGSのEMG信号がOMRON製セーフティリレーユニットG9SE-201に入力される。  
+- セーフティリレーユニットはリセットスイッチと接続され、K1リレーを制御。  
+- K1リレーはコントローラーSCON2の安全機能用I/Oコネクターの各端子（EDM+/-, /SRI2+/-, /SRI1+/-）に接続されている。  
+- 24V電源がセーフティリレーユニットに供給されている。  
+- 接続ケーブルはCB-CON-LB***で接続されている。
+</contents>

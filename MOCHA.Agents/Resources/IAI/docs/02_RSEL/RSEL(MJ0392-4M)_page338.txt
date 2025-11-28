@@ -1,0 +1,52 @@
+ファイル名: RSEL(MJ0392-4M)_page338
+
+<overview>
+このページは「6.1 インターフェイス仕様」に関する内容で、主に3種類のユニットの外観写真と各部の名称を示した図で構成されています。  
+テキストは図のラベルとして各部品名を示しており、表やグラフは含まれていません。  
+図は3つのユニット（SELユニット、PIO/SIO/SCON拡張ユニット、PIOユニット）の写真に対して、各部の名称を示すラベルが付けられています。
+</overview>
+
+<contents>
+### テキスト
+#### 6.1 インターフェイス仕様
+
+- SELユニット
+  - 標準 Ethernet
+  - I/Oスロット
+  - I/OスロットステータスLED
+
+- PIO/SIO/SCON拡張ユニット
+  - ステータスLED
+  - PIOコネクター
+  - SIOコネクター
+
+- PIOユニット
+  - ステータスLED
+  - PIOコネクター
+
+### 図
+```mermaid
+flowchart LR
+    subgraph SELユニット
+        A1[標準 Ethernet]
+        A2[I/Oスロット]
+        A3[I/OスロットステータスLED]
+    end
+
+    subgraph PIO/SIO/SCON拡張ユニット
+        B1[ステータスLED]
+        B2[PIOコネクター]
+        B3[SIOコネクター]
+    end
+
+    subgraph PIOユニット
+        C1[ステータスLED]
+        C2[PIOコネクター]
+    end
+```
+
+**図の説明:**  
+- SELユニットは標準Ethernetポート、I/OスロットおよびそのステータスLEDを備えている。  
+- PIO/SIO/SCON拡張ユニットはステータスLED、PIOコネクター、SIOコネクターを備えている。  
+- PIOユニットはステータスLEDとPIOコネクターを備えている。
+</contents>
