@@ -1,7 +1,7 @@
 namespace MOCHA.Agents.Infrastructure.Orchestration;
 
 /// <summary>
-/// Organizer エージェント用の既定プロンプト。
+/// Organizer エージェント用の既定プロンプト
 /// </summary>
 public static class OrganizerInstructions
 {
