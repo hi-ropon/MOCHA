@@ -9,11 +9,18 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Data;
 using MOCHA.Factories;
 using MOCHA.Models.Auth;
 using System.Threading;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.AspNetCore.Antiforgery;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Extensions;
+using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.Extensions.Options;
 
 namespace MOCHA.Tests;
 
@@ -53,13 +60,13 @@ public class DevAuthTests
             AllowAutoRedirect = false
         });
 
-        var token = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
         var content = new FormUrlEncodedContent(new Dictionary<string, string>
         {
             ["Input.Email"] = "dev-user@example.com",
             ["Input.Password"] = "Passw0rd!",
             ["ReturnUrl"] = "/",
-            ["__RequestVerificationToken"] = token
+            ["__RequestVerificationToken"] = antiforgery
         });
 
         var postResponse = await client.PostAsync("/signup?returnUrl=%2F", content);
@@ -77,20 +84,76 @@ public class DevAuthTests
     [TestMethod]
     public async Task 重複しているメールアドレスは登録不可()
     {
+        using var factory = new AuthWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
 
+        const string email = "dup@example.com";
+        var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var firstContent = CreateSignupContent(email, "Passw0rd!", "/", antiforgery);
+
+        var firstResponse = await client.PostAsync("/signup?returnUrl=%2F", firstContent);
+
+        Assert.AreEqual(HttpStatusCode.Redirect, firstResponse.StatusCode);
+
+        antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var secondContent = CreateSignupContent(email, "Passw0rd!", "/", antiforgery);
+
+        var secondResponse = await client.PostAsync("/signup?returnUrl=%2F", secondContent);
+        var body = WebUtility.HtmlDecode(await secondResponse.Content.ReadAsStringAsync());
+
+        Assert.AreEqual(HttpStatusCode.OK, secondResponse.StatusCode);
+        StringAssert.Contains(body, "同じメールアドレスのユーザーが既に存在します");
     }
 
     [TestMethod]
     public async Task メールアドレスにはアットマークが必要()
     {
+        using var factory = new AuthWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
 
+        var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var content = CreateSignupContent("invalid-email", "Passw0rd!", "/", antiforgery);
+
+        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(body, "入力を確認してください");
     }
 
     [TestMethod]
     public async Task パスワードは6文字以上()
     {
+        using var factory = new AuthWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
 
+        var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var content = CreateSignupContent("shortpass@example.com", "12345", "/", antiforgery);
+
+        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(body, "入力を確認してください");
     }
+
+    private static FormUrlEncodedContent CreateSignupContent(string email, string password, string returnUrl, string token) =>
+        new(new Dictionary<string, string>
+        {
+            ["Input.Email"] = email,
+            ["Input.Password"] = password,
+            ["ReturnUrl"] = returnUrl,
+            ["__RequestVerificationToken"] = token
+        });
 }
 
 internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
@@ -115,21 +178,30 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
             ReplaceDbContext(services);
             ReplaceInitializer(services);
             services.Configure<DevAuthOptions>(options => { options.Enabled = true; });
+            services.AddAntiforgery(options =>
+            {
+                options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            });
         });
     }
 
     private static void ReplaceDbContext(IServiceCollection services)
     {
-        var descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ChatDbContext>));
-        if (descriptor != null)
+        ServiceDescriptor? descriptor;
+        while ((descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ChatDbContext>))) != null)
         {
             services.Remove(descriptor);
         }
 
+        services.RemoveAll<IConfigureOptions<DbContextOptions<ChatDbContext>>>();
+        services.RemoveAll<IDbContextOptionsConfiguration<ChatDbContext>>();
+        services.RemoveAll<IDatabaseProvider>();
+        services.AddEntityFrameworkInMemoryDatabase();
         services.AddDbContext<ChatDbContext>(options =>
         {
             options.UseInMemoryDatabase("DevAuthTests");
         });
+        services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
     }
 
     private static void ReplaceInitializer(IServiceCollection services)
@@ -151,7 +223,7 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
 
 internal static class AntiforgeryTokenFetcher
 {
-    private static readonly Regex _tokenRegex = new("__RequestVerificationToken\" value=\"([^\"]+)\"", RegexOptions.Compiled);
+    private static readonly Regex _tokenRegex = new("name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static async Task<string> FetchAsync(HttpClient client, string path)
     {
