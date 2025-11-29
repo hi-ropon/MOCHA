@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Chat;
 using MOCHA.Services.Chat;
+using System.Linq;
 
 namespace MOCHA.Tests
 {
@@ -20,6 +21,7 @@ namespace MOCHA.Tests
             var activities = ActivityBuilder.BuildActivities(history);
 
             Assert.AreEqual(0, activities.Count);
+            Assert.IsTrue(activities.All(a => a.IsCompleted));
         }
 
         [TestMethod]
@@ -35,6 +37,8 @@ namespace MOCHA.Tests
             Assert.AreEqual(1, activities.Count);
             Assert.AreEqual(0, activities[0].TurnNumber);
             Assert.AreEqual(0, activities[0].Items.Count);
+            Assert.IsTrue(activities[0].IsCompleted);
+            Assert.IsFalse(activities[0].IsLive);
         }
 
         [TestMethod]
@@ -52,6 +56,7 @@ namespace MOCHA.Tests
             Assert.AreEqual(1, activities.Count);
             Assert.AreEqual(1, activities[0].Items.Count);
             Assert.AreEqual(ActivityKind.Assistant, activities[0].Items[0].Kind);
+            Assert.IsTrue(activities[0].IsCompleted);
         }
 
         [TestMethod]
@@ -74,6 +79,7 @@ namespace MOCHA.Tests
             CollectionAssert.AreEqual(
                 new[] { ActivityKind.Action, ActivityKind.ToolResult, ActivityKind.Assistant },
                 new[] { items[0].Kind, items[1].Kind, items[2].Kind });
+            Assert.IsTrue(activities[0].IsCompleted);
         }
     }
 }

@@ -589,6 +589,7 @@ h1:focus {
     display: inline-flex;
     flex-direction: column;
     align-self: flex-start;
+    position: relative;
 }
 
 .thinking-chip:hover {
@@ -616,16 +617,66 @@ h1:focus {
 
 .thinking-chip.live {
     border-style: solid;
-}
-
-.thinking-chip.live .chip-line::before {
-    content: "•";
-    color: var(--accent);
-    margin-right: 0.35rem;
+    box-shadow: 0 0 0 1px rgba(36, 193, 154, 0.15);
 }
 
 .thinking-chip.collapsed {
     background: var(--panel-soft);
+}
+
+.thinking-chip.completed {
+    border-style: solid;
+    border-color: var(--border-color);
+    background: var(--panel-soft);
+    opacity: 0.95;
+}
+
+.thinking-chip .chip-line {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.2rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.thinking-chip .chip-status-text {
+    letter-spacing: 0.01em;
+}
+
+.thinking-chip .chip-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 999px;
+    background: var(--text-muted);
+    box-shadow: 0 0 0 0 rgba(36, 193, 154, 0.25);
+}
+
+.thinking-chip.live .chip-dot {
+    background: var(--accent);
+    animation: chipPulse 1.25s ease-in-out infinite;
+}
+
+.thinking-chip.pulse .chip-dot {
+    animation: chipFlash 0.6s ease;
+}
+
+.thinking-chip.completed .chip-dot {
+    background: var(--accent);
+    animation: none;
+    box-shadow: none;
+}
+
+@keyframes chipPulse {
+    0% { box-shadow: 0 0 0 0 rgba(36, 193, 154, 0.35); }
+    70% { box-shadow: 0 0 0 8px rgba(36, 193, 154, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(36, 193, 154, 0); }
+}
+
+@keyframes chipFlash {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
 }
 
 .composer {

@@ -24,12 +24,17 @@ namespace MOCHA.Services.Chat
                         activities.Add(current);
                         break;
                     case ChatRole.Assistant when current is not null:
-                        current.Items.Add(new ActivityLogItem($"アシスタント: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Assistant, DateTimeOffset.UtcNow));
+                        current.AddLog(new ActivityLogItem($"アシスタント: {TrimForPreview(message.Content)}", message.Content, ActivityKind.Assistant, DateTimeOffset.UtcNow));
                         break;
                     case ChatRole.Tool when current is not null:
-                        current.Items.Add(BuildToolLog(message));
+                        current.AddLog(BuildToolLog(message));
                         break;
                 }
+            }
+
+            foreach (var activity in activities)
+            {
+                activity.MarkCompleted();
             }
 
             return activities;

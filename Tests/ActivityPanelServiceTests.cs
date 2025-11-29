@@ -13,20 +13,8 @@ namespace MOCHA.Tests
         {
             var activities = new List<TurnActivity>
             {
-                new(0)
-                {
-                    Items =
-                    {
-                        new ActivityLogItem("a", null, ActivityKind.Assistant, System.DateTimeOffset.UtcNow)
-                    }
-                },
-                new(1)
-                {
-                    Items =
-                    {
-                        new ActivityLogItem("b", null, ActivityKind.Action, System.DateTimeOffset.UtcNow)
-                    }
-                }
+                CreateActivity(0, new ActivityLogItem("a", null, ActivityKind.Assistant, System.DateTimeOffset.UtcNow)),
+                CreateActivity(1, new ActivityLogItem("b", null, ActivityKind.Action, System.DateTimeOffset.UtcNow))
             };
 
             var logs = ActivityPanelService.GetPanelLogs(activities, 1);
@@ -41,20 +29,8 @@ namespace MOCHA.Tests
         {
             var activities = new List<TurnActivity>
             {
-                new(0)
-                {
-                    Items =
-                    {
-                        new ActivityLogItem("a", null, ActivityKind.Assistant, System.DateTimeOffset.UtcNow)
-                    }
-                },
-                new(1)
-                {
-                    Items =
-                    {
-                        new ActivityLogItem("b", null, ActivityKind.Action, System.DateTimeOffset.UtcNow)
-                    }
-                }
+                CreateActivity(0, new ActivityLogItem("a", null, ActivityKind.Assistant, System.DateTimeOffset.UtcNow)),
+                CreateActivity(1, new ActivityLogItem("b", null, ActivityKind.Action, System.DateTimeOffset.UtcNow))
             };
 
             var logs = ActivityPanelService.GetPanelLogs(activities, null);
@@ -77,6 +53,14 @@ namespace MOCHA.Tests
 
             StringAssert.Contains(summary, "2 件");
             Assert.AreEqual("まだありません", emptySummary);
+        }
+
+        private static TurnActivity CreateActivity(int turn, ActivityLogItem item)
+        {
+            var activity = new TurnActivity(turn);
+            activity.AddLog(item);
+            activity.MarkCompleted();
+            return activity;
         }
     }
 }

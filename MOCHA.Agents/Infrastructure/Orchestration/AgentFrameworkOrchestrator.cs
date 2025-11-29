@@ -14,6 +14,7 @@ using MOCHA.Agents.Domain;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Tools;
 using MOCHA.Agents.Infrastructure.Options;
+using System.Threading.Channels;
 
 namespace MOCHA.Agents.Infrastructure.Orchestration;
 
@@ -68,54 +69,64 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var thread = _threads.GetOrAdd(conversationId, _ => _agent.GetNewThread());
-
         var messages = new List<ChatMessage>(context.History.Select(MapMessage))
         {
             new ChatMessage(MapRole(userTurn.Role), userTurn.Content)
         };
 
-        var toolEvents = new List<AgentEvent>();
-        using var _ = _tools.UseContext(conversationId, toolEvents.Add);
+        var channel = Channel.CreateUnbounded<AgentEvent>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false
+        });
 
-        ChatClientAgentRunResponse<string>? response = null;
-        string? errorMessage = null;
-        try
+        void Emit(AgentEvent ev)
         {
-            response = await _agent.RunAsync<string>(
-                messages,
-                thread,
-                _serializerOptions,
-                options: new AgentRunOptions(),
-                useJsonSchemaResponseFormat: false,
-                cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "エージェント応答の取得に失敗しました。");
-            errorMessage = ex.Message;
+            channel.Writer.TryWrite(ev);
         }
 
-        if (errorMessage is not null)
+        using var _ = _tools.UseContext(conversationId, Emit);
+
+        var runTask = Task.Run(async () =>
         {
-            yield return AgentEventFactory.Error(conversationId, errorMessage);
-            yield break;
-        }
+            try
+            {
+                var response = await _agent.RunAsync<string>(
+                    messages,
+                    thread,
+                    _serializerOptions,
+                    options: new AgentRunOptions(),
+                    useJsonSchemaResponseFormat: false,
+                    cancellationToken);
 
-        var rawText = ExtractResultSafe(response);
+                var rawText = ExtractResultSafe(response);
+                var replyText = ExtractPlainText(rawText);
 
-        var replyText = ExtractPlainText(rawText);
+                if (!string.IsNullOrWhiteSpace(replyText))
+                {
+                    Emit(AgentEventFactory.Message(conversationId, replyText));
+                }
 
-        foreach (var ev in toolEvents)
+                Emit(AgentEventFactory.Completed(conversationId));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "エージェント応答の取得に失敗しました。");
+                Emit(AgentEventFactory.Error(conversationId, ex.Message));
+                Emit(AgentEventFactory.Completed(conversationId));
+            }
+            finally
+            {
+                channel.Writer.TryComplete();
+            }
+        }, cancellationToken);
+
+        await foreach (var ev in channel.Reader.ReadAllAsync(cancellationToken))
         {
             yield return ev;
         }
 
-        if (!string.IsNullOrWhiteSpace(replyText))
-        {
-            yield return AgentEventFactory.Message(conversationId, replyText);
-        }
-
-        yield return AgentEventFactory.Completed(conversationId);
+        await runTask;
     }
 
     private static ChatMessage MapMessage(ChatTurn turn) =>

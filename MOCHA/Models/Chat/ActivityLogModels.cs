@@ -15,12 +15,48 @@ namespace MOCHA.Models.Chat
 
     public sealed class TurnActivity
     {
+        private readonly List<ActivityLogItem> _items = new();
+
         public TurnActivity(int turnNumber)
         {
             TurnNumber = turnNumber;
+            LastUpdated = DateTimeOffset.UtcNow;
+            IsLive = true;
         }
 
         public int TurnNumber { get; }
-        public List<ActivityLogItem> Items { get; } = new();
+        public IReadOnlyList<ActivityLogItem> Items => _items;
+        public bool IsLive { get; private set; }
+        public bool IsCompleted { get; private set; }
+        public DateTimeOffset LastUpdated { get; private set; }
+
+        public void AddLog(ActivityLogItem item)
+        {
+            _items.Add(item);
+            LastUpdated = item.Timestamp;
+            IsLive = true;
+        }
+
+        public void RefreshLive(DateTimeOffset timestamp)
+        {
+            LastUpdated = timestamp;
+            IsLive = true;
+        }
+
+        public void MarkCompleted()
+        {
+            IsLive = false;
+            IsCompleted = true;
+        }
+
+        public bool IsRecentlyUpdated(TimeSpan window, DateTimeOffset now)
+        {
+            if (!IsLive)
+            {
+                return false;
+            }
+
+            return now - LastUpdated <= window;
+        }
     }
 }

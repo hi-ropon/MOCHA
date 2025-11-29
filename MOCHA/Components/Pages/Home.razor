@@ -1,5 +1,7 @@
 ﻿@page "/"
 @attribute [Authorize]
+@using System
+@using System.Collections.Generic
 @using System.Linq
 @using System.Security.Claims
 @using System.Text.Encodings.Web
@@ -58,18 +60,21 @@
                         ? GetTurnActivityForTurn(userTurnCounter)
                         : null;
                     var hasLog = turnActivity?.Items.Any() == true;
-                    var isCurrentSending = IsSending && i == Messages.FindLastIndex(m => m.Role == ChatRole.User);
-                    var showInlineChip = message.Role == ChatRole.User && (hasLog || isCurrentSending);
+                    var showInlineChip = message.Role == ChatRole.User && (hasLog || turnActivity?.IsLive == true);
                     var turnIndexForChip = userTurnCounter;
                     <div class="@GetBubbleClass(message.Role)">
                         <div class="content">@message.Content</div>
                     </div>
                     @if (showInlineChip)
                     {
-                        <div class="thinking-chip @(IsSending ? "live" : "collapsed")" @onclick="() => OpenActivityPanelForTurn(turnIndexForChip)" title="アクティビティを開く">
+                        <div class="@GetChipClass(turnActivity)" @onclick="() => OpenActivityPanelForTurn(turnIndexForChip)" title="アクティビティを開く">
                             <div class="chip-header">
                                 <span class="chip-title">思考過程</span>
-                                <span class="chip-count">@((hasLog || isCurrentSending) ? $"{(turnActivity?.Items.Count ?? 0)} 件の経過" : "経過なし")</span>
+                                <span class="chip-count">@GetChipCountLabel(turnActivity, hasLog)</span>
+                            </div>
+                            <div class="chip-line">
+                                <span class="chip-dot"></span>
+                                <span class="chip-status-text">@GetChipStatus(turnActivity)</span>
                             </div>
                         </div>
                     }
@@ -140,7 +145,8 @@
     private ChatMessage? _latestAssistant;
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
-    private bool HasActivity => TurnActivities.Any(t => t.Items.Any()) || IsSending;
+    private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
+    private static readonly TimeSpan ActivityPulseWindow = TimeSpan.FromSeconds(1.5);
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
@@ -251,6 +257,7 @@
                         break;
                     case ChatStreamEventType.Completed:
                         Status = null;
+                        MarkActiveTurnCompleted();
                         if (_latestAssistant is not null)
                         {
                             Messages.Add(_latestAssistant);
@@ -272,6 +279,7 @@
         }
         finally
         {
+            MarkActiveTurnCompleted();
             IsSending = false;
             await InvokeAsync(StateHasChanged);
         }
@@ -409,7 +417,7 @@
             return;
         }
 
-        current.Items.Add(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
+        current.AddLog(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
     }
 
     private void ToggleActivityPanel()
@@ -478,7 +486,74 @@
         return TurnActivities.FirstOrDefault(t => t.TurnNumber == turnNumber);
     }
 
+    private TurnActivity? GetCurrentTurn() => TurnActivities.LastOrDefault();
+
+    private void MarkActiveTurnCompleted()
+    {
+        GetCurrentTurn()?.MarkCompleted();
+    }
+
     private string GetActivitySummary() => ActivityPanelService.GetActivitySummary(GetPanelLogs());
+
+    private string GetChipClass(TurnActivity? activity)
+    {
+        var classes = new List<string> { "thinking-chip" };
+        if (activity is null)
+        {
+            classes.Add("collapsed");
+            return string.Join(" ", classes);
+        }
+
+        classes.Add(activity.IsLive ? "live" : activity.IsCompleted ? "completed" : "collapsed");
+        if (activity.IsRecentlyUpdated(ActivityPulseWindow, DateTimeOffset.UtcNow))
+        {
+            classes.Add("pulse");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetChipCountLabel(TurnActivity? activity, bool hasLog)
+    {
+        if (activity is null)
+        {
+            return "経過なし";
+        }
+
+        var count = activity.Items.Count;
+        var label = (hasLog || count > 0) ? $"{count} 件の経過" : "経過なし";
+        if (activity.IsLive)
+        {
+            return $"{label} (更新中)";
+        }
+
+        if (activity.IsCompleted)
+        {
+            return $"{label} (完了)";
+        }
+
+        return label;
+    }
+
+    private static string GetChipStatus(TurnActivity? activity)
+    {
+        if (activity is null)
+        {
+            return "待機中";
+        }
+
+        if (activity.IsLive)
+        {
+            return "進行中";
+        }
+
+        if (activity.IsCompleted)
+        {
+            return "完了";
+        }
+
+        return "待機中";
+    }
 
     private RenderFragment RenderActivityList() => builder =>
     {
