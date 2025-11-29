@@ -157,6 +157,215 @@
     outline: 2px solid var(--accent);
 }
 
+.drawing-manager {
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.architecture-manager {
+    border-top: 1px solid var(--border-color);
+    padding-top: 12px;
+    margin-top: 8px;
+}
+
+.drawing-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.drawing-subtitle {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.drawing-open-btn {
+    width: auto;
+    min-width: 140px;
+}
+
+.drawing-open-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.drawing-permission {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin: 8px 0 10px;
+}
+
+.drawing-list {
+    display: grid;
+    gap: 8px;
+}
+
+.drawing-card {
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--text-primary);
+}
+
+.drawing-file-name {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.drawing-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.drawing-divider {
+    color: var(--border-color);
+}
+
+.drawing-description {
+    color: var(--text-primary);
+}
+
+.drawing-actions {
+    display: grid;
+    justify-items: end;
+    gap: 4px;
+}
+
+.drawing-updated {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.drawing-edit-btn {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+}
+
+.drawing-edit-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.drawing-empty {
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 8px;
+    background: var(--panel-bg);
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+}
+
+.plc-list {
+    display: grid;
+    gap: 10px;
+}
+
+.plc-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    display: grid;
+    gap: 8px;
+    color: var(--text-primary);
+}
+
+.plc-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.plc-name {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.plc-meta {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.plc-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: var(--text-primary);
+}
+
+.files-row {
+    justify-content: space-between;
+}
+
+.modules-row {
+    flex-wrap: wrap;
+}
+
+.plc-label {
+    color: var(--text-muted);
+    min-width: 80px;
+}
+
+.plc-value {
+    color: var(--text-primary);
+}
+
+.plc-modules {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.plc-chip {
+    padding: 4px 8px;
+    border-radius: 8px;
+    background: var(--panel-soft);
+    border: 1px solid var(--border-color);
+    font-size: 12px;
+    color: var(--text-primary);
+}
+
+.plc-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.danger-btn {
+    border-color: var(--danger);
+    color: var(--danger);
+}
+
+.cancel-btn {
+    border-color: var(--border-color);
+    color: var(--text-primary);
+    background: var(--panel-bg);
+}
+
+.cancel-btn,
+.drawing-modal-actions .cancel-btn {
+    min-width: 120px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-soft));
+}
+
+.drawing-modal-actions .danger-btn {
+    min-width: 120px;
+    background: linear-gradient(135deg, rgba(255, 239, 239, 0.9), rgba(255, 214, 214, 0.9));
+    color: var(--danger);
+}
+
 .save-agent-btn {
     justify-content: center;
 }
@@ -437,6 +646,256 @@
 .user-settings-body label {
     color: var(--text-muted);
     font-size: 0.9rem;
+}
+
+.drawing-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 12, 24, 0.7);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 2300;
+}
+
+.drawing-modal-shell {
+    width: min(640px, 96vw);
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px 20px 16px;
+    color: var(--text-primary);
+    box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+}
+
+.drawing-modal-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.drawing-modal-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.drawing-modal-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 2px;
+}
+
+.drawing-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.drawing-modal-body {
+    margin-top: 14px;
+    display: grid;
+    gap: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.plc-modal-shell {
+    width: min(720px, 96vw);
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+    padding: 18px 20px 16px;
+    color: var(--text-primary);
+    box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+    max-height: 92vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    gap: 12px;
+}
+
+.drawing-dropzone {
+    position: relative;
+    border: 1.5px dashed var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    display: grid;
+    place-items: center;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.drawing-dropzone input[type="file"] {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.drawing-drop-label {
+    text-align: center;
+    pointer-events: none;
+}
+
+.drop-primary {
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.drop-secondary {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.drawing-file-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    font-size: 13px;
+}
+
+.drawing-file-hint {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 6px;
+}
+
+.drawing-description {
+    min-height: 80px;
+}
+
+.field.double {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.plc-file-group {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    color: var(--text-primary);
+}
+
+.plc-file-title {
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+.plc-file-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    border: 1px dashed var(--border-color);
+    border-radius: 10px;
+}
+
+.plc-file-info {
+    color: var(--text-primary);
+    font-size: 13px;
+}
+
+.plc-file-size {
+    color: var(--text-muted);
+    margin-left: 6px;
+}
+
+.plc-modules-group {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    display: grid;
+    gap: 10px;
+    position: relative;
+}
+
+.plc-module-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.plc-module-header .drawing-edit-btn {
+    width: auto;
+    min-width: 88px;
+    height: 36px;
+    padding: 8px 14px;
+    font-size: 13px;
+}
+
+.plc-module-list {
+    display: grid;
+    gap: 8px;
+}
+
+.plc-module-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 8px 10px;
+}
+
+.plc-module-name {
+    font-size: 13px;
+}
+
+.drawing-error {
+    color: var(--danger);
+    font-size: 12px;
+    background: rgba(255, 99, 99, 0.08);
+    border: 1px solid rgba(255, 99, 99, 0.4);
+    padding: 8px 10px;
+    border-radius: 8px;
+}
+
+.drawing-modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 12px 10px 0;
+    border-top: 1px solid var(--border-color);
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    position: sticky;
+    bottom: 0;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.drawing-save-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.drawing-modal-actions button {
+    min-height: 44px;
+    line-height: 1.2;
+    min-width: 100px;
+    flex: 0 0 auto;
+}
+
+.drawing-modal-actions .drawing-save-btn {
+    min-width: 120px;
+    width: auto !important;
+    flex: 0 0 auto;
 }
 
 .user-settings-select {
