@@ -5,7 +5,7 @@ namespace MOCHA.Services.Chat;
 /// <summary>
 /// エージェントチャット送受信を抽象化するクライアントインターフェース。
 /// </summary>
-public interface ICopilotChatClient
+public interface IAgentChatClient
 {
     /// <summary>
     /// エージェントにメッセージを送り、ストリームでイベントを受け取る。
@@ -21,5 +21,5 @@ public interface ICopilotChatClient
     /// <param name="result">実行結果。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>送信タスク。</returns>
-    Task SubmitActionResultAsync(CopilotActionResult result, CancellationToken cancellationToken = default);
+    Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default);
 }

@@ -13,9 +13,9 @@ using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// IAgentOrchestrator を ICopilotChatClient としてラップするアダプタ。
+/// IAgentOrchestrator を IAgentChatClient としてラップするアダプタ。
 /// </summary>
-public sealed class AgentOrchestratorChatClient : ICopilotChatClient
+public sealed class AgentOrchestratorChatClient : IAgentChatClient
 {
     private readonly IAgentOrchestrator _orchestrator;
 
@@ -29,7 +29,7 @@ public sealed class AgentOrchestratorChatClient : ICopilotChatClient
         return Task.FromResult(SendCoreAsync(turn, cancellationToken));
     }
 
-    public Task SubmitActionResultAsync(CopilotActionResult result, CancellationToken cancellationToken = default)
+    public Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default)
     {
         // いまのところツール結果の往復は行わないため no-op
         return Task.CompletedTask;
@@ -62,7 +62,7 @@ public sealed class AgentOrchestratorChatClient : ICopilotChatClient
                 case AgentEventType.ToolCallRequested when ev.ToolCall is not null:
                     yield return new ChatStreamEvent(
                         ChatStreamEventType.ActionRequest,
-                        ActionRequest: new CopilotActionRequest(
+                        ActionRequest: new AgentActionRequest(
                             ev.ToolCall.Name,
                             ev.ConversationId,
                             ParsePayload(ev.ToolCall.ArgumentsJson)));
@@ -70,7 +70,7 @@ public sealed class AgentOrchestratorChatClient : ICopilotChatClient
                 case AgentEventType.ToolCallCompleted when ev.ToolResult is not null:
                     yield return new ChatStreamEvent(
                         ChatStreamEventType.ToolResult,
-                        ActionResult: new CopilotActionResult(
+                        ActionResult: new AgentActionResult(
                             ev.ToolResult.Name,
                             ev.ConversationId,
                             ev.ToolResult.Success,

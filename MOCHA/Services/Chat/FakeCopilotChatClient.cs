@@ -7,7 +7,7 @@ namespace MOCHA.Services.Chat;
 /// 実接続なしでも振る舞いを再現できるフェイク実装。
 /// テストやローカル開発で注入する。
 /// </summary>
-internal sealed class FakeCopilotChatClient : ICopilotChatClient
+internal sealed class FakeAgentChatClient : IAgentChatClient
 {
     private readonly Func<ChatTurn, IEnumerable<ChatStreamEvent>> _script;
 
@@ -15,7 +15,7 @@ internal sealed class FakeCopilotChatClient : ICopilotChatClient
     /// 任意のスクリプトを注入して初期化する。未指定の場合は既定スクリプトを使用。
     /// </summary>
     /// <param name="script">チャットターンを受け取りイベント列を返すスクリプト。</param>
-    public FakeCopilotChatClient(Func<ChatTurn, IEnumerable<ChatStreamEvent>>? script = null)
+    public FakeAgentChatClient(Func<ChatTurn, IEnumerable<ChatStreamEvent>>? script = null)
     {
         _script = script ?? DefaultScript;
     }
@@ -46,7 +46,7 @@ internal sealed class FakeCopilotChatClient : ICopilotChatClient
     /// <param name="result">送信する結果。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>完了済みタスク。</returns>
-    public Task SubmitActionResultAsync(CopilotActionResult result, CancellationToken cancellationToken = default)
+    public Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default)
     {
         // フェイクなので何もしない。必要に応じてロギングする。
         return Task.CompletedTask;
@@ -83,7 +83,7 @@ internal sealed class FakeCopilotChatClient : ICopilotChatClient
             };
             yield return new ChatStreamEvent(
                 ChatStreamEventType.ActionRequest,
-                ActionRequest: new CopilotActionRequest(
+                ActionRequest: new AgentActionRequest(
                     "read_device",
                     turn.ConversationId ?? Guid.NewGuid().ToString("N"),
                     payload));

@@ -112,7 +112,7 @@ builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("Fa
 builder.Services.AddScoped<RoleBootstrapper>();
 builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
 builder.Services.AddMochaAgents(builder.Configuration);
-builder.Services.AddScoped<ICopilotChatClient, AgentOrchestratorChatClient>();
+builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
 
 var app = builder.Build();
 
