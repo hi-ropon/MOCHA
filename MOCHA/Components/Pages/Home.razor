@@ -72,10 +72,6 @@
                                 <span class="chip-title">思考過程</span>
                                 <span class="chip-count">@GetChipCountLabel(turnActivity, hasLog)</span>
                             </div>
-                            <div class="chip-line">
-                                <span class="chip-dot"></span>
-                                <span class="chip-status-text">@GetChipStatus(turnActivity)</span>
-                            </div>
                         </div>
                     }
                 }
@@ -524,7 +520,9 @@
         var label = (hasLog || count > 0) ? $"{count} 件の経過" : "経過なし";
         if (activity.IsLive)
         {
-            return $"{label} (更新中)";
+            var status = GetChipStatus(activity);
+            var statusText = string.IsNullOrWhiteSpace(status) ? "更新中" : status;
+            return $"{label} ({statusText})";
         }
 
         if (activity.IsCompleted)
@@ -535,7 +533,7 @@
         return label;
     }
 
-    private static string GetChipStatus(TurnActivity? activity)
+    private string GetChipStatus(TurnActivity? activity)
     {
         if (activity is null)
         {
@@ -544,7 +542,14 @@
 
         if (activity.IsLive)
         {
-            return "進行中";
+            var actionLabel = GetLatestActionLabel(activity);
+            var text = !string.IsNullOrWhiteSpace(Status)
+                ? Status
+                : !string.IsNullOrWhiteSpace(actionLabel)
+                    ? actionLabel.Replace("ツール要求:", "ツール実行中:")
+                    : "進行中";
+
+            return TruncateLabel(text, 30);
         }
 
         if (activity.IsCompleted)
@@ -553,6 +558,29 @@
         }
 
         return "待機中";
+    }
+
+    private static string? GetLatestActionLabel(TurnActivity? activity)
+    {
+        if (activity is null)
+        {
+            return null;
+        }
+
+        var lastAction = activity.Items.LastOrDefault(i => i.Kind == ActivityKind.Action);
+        return lastAction?.Title;
+    }
+
+    private static string TruncateLabel(string text, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        return text.Length <= maxLength
+            ? text
+            : $"{text[..maxLength]}…";
     }
 
     private RenderFragment RenderActivityList() => builder =>
