@@ -13,12 +13,12 @@ namespace MOCHA.Services.Chat;
 /// </summary>
 internal sealed class ChatOrchestrator : IChatOrchestrator
 {
-    private readonly ICopilotChatClient _agentChatClient;
+    private readonly IAgentChatClient _agentChatClient;
     private readonly IPlcGatewayClient _plcGateway;
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
     private readonly IManualStore _manualStore;
-    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    private static readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
@@ -32,7 +32,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="history">会話履歴状態。</param>
     /// <param name="manualStore">マニュアルストア。</param>
     public ChatOrchestrator(
-        ICopilotChatClient agentChatClient,
+        IAgentChatClient agentChatClient,
         IPlcGatewayClient plcGateway,
         IChatRepository chatRepository,
         ConversationHistoryState history,
@@ -83,7 +83,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 await SaveMessageAsync(
                     user,
                     convId,
-                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload, SerializerOptions)}"),
+                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload, _serializerOptions)}"),
                     agentNumber,
                     cancellationToken);
 
@@ -94,7 +94,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 await SaveMessageAsync(
                     user,
                     convId,
-                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, SerializerOptions)}"),
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, _serializerOptions)}"),
                     agentNumber,
                     cancellationToken);
 
@@ -103,6 +103,20 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                     ActionResult: actionResult);
 
                 await _agentChatClient.SubmitActionResultAsync(actionResult, cancellationToken);
+            }
+            else if (ev.Type == ChatStreamEventType.ToolResult && ev.ActionResult is not null)
+            {
+                var actionResult = ev.ActionResult with { ConversationId = ev.ActionResult.ConversationId ?? convId };
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, _serializerOptions)}"),
+                    agentNumber,
+                    cancellationToken);
+
+                yield return new ChatStreamEvent(
+                    ChatStreamEventType.ToolResult,
+                    ActionResult: actionResult);
             }
             else
             {
@@ -125,7 +139,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> ExecuteActionAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> ExecuteActionAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         switch (request.ActionName)
         {
@@ -138,7 +152,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             case "read_manual":
                 return await HandleReadManualAsync(request, cancellationToken);
             default:
-                return new CopilotActionResult(
+                return new AgentActionResult(
                     request.ActionName,
                     request.ConversationId,
                     false,
@@ -153,7 +167,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> HandleReadDeviceAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleReadDeviceAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var device = ReadString(payload, "device") ?? "D";
@@ -173,7 +187,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             ["success"] = result.Success
         };
 
-        return new CopilotActionResult(
+        return new AgentActionResult(
             request.ActionName,
             request.ConversationId,
             result.Success,
@@ -187,7 +201,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> HandleBatchReadAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleBatchReadAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var devices = ReadStringList(payload, "devices") ?? new List<string>();
@@ -209,7 +223,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             ["success"] = result.Success
         };
 
-        return new CopilotActionResult(
+        return new AgentActionResult(
             request.ActionName,
             request.ConversationId,
             result.Success,
@@ -220,7 +234,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <summary>
     /// マニュアル検索アクションを実行する。
     /// </summary>
-    private async Task<CopilotActionResult> HandleFindManualsAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleFindManualsAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
@@ -237,7 +251,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             };
 
             var success = responsePayload["hits"] is List<object?> list && list.Count > 0;
-            return new CopilotActionResult(
+            return new AgentActionResult(
                 request.ActionName,
                 request.ConversationId,
                 success,
@@ -246,7 +260,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         }
         catch (Exception ex)
         {
-            return new CopilotActionResult(
+            return new AgentActionResult(
                 request.ActionName,
                 request.ConversationId,
                 false,
@@ -262,7 +276,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <summary>
     /// マニュアル読取アクションを実行する。
     /// </summary>
-    private async Task<CopilotActionResult> HandleReadManualAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleReadManualAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
@@ -281,7 +295,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 ["length"] = content?.Length
             };
 
-            return new CopilotActionResult(
+            return new AgentActionResult(
                 request.ActionName,
                 request.ConversationId,
                 success,
@@ -290,7 +304,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         }
         catch (Exception ex)
         {
-            return new CopilotActionResult(
+            return new AgentActionResult(
                 request.ActionName,
                 request.ConversationId,
                 false,

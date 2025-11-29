@@ -64,7 +64,7 @@ public class FakeChatFlowTests
         var orchestrator = CreateOrchestrator(turn => new[]
         {
             ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "ack")),
-            new ChatStreamEvent(ChatStreamEventType.ActionRequest, ActionRequest: new CopilotActionRequest("read_device", turn.ConversationId ?? "conv", new Dictionary<string, object?>())),
+            new ChatStreamEvent(ChatStreamEventType.ActionRequest, ActionRequest: new AgentActionRequest("read_device", turn.ConversationId ?? "conv", new Dictionary<string, object?>())),
             ChatStreamEvent.Completed(turn.ConversationId)
         }, plc);
 
@@ -89,7 +89,7 @@ public class FakeChatFlowTests
             ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "batch start")),
             new ChatStreamEvent(
                 ChatStreamEventType.ActionRequest,
-                ActionRequest: new CopilotActionRequest(
+                ActionRequest: new AgentActionRequest(
                     "batch_read_devices",
                     turn.ConversationId ?? "conv",
                     new Dictionary<string, object?>
@@ -105,6 +105,63 @@ public class FakeChatFlowTests
         Assert.IsTrue((bool)toolResult.Payload["success"]);
         var results = toolResult.Payload["results"] as IEnumerable<object?> ?? Array.Empty<object?>();
         Assert.AreEqual(2, results.Count());
+    }
+
+    /// <summary>
+    /// エージェント側から届く ToolResult も保存されることを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task エージェントのToolResultも保存する()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var orchestrator = new ChatOrchestrator(
+            new FakeAgentChatClient(turn =>
+            {
+                var convId = turn.ConversationId ?? "conv-tool";
+                return new[]
+                {
+                    ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "thinking")),
+                    new ChatStreamEvent(
+                        ChatStreamEventType.ActionRequest,
+                        ActionRequest: new AgentActionRequest(
+                            "find_manuals",
+                            convId,
+                            new Dictionary<string, object?>
+                            {
+                                ["agentName"] = "iaiAgent",
+                                ["query"] = "test"
+                            })),
+                    new ChatStreamEvent(
+                        ChatStreamEventType.ToolResult,
+                        ActionResult: new AgentActionResult(
+                            "find_manuals",
+                            convId,
+                            true,
+                            new Dictionary<string, object?>
+                            {
+                                ["raw"] = "agent-side"
+                            })),
+                    ChatStreamEvent.Completed(convId)
+                };
+            }),
+            new FakePlcGatewayClient(),
+            repo,
+            history,
+            new DummyManualStore());
+
+        var user = new UserContext("persist-user", "Persist User");
+        var conversationId = "conv-agent-tool";
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, conversationId, "manuals please", "AG-01"))
+        {
+        }
+
+        var saved = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
+        var toolResults = saved.Where(m => m.Role == ChatRole.Tool && m.Content.StartsWith("[result]")).ToList();
+
+        Assert.AreEqual(2, toolResults.Count, "オーケストレーター分とエージェント分の両方を保持すること");
+        Assert.IsTrue(toolResults.Any(r => r.Content.Contains("agent-side")), "エージェントの結果が保存されていること");
     }
 
     /// <summary>
@@ -128,7 +185,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeCopilotChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        return new ChatOrchestrator(new FakeAgentChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore());
     }
 
     /// <summary>
@@ -139,7 +196,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -163,7 +220,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -189,7 +246,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
