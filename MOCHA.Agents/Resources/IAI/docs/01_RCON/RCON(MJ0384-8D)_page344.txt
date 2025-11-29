@@ -1,0 +1,22 @@
+ファイル名: RCON(MJ0384-8D)_page344
+
+<overview>
+このページは「第4章 ユニットの連結・設置および配線」の一部であり、フィールドネットワークの配線に関する節の中のサブセクションとして構成されています。ページ全体はテキストのみで構成されており、以下の3つの接続仕様について簡潔に記載されています。
+- EtherCAT Motion
+- MECHATROLINK-III
+- SSCNET III/H
+
+各接続仕様の詳細は別の取扱説明書を参照するよう案内しているため、具体的な説明や図表、グラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 4.12.10 EtherCAT Motion
+EtherCATモーション接続仕様については、「RCON EtherCATモーション取扱説明書（MJ0427）」を参照するよう指示しています。
+
+#### 4.12.11 MECHATROLINK-III
+MECHATROLINK-III接続仕様については、「RCON MECHATROLINK-III取扱説明書（MJ0426）」を参照するよう指示しています。
+
+#### 4.12.12 SSCNET III/H
+SSCNET III/H接続仕様については、「RCON SSCNET III/H取扱説明書（MJ0428）」を参照するよう指示しています。
+</contents>

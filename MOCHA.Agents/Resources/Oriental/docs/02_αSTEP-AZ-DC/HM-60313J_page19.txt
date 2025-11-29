@@ -1,0 +1,118 @@
+<overview>
+このページは接続図（7-4）における電流シンク出力回路との接続例を示しています。位置決め機能対応タイプの接続回路図で、上位システムとドライバ間の詳細な配線図を記載した技術図面ページです。
+</overview>
+
+<contents>
+## 7-4 接続図
+
+### 電流シンク出力回路との接続例
+
+図は、位置決め機能対応タイプの接続例です。RS-485通信付きパルス列入力タイプ/パルス列入力タイプの場合、ピンNo.1, 2, 13, 14 はパルス入力端子です。接続例は20ページで確認してください。
+
+```mermaid
+flowchart TB
+    subgraph "上位システム"
+        A[DC24 V]
+        B[0 V]
+        C[DC24 V]
+        D[0 V]
+        E[DC12-24 V]
+        F[ツイストペア線]
+        G[0 V]
+    end
+
+    subgraph "ドライバ"
+        H1[IN0(START)]
+        H2[IN1(M0)]
+        H3[IN2(M1)]
+        H4[IN3(M2)]
+        H5[IN4(ZHOME)]
+        H6[IN5(FREE)]
+        H7[IN6(STOP)]
+        H8[IN7(ALM-RST)]
+        H9[IN-COM(0-7)]
+        H10[IN8(FW-JOG)]
+        H11[IN9(RV-JOG)]
+        H12[IN-COM(8-9)]
+
+        O1[OUT0(HOME-END)]
+        O2[OUT1(IN-POS)]
+        O3[OUT2(PLS-RDY)]
+        O4[OUT3(READY)]
+        O5[OUT4(MOVE)]
+        O6[OUT5(ALM-B)]
+        O7[OUT-COM]
+
+        P1[ASG+]
+        P2[ASG-]
+        P3[BSG+]
+        P4[BSG-]
+        P5[GND]
+    end
+
+    subgraph "外部回路"
+        R1[4.7 kΩ - 2.2 kΩ 抵抗]
+        R2[10 mA以下]
+        R3[出力負荷抵抗 1 kΩ]
+        LED1[LED]
+        LED2[LED]
+        LED3[LED]
+        LED4[LED]
+        LED5[LED]
+        LED6[LED]
+        Z1[26C31相当]
+    end
+
+    %% 入力信号接続
+    A --> R1
+    R1 --> H1
+    R1 --> H2
+    R1 --> H3
+    R1 --> H4
+    R1 --> H5
+    R1 --> H6
+    R1 --> H7
+    R1 --> H8
+    B --> H9
+
+    C --> R1
+    R1 --> H10
+    R1 --> H11
+    D --> H12
+
+    %% 出力信号接続
+    O1 --> R2
+    O2 --> R2
+    O3 --> R2
+    O4 --> R2
+    O5 --> R2
+    O6 --> R2
+    R2 --> LED1
+    R2 --> LED2
+    R2 --> LED3
+    R2 --> LED4
+    R2 --> LED5
+    R2 --> LED6
+    LED1 --> R3
+    LED2 --> R3
+    LED3 --> R3
+    LED4 --> R3
+    LED5 --> R3
+    LED6 --> R3
+    R3 --> E
+    O7 --> G
+
+    %% パルス出力接続
+    F --> P1
+    F --> P2
+    F --> P3
+    F --> P4
+    P1 --> Z1
+    P2 --> Z1
+    P3 --> Z1
+    P4 --> Z1
+    P5 --> G
+```
+
+※（）内は初期設定です。
+</contents>

@@ -1,0 +1,92 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page359
+
+<overview>
+このページは「4.3 プレスプログラムの運転方法」に関する内容で構成されています。  
+主に以下のセクションで構成されています。  
+- テキスト部分：各信号やデータの名称と送受信元（PLC→コントローラー、コントローラー→PLC）に関する説明。  
+- 図（グラフ）部分：各信号のタイミングチャートと信号の流れを示すフローチャート的な図。信号の送受信タイミングや相互関係を矢印で示している。  
+- 注釈部分：タイミングに関する注意事項が記載されている。  
+表はなく、テキストとタイミングチャート（グラフ）が中心の構成。  
+</overview>
+
+<contents>
+### テキスト
+#### 4.3 プレスプログラムの運転方法
+
+- 軸移動許可 ENMV (PLC→コントローラー)  
+- 加圧動作制御モード：[用途に合わせ設定] (PLC→コントローラー)  
+- 加圧動作停止方法：[用途に合わせ設定] (PLC→コントローラー)  
+- 目標位置データ (PLC→コントローラー)  
+- 速度データ (PLC→コントローラー)  
+- 加速度データ (PLC→コントローラー)  
+- 減速度データ (PLC→コントローラー)  
+- 加圧荷重データ (PLC→コントローラー)  
+- プレス直値スタート指令 DPST (PLC→コントローラー)  
+- 加圧動作中 DPRS (コントローラー→PLC)  
+- 加圧動作終了 DPED (コントローラー→PLC)  
+- 現在荷重 FBFC (コントローラー→PLC)  
+- 現在位置 PNOW (コントローラー→PLC)  
+- アクチュエーター動作（速度波形のイメージ）
+
+#### 注釈
+- ※1 T1：上位コントローラーのスキャンタイムを考慮し、間隔を空けてください。  
+- ※2 Mtは、「使用するフィールドネットワークの仕様」を参照してください。
+
+### 図（タイミングチャートと信号フロー）
+```mermaid
+flowchart TD
+    subgraph PLC_to_Controller
+        ENMV[軸移動許可 ENMV]
+        Mode[加圧動作制御モード]
+        StopMethod[加圧動作停止方法]
+        TargetPos[目標位置データ]
+        Speed[速度データ]
+        Accel[加速度データ]
+        Decel[減速度データ]
+        LoadData[加圧荷重データ]
+        StartCmd[プレス直値スタート指令 DPST]
+    end
+
+    subgraph Controller_to_PLC
+        Pressing[DPRS 加圧動作中]
+        PressEnd[DPED 加圧動作終了]
+        CurrentLoad[FBFC 現在荷重]
+        CurrentPos[PNOW 現在位置]
+    end
+
+    subgraph Actuator
+        ActuatorMotion[アクチュエーター動作（速度波形のイメージ）]
+    end
+
+    ENMV -->|1)| StartCmd
+    Mode -->|2)| StartCmd
+    StopMethod -->|3)| StartCmd
+    TargetPos -->|4)| StartCmd
+    Speed -->|5)| StartCmd
+    Accel -->|6)| StartCmd
+    Decel -->|7)| StartCmd
+    LoadData -->|8)| StartCmd
+
+    StartCmd -->|9) T1待ち| Pressing
+    StartCmd -->|9) T1待ち| PressEnd
+
+    Pressing -->|10)| StartCmd
+    PressEnd -->|10)| StartCmd
+
+    Pressing -->|12)| CurrentLoad
+    Pressing -->|12)| CurrentPos
+
+    PressEnd -->|13)| CurrentLoad
+    PressEnd -->|13)| CurrentPos
+
+    CurrentLoad -->|交差| CurrentPos
+
+    ActuatorMotion -.-> CurrentPos
+```
+
+**図の説明**  
+- PLCからコントローラーへは、軸移動許可や各種制御モード、目標位置や速度・加減速データ、加圧荷重データ、スタート指令が送られる。  
+- コントローラーからPLCへは、加圧動作中・終了の信号、現在荷重・位置のデータが返される。  
+- 信号の送受信はタイミングチャートで示され、T1の待ち時間を設ける必要がある。  
+- アクチュエーターの動作は速度波形のイメージとして示されている。  
+</contents>

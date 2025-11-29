@@ -1,0 +1,31 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page140
+
+<overview>
+本ページは主に表形式で構成されており、STRING型やビット配列、INT型/DINT型などのデータ型間の変換に関する汎用ファンクションの一覧を示しています。テキスト部分は各ファンクションの名称、処理内容、参照先ページを説明しています。グラフや図はなく、表のみで情報が整理されています。
+</overview>
+
+<contents>
+### 表
+#### STRING型やビット配列、INT型/DINT型の変換ファンクション一覧
+
+| ファンクション記号 | 処理内容 | 参照先 |
+|--------------------|----------|--------|
+| **STRING_TO_INT / STRING_TO_INT_E** | STRING型データをINT型データへ変換します。 | 1392ページ |
+| **STRING_TO_DINT / STRING_TO_DINT_E** | STRING型データをDINT型データへ変換します。 | 1394ページ |
+| **STRING_TO_BCD / STRING_TO_BCD_E** | STRING型データをBCD型データへ変換します。 | 1396ページ |
+| **STRING_TO_REAL / STRING_TO_REAL_E** | STRING型データをREAL型データへ変換します。 | 1398ページ |
+| **STRING_TO_TIME / STRING_TO_TIME_E** | STRING型データをTIME型データへ変換します。 | 1401ページ |
+| **BITARR_TO_INT / BITARR_TO_INT_E** | ビット配列から指定のビット数をINT型データへ変換します。 | 1403ページ |
+| **BITARR_TO_DINT / BITARR_TO_DINT_E** | ビット配列から指定のビット数をDINT型データへ変換します。 | 1404ページ |
+| **INT_TO_BITARR / INT_TO_BITARR_E** | INT型データの下位nビットをビット配列に出力します。 | 1405ページ |
+| **DINT_TO_BITARR / DINT_TO_BITARR_E** | DINT型データの下位nビットをビット配列に出力します。 | 1406ページ |
+| **CPY_BITARR / CPY_BITARR_E** | ビット配列を指定ビットサイズ分コピーします。 | 1407ページ |
+| **GET_BIT_OF_INT / GET_BIT_OF_INT_E** | ワードラベルの指定ビットを読み出します。 | 1408ページ |
+| **SET_BIT_OF_INT / SET_BIT_OF_INT_E** | ワードラベルの指定ビットに書き込みます。 | 1410ページ |
+| **CPY_BIT_OF_INT / CPY_BIT_OF_INT_E** | ワードラベルの指定ビットを別のワードラベルの指定ビットにコピーします。 | 1412ページ |
+
+- 各ファンクションは基本的に「ファンクション記号」「処理内容」「参照先ページ」の3項目で構成されている。
+- 「_E」が付くファンクションは拡張版やエラー処理付きの可能性がある。
+- 変換対象はSTRING型からINT/DINT/BCD/REAL/TIME型、ビット配列からINT/DINT型、INT/DINT型からビット配列への変換、ビット配列のコピー、ワードラベルのビット単位の読み出し・書き込み・コピーが含まれる。
+
+</contents>

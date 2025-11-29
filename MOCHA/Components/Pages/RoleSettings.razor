@@ -1,6 +1,7 @@
 @page "/settings/roles"
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IUserRoleProvider RoleProvider
+@using MOCHA.Services.Auth
 
 <div class="role-page">
     <h1 class="page-title">ロール管理</h1>
@@ -140,14 +141,15 @@
         isLoading = true;
         selectedRoles = new(StringComparer.OrdinalIgnoreCase);
 
-        if (string.IsNullOrWhiteSpace(targetUserId))
+        var normalizedTarget = RoleSettingsService.NormalizeUserId(targetUserId);
+        if (normalizedTarget is null)
         {
             SetStatus("ユーザーIDを入力してください。", "warn");
             isLoading = false;
             return;
         }
 
-        var roles = await RoleProvider.GetRolesAsync(targetUserId.Trim());
+        var roles = await RoleProvider.GetRolesAsync(normalizedTarget);
         foreach (var role in roles)
         {
             selectedRoles.Add(role.Value);
@@ -162,31 +164,26 @@
         ResetStatus();
         isSaving = true;
 
-        if (string.IsNullOrWhiteSpace(targetUserId))
+        var normalizedTarget = RoleSettingsService.NormalizeUserId(targetUserId);
+        if (normalizedTarget is null)
         {
             SetStatus("ユーザーIDを入力してください。", "warn");
             isSaving = false;
             return;
         }
 
-        var normalizedTarget = targetUserId.Trim();
         var current = await RoleProvider.GetRolesAsync(normalizedTarget);
         var currentSet = new HashSet<string>(current.Select(r => r.Value), StringComparer.OrdinalIgnoreCase);
+        var diff = RoleSettingsService.CalculateDiff(currentSet, selectedRoles);
 
-        foreach (var roleId in selectedRoles)
+        foreach (var roleId in diff.ToAssign)
         {
-            if (!currentSet.Contains(roleId))
-            {
-                await RoleProvider.AssignAsync(normalizedTarget, UserRoleId.From(roleId));
-            }
+            await RoleProvider.AssignAsync(normalizedTarget, UserRoleId.From(roleId));
         }
 
-        foreach (var roleId in currentSet)
+        foreach (var roleId in diff.ToRemove)
         {
-            if (!selectedRoles.Contains(roleId))
-            {
-                await RoleProvider.RemoveAsync(normalizedTarget, UserRoleId.From(roleId));
-            }
+            await RoleProvider.RemoveAsync(normalizedTarget, UserRoleId.From(roleId));
         }
 
         SetStatus("保存しました。", "success");
@@ -196,14 +193,7 @@
     private void ToggleRole(string roleId, object? value)
     {
         var isChecked = value as bool? ?? false;
-        if (isChecked)
-        {
-            selectedRoles.Add(roleId);
-        }
-        else
-        {
-            selectedRoles.Remove(roleId);
-        }
+        selectedRoles = RoleSettingsService.Toggle(selectedRoles, roleId, isChecked);
     }
 
     private void ResetStatus()

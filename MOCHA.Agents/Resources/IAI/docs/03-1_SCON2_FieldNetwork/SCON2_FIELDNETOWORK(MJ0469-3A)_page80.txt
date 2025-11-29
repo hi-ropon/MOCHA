@@ -1,0 +1,33 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page80
+
+<overview>
+このページは「EtherCAT」に関するLEDの点灯タイミングについて説明しています。構成は以下の通りです。
+- テキスト部分：LEDの点灯タイミングの説明
+- 図部分：4種類のLED点灯パターン（blinking、single flash、double flash、flickering）のタイミング波形図
+- 表部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### LEDの点灯タイミング
+EtherCATのLEDの点灯タイミングについて示しています。
+
+### 図
+```mermaid
+flowchart LR
+    A[blinking] -->|ON 200ms| B[OFF 200ms]
+    B --> A
+    C[single flash] -->|ON 200ms| D[OFF 1000ms]
+    D -->|ON 200ms| E[OFF]
+    F[double flash] -->|ON 200ms| G[OFF 200ms]
+    G -->|ON 200ms| H[OFF 1000ms]
+    I[flickering] -->|ON/OFF 50ms間隔| I
+```
+
+**図の説明:**
+- **blinking**: 200ms点灯、200ms消灯を繰り返す点滅
+- **single flash**: 200ms点灯、1000ms消灯、200ms点灯の単発点滅
+- **double flash**: 200ms点灯、200ms消灯、200ms点灯、1000ms消灯の2回点滅
+- **flickering**: 50ms間隔で高速点滅
+
+</contents>

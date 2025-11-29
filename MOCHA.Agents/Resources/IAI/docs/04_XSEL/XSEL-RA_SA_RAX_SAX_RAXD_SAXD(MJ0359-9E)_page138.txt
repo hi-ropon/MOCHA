@@ -1,0 +1,145 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page138
+
+<overview>
+本ページは「3.3 非常停止回路（システムI/O）の配線」について説明しています。  
+構成は以下の通りです。  
+- テキスト部分：XSEL-SA/SAX/SAXDの場合の非常停止回路に関する説明と注意事項  
+- 図部分：XSELコントローラーとティーチングボックス、停止スイッチなどの配線図  
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 3.3 非常停止回路（システムI/O）の配線
+(2) XSEL-SA/SAX/SAXDの場合  
+装置の非常停止回路にティーチングボックスの停止スイッチを反映させる場合の配線例を示しています。
+
+**注1**  
+外部スイッチを接続し、AUTO/MANUモードの切替えを行うことができます。使用しない場合は短絡してください。
+
+**注2**  
+I/OパラメーターNo.24で、AUTO1 IN/AUTO1 OUT信号に切替えることができます。  
+詳細は「3.3.2 非常停止回路（システムI/O）の仕様」を参照してください。
+
+### 図
+```mermaid
+flowchart TD
+    subgraph ティーチングボックス
+        TBX1[テンダンスイッチ ENB TBX1]
+        ENB1[ENB1 VCC1]
+        ENB2[ENB2 VCC2]
+        EMG_IN[EMG IN]
+        EMG_OUT1[EMG OUT1]
+        EMG_OUT2[EMG OUT2]
+    end
+
+    subgraph XSELコントローラー1台目
+        AUTO2IN[AUTO2 IN]
+        AUTO2OUT[AUTO2 OUT]
+        ENBin[ENBin (IN)]
+        ENB1in[ENB1 (line+)]
+        ENB1out[ENB1 (line-)]
+        ENB2in[ENB2 (line+)]
+        ENB2out[ENB2 (line-)]
+        RDYout[RDY (Out+)]
+        DETin[DET (IN)]
+        DETout[DET (OUT)]
+        EMGin[EMG IN]
+        EMG1[EMG1 (line+)]
+        EMG1out[EMG1 (line-)]
+        EMG2[EMG2 (line+)]
+        EMG2out[EMG2 (line-)]
+        SDNout[SDN (Out+)]
+        SDNout2[SDN (Out-)]
+    end
+
+    subgraph XSELコントローラー2台目
+        AUTO2IN2[AUTO2 IN]
+        AUTO2OUT2[AUTO2 OUT]
+        ENBin2[ENBin (IN)]
+        ENB1in2[ENB1 (line+)]
+        ENB1out2[ENB1 (line-)]
+        ENB2in2[ENB2 (line+)]
+        ENB2out2[ENB2 (line-)]
+        RDYout2[RDY (Out+)]
+        DETin2[DET (IN)]
+        DETout2[DET (OUT)]
+        EMGin2[EMG IN]
+        EMG1_2[EMG1 (line+)]
+        EMG1out2[EMG1 (line-)]
+        EMG2_2[EMG2 (line+)]
+        EMG2out2[EMG2 (line-)]
+        SDNout3[SDN (Out+)]
+        SDNout4[SDN (Out-)]
+    end
+
+    subgraph XSELコントローラーN台目
+        AUTO2INN[AUTO2 IN]
+        AUTO2OUTN[AUTO2 OUT]
+        ENBinN[ENBin (IN)]
+        ENB1inN[ENB1 (line+)]
+        ENB1outN[ENB1 (line-)]
+        ENB2inN[ENB2 (line+)]
+        ENB2outN[ENB2 (line-)]
+        RDYoutN[RDY (Out+)]
+        DETinN[DET (IN)]
+        DEToutN[DET (OUT)]
+        EMGinN[EMG IN]
+        EMG1N[EMG1 (line+)]
+        EMG1outN[EMG1 (line-)]
+        EMG2N[EMG2 (line+)]
+        EMG2outN[EMG2 (line-)]
+        SDNoutN1[SDN (Out+)]
+        SDNoutN2[SDN (Out-)]
+    end
+
+    TBX1 --> ENB1in
+    TBX1 --> ENB2in
+    TBX1 --> EMGin
+    TBX1 --> EMG_OUT1
+    TBX1 --> EMG_OUT2
+    EMG_OUT1 --> EMG1
+    EMG_OUT2 --> EMG2
+    ENB1in --> ENB1out
+    ENB2in --> ENB2out
+    EMGin --> EMG1out
+    EMGin --> EMG2out
+
+    AUTO2IN --> AUTO2OUT
+    AUTO2IN2 --> AUTO2OUT2
+    AUTO2INN --> AUTO2OUTN
+
+    RDYout --> CR1[CR1 (120mA以上)]
+    RDYout2 --> CR1
+    RDYoutN --> CR1
+
+    CR1 --> 駆動遮断リレー1[駆動遮断リレー]
+    CR1 --> 駆動遮断リレー2[駆動遮断リレー]
+    CR1 --> 駆動遮断リレーN[駆動遮断リレー]
+
+    CR2[CR2 (10mA以上)] --> ENBin
+    CR2 --> ENBin2
+    CR2 --> ENBinN
+
+    SDNout --> CR3[CR3]
+    SDNout2 --> CR3
+    SDNout3 --> CR7[CR7]
+    SDNout4 --> CR7
+    SDNoutN1 --> CR8[CR8]
+    SDNoutN2 --> CR8
+
+    CR3 --> 駆動遮断リレー1
+    CR7 --> 駆動遮断リレー2
+    CR8 --> 駆動遮断リレーN
+
+    セーフティーゲート --> CR2
+    安全扉開でON --> CR1
+    非常停止接続 --> CR1
+```
+
+**図の説明:**  
+- XSELコントローラー複数台（1台目、2台目、N台目）とティーチングボックスの停止スイッチが接続されている。  
+- 各コントローラーのEMG（非常停止）信号やENB（イネーブル）信号がティーチングボックスの停止スイッチに連動。  
+- 各コントローラーの出力は駆動遮断リレーを介して安全回路に接続されている。  
+- 外部スイッチやセーフティーゲート、安全扉開信号も回路に組み込まれている。  
+</contents>

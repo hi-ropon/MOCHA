@@ -1,9 +1,13 @@
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
-using MOCHA.Services.Chat;
-using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
+using MOCHA.Agents.Domain;
+using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
+using MOCHA.Services.Chat;
 
 namespace MOCHA.Tests;
 
@@ -37,22 +41,127 @@ public class FakeChatFlowTests
 
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ActionRequest));
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ToolResult));
-        Assert.IsTrue(events.Any(e =>
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.AreEqual("D", toolResult.Payload["device"]);
+        Assert.AreEqual(100, (int)toolResult.Payload["addr"]);
+        var values = (toolResult.Payload["values"] as IEnumerable<int> ?? Array.Empty<int>()).ToList();
+        Assert.IsTrue(values.Contains(42));
+        var assistantMessages = events.Where(e =>
             e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("D100") &&
-            e.Message.Content.Contains("42")));
-        Assert.IsTrue(events.Any(e =>
-            e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("Copilot Studio") &&
-            e.Message.Content.Contains("D100")));
-        Assert.IsTrue(events.Any(e =>
-            e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("fake Copilot") &&
-            e.Message.Content.Contains("D100")));
+            e.Message?.Role == ChatRole.Assistant).ToList();
+        Assert.IsTrue(assistantMessages.Any(), "アシスタント応答が1件以上あること");
+        Assert.IsTrue(assistantMessages.All(m => !m.Message!.Content.Contains("fake Agent")), "フェイク応答を含まないこと");
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Completed));
+    }
+
+    /// <summary>
+    /// 読み取り設定が欠落していても既定値で処理されることを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task 読み取り設定が欠落しても既定値で処理する()
+    {
+        var plc = new FakePlcGatewayClient(new Dictionary<string, IReadOnlyList<int>> { ["D0"] = new List<int> { 7 } });
+        var orchestrator = CreateOrchestrator(turn => new[]
+        {
+            ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "ack")),
+            new ChatStreamEvent(ChatStreamEventType.ActionRequest, ActionRequest: new AgentActionRequest("read_device", turn.ConversationId ?? "conv", new Dictionary<string, object?>())),
+            ChatStreamEvent.Completed(turn.ConversationId)
+        }, plc);
+
+        var events = await CollectAsync(orchestrator, "read default");
+
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.AreEqual("D", toolResult.Payload["device"]);
+        Assert.AreEqual(0, (int)toolResult.Payload["addr"]);
+        Assert.IsTrue((bool)toolResult.Payload["success"]);
+        var values = (toolResult.Payload["values"] as IEnumerable<int> ?? Array.Empty<int>()).ToList();
+        Assert.AreEqual(7, values.Single());
+    }
+
+    /// <summary>
+    /// 一括読み取りアクションがフェイクで成功することを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task 一括読み取りが成功する()
+    {
+        var orchestrator = CreateOrchestrator(turn => new[]
+        {
+            ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "batch start")),
+            new ChatStreamEvent(
+                ChatStreamEventType.ActionRequest,
+                ActionRequest: new AgentActionRequest(
+                    "batch_read_devices",
+                    turn.ConversationId ?? "conv",
+                    new Dictionary<string, object?>
+                    {
+                        ["devices"] = new List<string> { "D100", "M10" }
+                    })),
+            ChatStreamEvent.Completed(turn.ConversationId)
+        });
+
+        var events = await CollectAsync(orchestrator, "batch");
+
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.IsTrue((bool)toolResult.Payload["success"]);
+        var results = toolResult.Payload["results"] as IEnumerable<object?> ?? Array.Empty<object?>();
+        Assert.AreEqual(2, results.Count());
+    }
+
+    /// <summary>
+    /// エージェント側から届く ToolResult も保存されることを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task エージェントのToolResultも保存する()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var orchestrator = new ChatOrchestrator(
+            new FakeAgentChatClient(turn =>
+            {
+                var convId = turn.ConversationId ?? "conv-tool";
+                return new[]
+                {
+                    ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "thinking")),
+                    new ChatStreamEvent(
+                        ChatStreamEventType.ActionRequest,
+                        ActionRequest: new AgentActionRequest(
+                            "find_manuals",
+                            convId,
+                            new Dictionary<string, object?>
+                            {
+                                ["agentName"] = "iaiAgent",
+                                ["query"] = "test"
+                            })),
+                    new ChatStreamEvent(
+                        ChatStreamEventType.ToolResult,
+                        ActionResult: new AgentActionResult(
+                            "find_manuals",
+                            convId,
+                            true,
+                            new Dictionary<string, object?>
+                            {
+                                ["raw"] = "agent-side"
+                            })),
+                    ChatStreamEvent.Completed(convId)
+                };
+            }),
+            new FakePlcGatewayClient(),
+            repo,
+            history,
+            new DummyManualStore());
+
+        var user = new UserContext("persist-user", "Persist User");
+        var conversationId = "conv-agent-tool";
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, conversationId, "manuals please", "AG-01"))
+        {
+        }
+
+        var saved = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
+        var toolResults = saved.Where(m => m.Role == ChatRole.Tool && m.Content.StartsWith("[result]")).ToList();
+
+        Assert.AreEqual(2, toolResults.Count, "オーケストレーター分とエージェント分の両方を保持すること");
+        Assert.IsTrue(toolResults.Any(r => r.Content.Contains("agent-side")), "エージェントの結果が保存されていること");
     }
 
     /// <summary>
@@ -72,11 +181,11 @@ public class FakeChatFlowTests
     /// <summary>
     /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーターを生成する。
     /// </summary>
-    private static ChatOrchestrator CreateOrchestrator()
+    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurnModel, IEnumerable<ChatStreamEvent>>? script = null, FakePlcGatewayClient? plc = null)
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        return new ChatOrchestrator(new FakeAgentChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore());
     }
 
     /// <summary>
@@ -87,7 +196,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -111,7 +220,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -137,7 +246,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeCopilotChatClient(), new FakePlcGatewayClient(), repo, history);
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
@@ -147,6 +256,20 @@ public class FakeChatFlowTests
 
         await history.LoadAsync(user.UserId, "AG-77");
         Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId && s.AgentNumber == "AG-77"));
+    }
+
+    private sealed class DummyManualStore : IManualStore
+    {
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy manual", 12));
+        }
+
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        {
+            IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy manual", "dummy.txt", 1.0) };
+            return Task.FromResult(hits);
+        }
     }
 
     /// <summary>

@@ -19,6 +19,7 @@
 .sidebar-title {
     display: inline-flex;
     align-items: center;
+    gap: 8px;
     margin-bottom: 16px;
     height: 32px;
 }
@@ -28,6 +29,31 @@
     height: 72px;
     object-fit: contain;
     display: block;
+}
+
+.sidebar-admin-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    background: var(--panel-strong-bg);
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sidebar-admin-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.sidebar-admin-btn:hover {
+    background: var(--card-hover);
+    border-color: var(--accent);
+    color: var(--accent);
 }
 
 .agent-section {

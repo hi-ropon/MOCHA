@@ -1,0 +1,34 @@
+ファイル名: SCON2(MJ0458-1E)_page424
+
+<overview>
+本ページは「9.2 安全機能 SS1-t仕様」の一部であり、主に「9.2.5 仕様」セクションに該当します。構成は以下の通りです。
+- テキスト部分：安全パラメーターの説明と注意事項
+- 表部分：安全パラメーターの各項目、規格、性能レベルをまとめた表
+- グラフや図はなし
+</overview>
+
+<contents>
+### テキスト
+#### 9.2.5 仕様
+（1）安全パラメーター  
+当社の製品は装置を構成する部品の一つとなるため、装置全体のSIL/PLを算出する際に本項の値を用いて計算を行うことが推奨されています。  
+安全パラメーターの値は、SCON2単独で使用する場合にのみ適用され、機能安全ユニットを接続して使用する場合は別途「機能安全ユニット取扱説明書（MJ0459）」を参照する必要があります。
+
+（注）EN ISO 13849-1におけるPL eおよびIEC 61508におけるSIL3を満たすためには、EDM信号の監視を上位装置で行う必要があります。
+
+### 表
+#### 安全パラメーター一覧
+
+| 項目                                   | 規格                     | 性能レベル                          |
+| :------------------------------------ | :----------------------- | :--------------------------------- |
+| 安全度水準 (Safety Integrity Level)   | IEC 61508<br>IEC 62061   | SIL3<br>SIL CL3                    |
+| 単位時間当たりの危険側故障確率<br>(Probability of dangerous failure per hour) | IEC 61508<br>IEC 62061   | PFH = 2.4 × 10⁻⁹ [1/h]            |
+| パフォーマンスレベル (Performance Level) | EN ISO 13849-1           | PL e (Category 3)                  |
+| 危険側故障までの平均時間<br>(Mean time to dangerous failure of each channel) | EN ISO 13849-1           | MTTFd: High (≧100年)<br>(788a)   |
+| 平均自己診断率 (Average diagnostic coverage) | EN ISO 13849-1           | DCavg: Medium (97.7%)              |
+| 停止カテゴリー (Stop category)         | IEC 60204-1              | Stop category 1                   |
+| 安全機能 (Safety function)             | IEC/EN 61800-5-2         | SS1-t                             |
+| ミッションタイム (Mission time)        | IEC 61508                | 20年                             |
+| ハードウェア障害許容度 HFT<br>(Hardware Fault Tolerance) | IEC 61508                | 1                                |
+| カテゴリー (Category)                   | EN ISO 13849-1           | 3                                |
+</contents>

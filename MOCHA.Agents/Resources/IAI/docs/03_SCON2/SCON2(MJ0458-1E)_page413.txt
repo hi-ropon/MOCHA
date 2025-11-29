@@ -1,0 +1,61 @@
+ファイル名: SCON2(MJ0458-1E)_page413
+
+<overview>
+本ページは「第9章 安全回路の構成」の一部であり、主に「9.1 安全カテゴリーへの対応」に関する内容です。ページ構成は以下の通りです。
+- テキスト部分：安全カテゴリー1の詳細回路例の説明タイトルのみ。
+- 図部分：安全カテゴリー1の詳細回路例の回路図が大きく掲載されている。
+- 表やグラフはなし。
+</overview>
+
+<contents>
+### テキスト
+#### 9.1 安全カテゴリーへの対応
+・カテゴリー1詳細回路例
+
+### 図
+```mermaid
+flowchart TD
+    AC[AC100V / AC200V] --> EM[電磁接触器]
+    EM -->|接点| EXT[外部非常停止回路 カテゴリー1]
+    EXT -->|L1,L2| RECT[整流器]
+    RECT --> DC[DCバス]
+
+    subgraph RCB-LB-TGS
+        direction TB
+        TP_TP[TP SGA SGB RTS CTS]
+        EMG[EMG1- EMG1+ EMG2- EMG2+]
+        ENB[ENB1- ENB1+ ENB2- ENB2+]
+        DC24[DC24+ DC24-]
+        SHELL[シェル]
+    end
+
+    TP_TP -->|信号線| CONTROLLER[コントローラー]
+    EMG --> CONTROLLER
+    ENB --> CONTROLLER
+    DC24 --> CONTROLLER
+    SHELL -.-> CONTROLLER
+
+    CONTROLLER -->|システムIOコネクター| SYSIO[1 2 3 4]
+
+    subgraph イネーブルSW
+        direction TB
+        ENB1_ENB2[ENB1+ ENB2-]
+    end
+
+    ENB1_ENB2 -->|24V| RCB-LB-TGS
+
+    subgraph 非常停止SW
+        direction TB
+        EMG1_EMG2[EMG1- EMG2+]
+    end
+
+    EMG1_EMG2 -->|24V| RCB-LB-TGS
+```
+
+**図の説明:**
+- AC100V/AC200Vの電源が電磁接触器を介して外部非常停止回路（カテゴリー1）に接続されている。
+- 外部非常停止回路は整流器を通じてDCバスに接続されている。
+- RCB-LB-TGSモジュールは複数の信号線（TP、SGA、SGB、RTS、CTS）、非常停止スイッチ（EMG1±、EMG2±）、イネーブルスイッチ（ENB1±、ENB2±）、DC24V電源、シェル接地で構成されている。
+- コントローラーはこれらの信号を受け取り、システムIOコネクターを通じて外部機器と接続されている。
+- 非常停止スイッチとイネーブルスイッチは24V電源で駆動されている。
+</contents>

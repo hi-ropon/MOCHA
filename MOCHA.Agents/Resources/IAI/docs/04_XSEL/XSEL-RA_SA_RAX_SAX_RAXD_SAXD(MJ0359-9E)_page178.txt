@@ -1,0 +1,86 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page178
+
+<overview>
+本ページは「3.7 ブレーキボックスの配線」に関する内容で構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：ロボシリンダー超高推力ロッドタイプRCS2-RA13RおよびISB/ISPB（特別仕様品）のブレーキモーター使用に関する説明文。
+- 図（配線図）部分：2種類のロボシリンダーのブレーキボックス配線図が2つ掲載されている。各図は電源、コネクター、コントローラー、エンコーダー、リミットスイッチ、アクチュエーターの接続関係を示している。
+- 表やグラフはなし。
+</overview>
+
+<contents>
+### テキスト
+#### 3.7 ブレーキボックスの配線
+
+2) ロボシリンダー超高推力ロッドタイプ RCS2-RA13R  
+3) ISB/ISPB（特別仕様品）：DC24Vのブレーキ作動電圧のブレーキモーター使用
+
+---
+
+### 図（配線図）
+
+#### 2) ロボシリンダー超高推力ロッドタイプ RCS2-RA13R 配線図
+
+```mermaid
+flowchart LR
+    DC24V1[DC24V] -->|+24V| BrakePowerConnector1[ブレーキ電源コネクター]
+    BrakePowerConnector1 -->|+24V| XSELController[XSELコントローラー]
+    XSELController --> EncoderConnector1[1軸用エンコーダーコネクター]
+    EncoderConnector1 --> M1[1軸用モーターケーブル接続用コネクター]
+    M1 --> Example1[【例】1軸目に接続]
+
+    DC24V2[DC24V] -->|+24V| BrakeBox1[ブレーキボックス (RCB-110-RA13)]
+    BrakeBox1 --> Controller1[CONTROLLER1]
+    Controller1 --> EncoderInput1[エンコーダー入力コネクター]
+    Controller1 --> LimitSwitch1[リミットスイッチコネクター]
+    BrakeBox1 --> Actuator1[ACTUATOR1]
+    Actuator1 --> EncoderOutput1[エンコーダー出力コネクター]
+    Actuator1 -->|24V IN| PowerIn1[+24V IN / 0V]
+
+    BrakeBox1 --> Controller2[CONTROLLER2]
+    Controller2 --> EncoderInput2[エンコーダー入力コネクター]
+    Controller2 --> LimitSwitch2[リミットスイッチコネクター]
+    BrakeBox1 --> Actuator2[ACTUATOR2]
+    Actuator2 --> EncoderOutput2[エンコーダーコネクター]
+
+    BrakeBox1 --> CB_RCS2_PLA[CB-RCS2-PLA□□□ または CB-X2-PLA□□□]
+    BrakeBox1 --> CB_RCC_MA[CB-RCC-MA□□□ または CB-RCC-MA□□□-RB]
+```
+
+---
+
+#### 3) ISB/ISPB（特別仕様品） DC24Vブレーキモーター使用 配線図
+
+```mermaid
+flowchart LR
+    DC24V1[DC24V] -->|+24V| BrakePowerConnector2[ブレーキ電源コネクター]
+    BrakePowerConnector2 -->|+24V| XSELController2[XSELコントローラー]
+    XSELController2 --> EncoderConnector2[1軸用エンコーダーコネクター]
+    EncoderConnector2 --> M2[1軸用モーターケーブル接続用コネクター]
+    M2 --> Example2[【例】1軸目に接続]
+
+    DC24V2[DC24V] -->|+24V| BrakeBox2[ブレーキボックス (RCB-110-RA13)]
+    BrakeBox2 --> Controller1_2[CONTROLLER1]
+    Controller1_2 --> EncoderInput1_2[エンコーダー入力コネクター]
+    Controller1_2 --> LimitSwitch1_2[リミットスイッチコネクター]
+    BrakeBox2 --> Actuator1_2[ACTUATOR1]
+    Actuator1_2 --> EncoderOutput1_2[エンコーダー出力コネクター]
+    Actuator1_2 -->|24V IN| PowerIn2[+24V IN / 0V]
+
+    BrakeBox2 --> Controller2_2[CONTROLLER2]
+    Controller2_2 --> EncoderInput2_2[エンコーダー入力コネクター]
+    Controller2_2 --> LimitSwitch2_2[リミットスイッチコネクター]
+    BrakeBox2 --> Actuator2_2[ACTUATOR2]
+    Actuator2_2 --> EncoderOutput2_2[エンコーダーコネクター]
+
+    BrakeBox2 --> CB_X1_PAD[CB-X1-PAD□□□]
+    BrakeBox2 --> CB_X_MA[CB-X-MA□□□]
+```
+
+---
+
+**図の説明:**  
+- 両配線図ともに、DC24V電源からブレーキ電源コネクターを経由し、XSELコントローラーおよび1軸用エンコーダーコネクター、モーターケーブル接続用コネクターへ接続されている。  
+- ブレーキボックス（RCB-110-RA13）には2つのコントローラー（CONTROLLER1、CONTROLLER2）があり、それぞれエンコーダー入力、リミットスイッチコネクター、アクチュエーターのエンコーダー出力コネクターに接続されている。  
+- ブレーキボックスからは各種コネクター（CB-RCS2-PLA□□□、CB-X2-PLA□□□、CB-RCC-MA□□□、CB-RCC-MA□□□-RB、CB-X1-PAD□□□、CB-X-MA□□□）へ接続されている。  
+- 例として1軸目に接続されることが示されている。
+</contents>

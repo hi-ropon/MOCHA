@@ -1,0 +1,96 @@
+ファイル名: HM-60252J_page99
+
+<overview>
+本ページは「ストアードデータ(SD)運転」に関する説明で構成されています。上部に表形式で「イベントトリガカウント」の設定内容が示され、その下に「イベントトリガタイプの種類」として複数のトリガタイプの動作を示す波形グラフが並んでいます。テキストは表の説明と各トリガタイプの概要、グラフはトリガI/O、トリガカウント、内部タイマ、イベントの関係を示す波形図で構成されています。図は8種類のトリガタイプ（ON/OFFエッジ、ON/OFF(msec)、ON/OFF(加減算累積msec)、ON/OFF(単純累積msec)）の動作を比較できるように配置されています。
+</overview>
+
+<contents>
+### テキスト
+#### イベントトリガカウント
+| MEXE02ツリー表示 | 名称 | 内容 | 初期値 |
+| :--- | :--- | :--- | :--- |
+| 運転/〇イベント | イベントトリガカウント | イベントトリガを検出するための判定時間、または検出回数を設定します。<br>【設定範囲】0～65,535 (1=1 msecまたは1=1回) | 0 |
+
+#### イベントトリガタイプの種類
+- ONエッジ  
+- OFFエッジ  
+- ON(msec)  
+- OFF(msec)  
+- ON(加減算累積 msec)  
+- OFF(加減算累積 msec)  
+- ON(単純累積 msec)  
+- OFF(単純累積 msec)  
+
+**memo**  
+ON(単純累積)とOFF(単純累積)は、ドライバVer.3.00以降に対応しています。
+
+### 図（イベントトリガタイプの波形）
+
+```mermaid
+flowchart LR
+    subgraph ONエッジ
+        direction TB
+        A1[トリガI/O ON/OFF] --> A2[トリガカウント]
+        A2 --> A3[内部タイマ]
+        A3 --> A4[イベント ON/OFF]
+    end
+
+    subgraph OFFエッジ
+        direction TB
+        B1[トリガI/O ON/OFF] --> B2[トリガカウント]
+        B2 --> B3[内部タイマ]
+        B3 --> B4[イベント ON/OFF]
+    end
+
+    subgraph ON(msec)
+        direction TB
+        C1[トリガI/O ON/OFF] --> C2[トリガカウント]
+        C2 --> C3[内部タイマ]
+        C3 --> C4[イベント ON/OFF]
+    end
+
+    subgraph OFF(msec)
+        direction TB
+        D1[トリガI/O ON/OFF] --> D2[トリガカウント]
+        D2 --> D3[内部タイマ]
+        D3 --> D4[イベント ON/OFF]
+    end
+
+    subgraph ON(加減算累積 msec)
+        direction TB
+        E1[トリガI/O ON/OFF] --> E2[トリガカウント]
+        E2 --> E3[内部タイマ]
+        E3 --> E4[イベント ON/OFF]
+    end
+
+    subgraph OFF(加減算累積 msec)
+        direction TB
+        F1[トリガI/O ON/OFF] --> F2[トリガカウント]
+        F2 --> F3[内部タイマ]
+        F3 --> F4[イベント ON/OFF]
+    end
+
+    subgraph ON(単純累積 msec)
+        direction TB
+        G1[トリガI/O ON/OFF] --> G2[トリガカウント]
+        G2 --> G3[内部タイマ]
+        G3 --> G4[イベント ON/OFF]
+    end
+
+    subgraph OFF(単純累積 msec)
+        direction TB
+        H1[トリガI/O ON/OFF] --> H2[トリガカウント]
+        H2 --> H3[内部タイマ]
+        H3 --> H4[イベント ON/OFF]
+    end
+```
+
+**図の説明:**  
+各トリガタイプは「トリガI/O」のON/OFF信号を起点に、「トリガカウント」が変化し、それに応じて「内部タイマ」が動作し、最終的に「イベント」のON/OFFが発生する流れを示しています。  
+- ON/OFFエッジはトリガの立ち上がり/立ち下がりを検出  
+- (msec)は時間単位でのトリガ検出  
+- (加減算累積 msec)は加算・減算を繰り返す累積時間での検出  
+- (単純累積 msec)は単純に累積する時間での検出  
+
+memoにあるように、単純累積タイプはドライババージョン3.00以降で対応しています。
+</contents>

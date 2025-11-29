@@ -1,0 +1,57 @@
+ファイル名: RSEL(MJ0392-4M)_page550
+
+<overview>
+本ページは「RSELシリアル通信複数チャンネル対応機能」について説明している。ページ構成は以下の通り。
+- テキスト部分：動作モードごとの通信中チャンネルのイメージ説明
+- 図部分：2つの動作モード（“MANU”と“AUTO”）における実行コマンド受付け状態の接続構成図
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### RSELシリアル通信複数チャンネル対応機能
+動作モードごとの通信中チャンネルのイメージを示す。
+
+- “MANU”時の実行コマンド受付け状態
+- “AUTO”時の実行コマンド受付け状態（I/OパラメーターNo.116でSIO接続コネクターを設定）
+
+### 図
+```mermaid
+flowchart LR
+    subgraph MANUモード
+        A1[TPポート]
+        A2[USB]
+        A3[Ethernetポート]
+        A4[SIO接続コネクター]
+        RSEL1[RSELシステム]
+        A1 -->|優先順位1| RSEL1
+        A2 -->|優先順位2| RSEL1
+        A3 -->|優先順位3| RSEL1
+        A4 -->|優先順位4| RSEL1
+    end
+
+    subgraph AUTOモード
+        B1[Ethernetポート]
+        B2[TPポート]
+        B3[USB]
+        B4[SIO接続コネクター]
+        RSEL2[RSELシステム]
+        B1 --> RSEL2
+        B2 --> RSEL2
+        B3 --> RSEL2
+        RSEL2 --> B4
+        note1[参照のみ]:::note
+        note2[実行/参照ともに対応可能]:::note
+        B1 -.-> note1
+        B2 -.-> note1
+        B3 -.-> note1
+        B4 -.-> note2
+    end
+
+    classDef note fill:#f9f,stroke:#333,stroke-width:1px,color:#000,font-style:italic;
+```
+
+**図の説明:**
+- **MANUモード**では、TPポート、USB、Ethernetポート、SIO接続コネクターの4つの通信チャンネルが優先順位1～4で接続されている。
+- **AUTOモード**では、Ethernetポート、TPポート、USBは参照のみで接続され、SIO接続コネクターは実行および参照の両方に対応可能。
+</contents>

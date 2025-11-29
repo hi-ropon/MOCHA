@@ -1,0 +1,34 @@
+ファイル名: RCON(MJ0384-8D)_page159
+
+<overview>
+本ページは「200V電源ユニット」の型式銘板の見方について説明しています。構成は以下の通りです。
+- テキスト部分：型式銘板の各表示項目の説明、注意事項の説明
+- 画像部分：200V電源ユニット本体の銘板位置を示す写真と銘板の拡大図
+- 表部分：各注意マークの意味と説明をまとめた表
+グラフやフローチャートは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 200V電源ユニットの型式銘板の見方
+- 型式銘板には「型式」「シリアル番号」「注意マーク（高温注意、感電注意）」が記載されている。
+- 型式銘板の例として「PS2 X000000 X0」のタイプとシリアル番号の位置が示されている。
+- 本デザインはUL/CE取得後のもの。
+
+#### 注意事項
+- コントローラー指定以外のケーブルは使用禁止。
+- 残余電流式保護装置（RCD）が直接または間接的な接触の保護に使われる場合、電子機器（EE）側の電源側にはタイプBのRCDのみ認められる。
+- 電源を切った後、10分間は端子部に触れないこと（感電の恐れあり）。
+- 通電中は触らないこと（やけどの恐れあり）。
+
+### 画像
+- 200V電源ユニット本体の写真に銘板位置を矢印で示している。
+- 銘板の拡大図には型式、シリアル番号、注意マークが赤字で説明付きで示されている。
+
+### 表
+| マーク | マークの説明 |
+| :---: | :--- |
+| ![注意マーク](注意マーク画像) | コントローラー指定以外のケーブルは使用しないこと。<br>Use IAI specified cables only.<br>残余電流式保護装置（RCD）が直接または間接的な接触の保護に使われる場合、電子機器（EE）側の電源側にはタイプBのRCDのみ認められる。<br>Where residual-current-operated protective device (RCD) is used for protection in case of direct or indirect contact, only RCD of Type B is allowed on the supply side of this Electronic Equipment (EE). |
+| ![高温注意マーク](高温注意マーク画像) | 電源を切った後、10分間は端子部に触れないこと。感電の恐れあり。<br>Do not touch terminals within 10 minutes after disconnect the power.<br>Risk of electric shock. |
+| ![感電注意マーク](感電注意マーク画像) | 通電中は触らないこと。やけどの恐れあり。<br>Do not touch product when power is ON. Risk of burn. |
+</contents>

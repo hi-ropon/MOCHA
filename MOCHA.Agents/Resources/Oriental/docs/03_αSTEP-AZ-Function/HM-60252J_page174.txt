@@ -1,0 +1,132 @@
+ファイル名: HM-60252J_page174
+
+<overview>
+このページは「電流シンク出力回路との接続例」に関する内容で構成されています。  
+テキスト部分では、位置決め機能内蔵タイプの接続例の説明があり、パルス列入力タイプとRS-485通信付きパルス列入力タイプのピン割り当てについて言及しています。  
+図部分は、コントローラとドライバ間の配線および各ピンの接続を示す回路図が掲載されています。  
+表部分はなく、回路図がメインの構成です。
+</overview>
+
+<contents>
+### テキスト
+#### 電流シンク出力回路との接続例
+- 本図は位置決め機能内蔵タイプの接続例を示しています。  
+- パルス列入力タイプとRS-485通信付きパルス列入力タイプの場合、ピンNo.1、2、13、14はパルス入力専用です。  
+- 詳細な接続例は175ページを参照してください。  
+- （※）括弧内は初期値を示しています。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph コントローラ
+        direction TB
+        DC24V_1[DC24 V]
+        DC24V_2[DC24 V]
+        DC12_24V[DC12～24 V]
+        GND_0V_1[0 V]
+        GND_0V_2[0 V]
+        GND_0V_3[0 V]
+        IN0_START[IN0 (START)]
+        IN1_M0[IN1 (M0)]
+        IN2_M1[IN2 (M1)]
+        IN3_M2[IN3 (M2)]
+        IN4_ZHOME[IN4 (ZHOME)]
+        IN5_FREE[IN5 (FREE)]
+        IN6_STOP[IN6 (STOP)]
+        IN7_ALM_RST[IN7 (ALM-RST)]
+        IN_COM_0_7[IN-COM [0-7]]
+        IN8_FW_JOG[IN8 (FW-JOG)]
+        IN9_RV_JOG[IN9 (RV-JOG)]
+        IN_COM_8_9[IN-COM [8-9]]
+        OUT0_HOME_END[OUT0 (HOME-END)]
+        OUT1_IN_POS[OUT1 (IN-POS)]
+        OUT2_PLS_RDY[OUT2 (PLS-RDY)]
+        OUT3_READY[OUT3 (READY)]
+        OUT4_MOVE[OUT4 (MOVE)]
+        OUT5_ALM_B[OUT5 (ALM-B)]
+        OUT_COM[OUT-COM]
+        ASG_PLUS[ASG+]
+        ASG_MINUS[ASG-]
+        BSG_PLUS[BSG+]
+        BSG_MINUS[BSG-]
+        GND_0V_4[GND]
+    end
+
+    subgraph ドライバ
+        direction TB
+        D_IN0_START[1]
+        D_IN1_M0[13]
+        D_IN2_M1[2]
+        D_IN3_M2[14]
+        D_IN4_ZHOME[3]
+        D_IN5_FREE[15]
+        D_IN6_STOP[4]
+        D_IN7_ALM_RST[16]
+        D_IN_COM_0_7[5]
+        D_IN8_FW_JOG[6]
+        D_IN9_RV_JOG[18]
+        D_IN_COM_8_9[17]
+        D_OUT0_HOME_END[7]
+        D_OUT1_IN_POS[19]
+        D_OUT2_PLS_RDY[8]
+        D_OUT3_READY[20]
+        D_OUT4_MOVE[9]
+        D_OUT5_ALM_B[21]
+        D_OUT_COM[10]
+        D_ASG_PLUS[11]
+        D_ASG_MINUS[23]
+        D_BSG_PLUS[12]
+        D_BSG_MINUS[24]
+        D_GND[22]
+    end
+
+    %% 入力線接続
+    IN0_START -->|信号線| D_IN0_START
+    IN1_M0 -->|信号線| D_IN1_M0
+    IN2_M1 -->|信号線| D_IN2_M1
+    IN3_M2 -->|信号線| D_IN3_M2
+    IN4_ZHOME -->|信号線| D_IN4_ZHOME
+    IN5_FREE -->|信号線| D_IN5_FREE
+    IN6_STOP -->|信号線| D_IN6_STOP
+    IN7_ALM_RST -->|信号線| D_IN7_ALM_RST
+    IN_COM_0_7 -->|信号線| D_IN_COM_0_7
+    IN8_FW_JOG -->|信号線| D_IN8_FW_JOG
+    IN9_RV_JOG -->|信号線| D_IN9_RV_JOG
+    IN_COM_8_9 -->|信号線| D_IN_COM_8_9
+
+    %% 出力線接続
+    OUT0_HOME_END -->|10mA以下| D_OUT0_HOME_END
+    OUT1_IN_POS -->|10mA以下| D_OUT1_IN_POS
+    OUT2_PLS_RDY -->|10mA以下| D_OUT2_PLS_RDY
+    OUT3_READY -->|10mA以下| D_OUT3_READY
+    OUT4_MOVE -->|10mA以下| D_OUT4_MOVE
+    OUT5_ALM_B -->|10mA以下| D_OUT5_ALM_B
+    OUT_COM -->|共通| D_OUT_COM
+
+    %% 電源・GND接続
+    DC24V_1 -->|電源| コントローラ内部
+    DC24V_2 -->|電源| コントローラ内部
+    DC12_24V -->|電源| コントローラ内部
+    GND_0V_1 -->|0V| コントローラ内部
+    GND_0V_2 -->|0V| コントローラ内部
+    GND_0V_3 -->|0V| コントローラ内部
+    GND_0V_4 -->|0V| ドライバ内部
+
+    %% ツイストペア線接続
+    ASG_PLUS -->|ツイストペア線| D_ASG_PLUS
+    ASG_MINUS -->|ツイストペア線| D_ASG_MINUS
+    BSG_PLUS -->|ツイストペア線| D_BSG_PLUS
+    BSG_MINUS -->|ツイストペア線| D_BSG_MINUS
+    GND_0V_4 -->|0V| D_GND
+```
+
+**図の説明:**  
+- 左側がコントローラ、右側がドライバを示す。  
+- 各入力信号（IN0～IN9、IN-COMなど）が対応するピン番号に接続されている。  
+- 出力信号（OUT0～OUT5、OUT-COM）も同様に接続されている。  
+- 電源はDC12～24VおよびDC24Vが供給され、GNDは0Vで共通接続。  
+- ツイストペア線でASG+/ASG-、BSG+/BSG-が接続されている。  
+- 出力飽和電圧は最大3Vであることが示されている。  
+- 抵抗値は4.7kΩと2.2kΩが各入力ラインに直列に接続されている。
+
+</contents>

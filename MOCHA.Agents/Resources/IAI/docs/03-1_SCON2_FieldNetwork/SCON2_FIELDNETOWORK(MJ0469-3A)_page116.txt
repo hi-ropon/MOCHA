@@ -1,0 +1,38 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page116
+
+<overview>
+このページは「2.7.3 配線」に関する内容で構成されています。  
+- テキスト部分：配線例の説明と注意事項  
+- 図部分：PROFINET IOの配線例を示すネットワーク構成図  
+- 表部分はなし  
+- グラフ部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### 2.7.3 配線
+（1）配線例について説明しています。
+
+- PLC（PROFINET IOマスターユニット）からハブを介して複数のSCON2およびその他スレーブ機器へEthernetケーブルで接続する構成例です。
+- Ethernetケーブルはカテゴリ5以上のストレートケーブルで、100m以内の長さが推奨されています。
+- ケーブルはアルミテープと編組の二重遮蔽シールドケーブルが推奨されており、ケーブルはユーザー側で用意する必要があります。
+- 終端処理は不要です。
+
+### 図
+```mermaid
+flowchart LR
+    PLC[PLC (PROFINET IOマスターユニット)]
+    HUB[ハブ]
+    SCON2_1[SCON2]
+    SCON2_2[SCON2]
+    OTHER[その他スレーブ機器]
+
+    PLC -- Ethernetケーブル --> HUB
+    HUB -- Ethernetケーブル --> SCON2_1
+    HUB -- Ethernetケーブル --> SCON2_2
+    HUB -- Ethernetケーブル --> OTHER
+```
+
+**図の説明:**  
+PLCからハブへEthernetケーブルで接続し、ハブから複数のSCON2およびその他のスレーブ機器へEthernetケーブルで接続するネットワーク構成を示しています。
+</contents>

@@ -1,17 +1,25 @@
 ﻿@page "/"
 @attribute [Authorize]
+@using System
+@using System.Collections.Generic
+@using System.Linq
 @using System.Security.Claims
+@using System.Text.Encodings.Web
+@using System.Text.Json
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.Extensions.Options
+@using MOCHA.Agents.Infrastructure.Options
 @using MOCHA.Models.Chat
-@using MOCHA.Services.Copilot
+@using MOCHA.Services.Chat
 @using MOCHA.Services.Plc
+@using static MOCHA.Services.Chat.ActivityPanelService
+@using static MOCHA.Services.Chat.ActivityBuilder
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
-@inject IOptionsMonitor<CopilotStudioOptions> CopilotOptions
+@inject IOptionsMonitor<LlmOptions> LlmOptions
 @inject IOptionsMonitor<PlcGatewayOptions> PlcOptions
 @implements IDisposable
 
@@ -24,7 +32,7 @@
             <div>
                 <div class="env-badge">DEV</div>
                 <div class="status-line">
-                    <span class="@CopilotDotClass"></span> @CopilotStatusLabel
+                    <span class="@AgentDotClass"></span> @AgentStatusLabel
                     <span class="@GatewayDotClass"></span> @GatewayStatusLabel
                 </div>
             </div>
@@ -37,11 +45,35 @@
     <div class="chat-body">
         <main class="chat-main glass-card">
             <div class="messages" @ref="MessageList">
-                @foreach (var message in Messages)
+                @{
+                    var userTurnCounter = -1;
+                }
+                @for (var i = 0; i < Messages.Count; i++)
                 {
+                    var message = Messages[i];
+                    if (message.Role == ChatRole.User)
+                    {
+                        userTurnCounter++;
+                    }
+
+                    var turnActivity = message.Role == ChatRole.User
+                        ? GetTurnActivityForTurn(userTurnCounter)
+                        : null;
+                    var hasLog = turnActivity?.Items.Any() == true;
+                    var showInlineChip = message.Role == ChatRole.User && (hasLog || turnActivity?.IsLive == true);
+                    var turnIndexForChip = userTurnCounter;
                     <div class="@GetBubbleClass(message.Role)">
                         <div class="content">@message.Content</div>
                     </div>
+                    @if (showInlineChip)
+                    {
+                        <div class="@GetChipClass(turnActivity)" @onclick="() => OpenActivityPanelForTurn(turnIndexForChip)" title="アクティビティを開く">
+                            <div class="chip-header">
+                                <span class="chip-title">思考過程</span>
+                                <span class="chip-count">@GetChipCountLabel(turnActivity, hasLog)</span>
+                            </div>
+                        </div>
+                    }
                 }
 
                 @if (!string.IsNullOrEmpty(Status))
@@ -50,17 +82,17 @@
                 }
             </div>
 
-                <div class="composer">
-                    <div class="composer-inner">
-                        <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
-                                  @bind="Input"
-                                  @bind:event="oninput"
-                                  @onkeydown="HandleKeyDown"
-                                  rows="1"></textarea>
-                        <div class="input-actions">
-                            <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
-                                &#9632;
-                            </button>
+            <div class="composer">
+                <div class="composer-inner">
+                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                              @bind="Input"
+                              @bind:event="oninput"
+                              @onkeydown="HandleKeyDown"
+                              rows="1"></textarea>
+                    <div class="input-actions">
+                        <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
+                            &#9632;
+                        </button>
                         <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
                             &#10148;
                         </button>
@@ -68,6 +100,24 @@
                 </div>
             </div>
         </main>
+
+        @if (ShowActivityPanel)
+        {
+            <div class="activity-scrim" @onclick="CloseActivityPanel"></div>
+        }
+
+        <aside class="activity-panel glass-card @(ShowActivityPanel ? "open" : string.Empty)">
+            <div class="activity-header">
+                <div>
+                    <div class="activity-title">アクティビティ</div>
+                    <div class="activity-sub">@GetActivitySummary()</div>
+                </div>
+                <button class="icon-btn tertiary" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
+            </div>
+            <div class="activity-body">
+                @RenderActivityList()
+            </div>
+        </aside>
     </div>
 </div>
 
@@ -76,6 +126,7 @@
     [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
     private readonly List<ChatMessage> Messages = new();
+    private readonly List<TurnActivity> TurnActivities = new();
     private string Input = string.Empty;
     private string? Status;
     private bool IsSending;
@@ -83,19 +134,24 @@
     private string? _activeAgentNumber;
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
-    private IDisposable? _copilotOptionsSubscription;
+    private IDisposable? _llmOptionsSubscription;
     private IDisposable? _plcOptionsSubscription;
     private UserContext? _user;
     private string? _loadedConversationId;
+    private ChatMessage? _latestAssistant;
+    private bool ShowActivityPanel;
+    private int? SelectedTurnNumber;
+    private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
+    private static readonly TimeSpan ActivityPulseWindow = TimeSpan.FromSeconds(1.5);
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
-    private bool CopilotLive => IsCopilotConfigured(CopilotOptions.CurrentValue);
+    private bool AgentLive => IsLlmConfigured(LlmOptions.CurrentValue);
     private bool GatewayLive => PlcOptions.CurrentValue.Enabled;
-    private string CopilotDotClass => $"dot {(CopilotLive ? "dot-on" : "dot-off")}";
+    private string AgentDotClass => $"dot {(AgentLive ? "dot-on" : "dot-off")}";
     private string GatewayDotClass => $"dot {(GatewayLive ? "dot-on" : "dot-off")}";
-    private string CopilotStatusLabel => CopilotLive ? "Copilot" : "Copilot (fake)";
+    private string AgentStatusLabel => AgentLive ? "Agents" : "Agents (local)";
     private string GatewayStatusLabel => GatewayLive ? "Gateway" : "Gateway (fake)";
 #if DEBUG
     private const bool IsDebug = true;
@@ -115,7 +171,7 @@
             Status = "装置エージェントを選択してください";
         }
 
-        _copilotOptionsSubscription = CopilotOptions.OnChange(_ => InvokeAsync(StateHasChanged));
+        _llmOptionsSubscription = LlmOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         AgentState.Changed += OnAgentStateChanged;
     }
@@ -163,12 +219,25 @@
         IsSending = true;
         Status = null;
 
+        if (Messages.Count == 1
+            && Messages[0].Role == ChatRole.Assistant
+            && string.Equals(Messages[0].Content, "こんにちは、何をお手伝いしましょうか？", StringComparison.Ordinal))
+        {
+            Messages.Clear();
+            TurnActivities.Clear();
+            SelectedTurnNumber = null;
+            _latestAssistant = null;
+        }
+
         ConversationId ??= Guid.NewGuid().ToString("N");
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
         var userMessage = new ChatMessage(ChatRole.User, text);
         Messages.Add(userMessage);
+        StartNewTurn(TurnActivities.Count);
+        _latestAssistant = null;
+        ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
         try
@@ -178,24 +247,30 @@
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        Messages.Add(ev.Message);
+                        _latestAssistant = ev.Message;
+                        RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(ev.Message.Content)}", ev.Message.Content);
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
                         await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber);
-                        Status = $"ツール実行中: {ev.ActionRequest.ActionName}";
+                        RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
                         ConversationId ??= ev.ActionResult.ConversationId;
-                        var payloadJson = System.Text.Json.JsonSerializer.Serialize(ev.ActionResult.Payload);
-                        Messages.Add(new ChatMessage(ChatRole.Tool, $"{ev.ActionResult.ActionName}: {payloadJson}"));
-                        Status = null;
+                        var payloadJson = SafeSerialize(ev.ActionResult.Payload);
+                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
                         break;
                     case ChatStreamEventType.Completed:
                         Status = null;
+                        MarkActiveTurnCompleted();
+                        if (_latestAssistant is not null)
+                        {
+                            Messages.Add(_latestAssistant);
+                        }
                         break;
                     case ChatStreamEventType.Error:
                         Status = ev.Error;
+                        RecordActivity(ActivityKind.Error, "エラー", ev.Error);
                         break;
                 }
 
@@ -209,6 +284,7 @@
         }
         finally
         {
+            MarkActiveTurnCompleted();
             IsSending = false;
             await InvokeAsync(StateHasChanged);
         }
@@ -272,8 +348,12 @@
         ConversationId = null;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
+        TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
+        ShowActivityPanel = false;
+        SelectedTurnNumber = null;
+        _latestAssistant = null;
         SeedInitialMessage();
     }
 
@@ -283,12 +363,17 @@
         ConversationId = conversationId;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
+        TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
+        ShowActivityPanel = false;
+        SelectedTurnNumber = null;
+        _latestAssistant = null;
 
         var user = _user ?? await ResolveUserAsync();
         var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
-        Messages.AddRange(historyMessages);
+        Messages.AddRange(ChatMessageProjector.KeepUserAndFinalAssistant(historyMessages));
+        RebuildActivityFromHistory(historyMessages);
 
         if (!Messages.Any())
         {
@@ -304,12 +389,15 @@
         await Task.CompletedTask;
     }
 
-    private static bool IsCopilotConfigured(CopilotStudioOptions options)
+    private static bool IsLlmConfigured(LlmOptions options)
     {
-        return options.Enabled &&
-               (!string.IsNullOrWhiteSpace(options.DirectConnectUrl) ||
-                !string.IsNullOrWhiteSpace(options.EnvironmentId)) &&
-               !string.IsNullOrWhiteSpace(options.SchemaName);
+        if (options is null)
+        {
+            return false;
+        }
+
+        return !string.IsNullOrWhiteSpace(options.ApiKey)
+               || !string.IsNullOrWhiteSpace(options.Endpoint);
     }
 
     private async Task<UserContext> ResolveUserAsync()
@@ -326,9 +414,237 @@
         return new UserContext(objectId, displayName);
     }
 
+    private void RecordActivity(ActivityKind kind, string title, string? detail = null)
+    {
+        var current = TurnActivities.LastOrDefault();
+        if (current is null)
+        {
+            return;
+        }
+
+        current.AddLog(new ActivityLogItem(title, detail, kind, DateTimeOffset.UtcNow));
+    }
+
+    private void ToggleActivityPanel()
+    {
+        if (ShowActivityPanel)
+        {
+            ShowActivityPanel = false;
+            SelectedTurnNumber = null;
+            return;
+        }
+
+        SelectedTurnNumber = null;
+        ShowActivityPanel = true;
+    }
+
+    private void OpenActivityPanelForTurn(int turnNumber)
+    {
+        SelectedTurnNumber = turnNumber;
+        ShowActivityPanel = true;
+    }
+
+    private void CloseActivityPanel()
+    {
+        ShowActivityPanel = false;
+        SelectedTurnNumber = null;
+    }
+
+    private static string GetPillClass(ActivityKind kind) => kind switch
+    {
+        ActivityKind.Action => "pill-action",
+        ActivityKind.ToolResult => "pill-tool",
+        ActivityKind.Error => "pill-error",
+        _ => "pill-assistant"
+    };
+
+    private static string GetPillLabel(ActivityKind kind) => kind switch
+    {
+        ActivityKind.Action => "Action",
+        ActivityKind.ToolResult => "Result",
+        ActivityKind.Error => "Error",
+        _ => "Thought"
+    };
+
+    private static readonly JsonSerializerOptions SerializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
+
+    private static string SafeSerialize(IReadOnlyDictionary<string, object?> payload) =>
+        JsonSerializer.Serialize(payload, SerializerOptions);
+
+    private void RebuildActivityFromHistory(IReadOnlyList<ChatMessage> historyMessages)
+    {
+        TurnActivities.Clear();
+        var built = ActivityBuilder.BuildActivities(historyMessages);
+        TurnActivities.AddRange(built);
+    }
+
+    private void StartNewTurn(int turnNumber)
+    {
+        TurnActivities.Add(new TurnActivity(turnNumber));
+    }
+
+    private TurnActivity? GetTurnActivityForTurn(int turnNumber)
+    {
+        return TurnActivities.FirstOrDefault(t => t.TurnNumber == turnNumber);
+    }
+
+    private TurnActivity? GetCurrentTurn() => TurnActivities.LastOrDefault();
+
+    private void MarkActiveTurnCompleted()
+    {
+        GetCurrentTurn()?.MarkCompleted();
+    }
+
+    private string GetActivitySummary() => ActivityPanelService.GetActivitySummary(GetPanelLogs());
+
+    private string GetChipClass(TurnActivity? activity)
+    {
+        var classes = new List<string> { "thinking-chip" };
+        if (activity is null)
+        {
+            classes.Add("collapsed");
+            return string.Join(" ", classes);
+        }
+
+        classes.Add(activity.IsLive ? "live" : activity.IsCompleted ? "completed" : "collapsed");
+        if (activity.IsRecentlyUpdated(ActivityPulseWindow, DateTimeOffset.UtcNow))
+        {
+            classes.Add("pulse");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private string GetChipCountLabel(TurnActivity? activity, bool hasLog)
+    {
+        if (activity is null)
+        {
+            return "経過なし";
+        }
+
+        var count = activity.Items.Count;
+        var label = (hasLog || count > 0) ? $"{count} 件の経過" : "経過なし";
+        if (activity.IsLive)
+        {
+            var status = GetChipStatus(activity);
+            var statusText = string.IsNullOrWhiteSpace(status) ? "更新中" : status;
+            return $"{label} ({statusText})";
+        }
+
+        if (activity.IsCompleted)
+        {
+            return $"{label} (完了)";
+        }
+
+        return label;
+    }
+
+    private string GetChipStatus(TurnActivity? activity)
+    {
+        if (activity is null)
+        {
+            return "待機中";
+        }
+
+        if (activity.IsLive)
+        {
+            var actionLabel = GetLatestActionLabel(activity);
+            var text = !string.IsNullOrWhiteSpace(Status)
+                ? Status
+                : !string.IsNullOrWhiteSpace(actionLabel)
+                    ? actionLabel.Replace("ツール要求:", "ツール実行中:")
+                    : "進行中";
+
+            return TruncateLabel(text, 30);
+        }
+
+        if (activity.IsCompleted)
+        {
+            return "完了";
+        }
+
+        return "待機中";
+    }
+
+    private static string? GetLatestActionLabel(TurnActivity? activity)
+    {
+        if (activity is null)
+        {
+            return null;
+        }
+
+        var lastAction = activity.Items.LastOrDefault(i => i.Kind == ActivityKind.Action);
+        return lastAction?.Title;
+    }
+
+    private static string TruncateLabel(string text, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return text;
+        }
+
+        return text.Length <= maxLength
+            ? text
+            : $"{text[..maxLength]}…";
+    }
+
+    private RenderFragment RenderActivityList() => builder =>
+    {
+        var seq = 0;
+        var logs = GetPanelLogs().ToList();
+        if (logs.Any())
+        {
+            foreach (var log in logs)
+            {
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-item");
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-meta");
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", $"pill {GetPillClass(log.Kind)}");
+                builder.AddContent(seq++, GetPillLabel(log.Kind));
+                builder.CloseElement();
+                builder.OpenElement(seq++, "span");
+                builder.AddAttribute(seq++, "class", "timestamp");
+                builder.AddContent(seq++, log.Timestamp.ToLocalTime().ToString("HH:mm:ss"));
+                builder.CloseElement();
+                builder.CloseElement();
+
+                builder.OpenElement(seq++, "div");
+                builder.AddAttribute(seq++, "class", "activity-title-text");
+                builder.AddContent(seq++, log.Title);
+                builder.CloseElement();
+
+                if (!string.IsNullOrWhiteSpace(log.Detail))
+                {
+                    builder.OpenElement(seq++, "div");
+                    builder.AddAttribute(seq++, "class", "activity-detail");
+                    builder.AddContent(seq++, log.Detail);
+                    builder.CloseElement();
+                }
+
+                builder.CloseElement();
+            }
+        }
+        else
+        {
+            builder.OpenElement(seq++, "div");
+            builder.AddAttribute(seq++, "class", "activity-empty");
+            builder.AddContent(seq++, "思考の途中経過がここに表示されます。");
+            builder.CloseElement();
+        }
+    };
+
+    private IEnumerable<ActivityLogItem> GetPanelLogs() => ActivityPanelService.GetPanelLogs(TurnActivities, SelectedTurnNumber);
+
     public void Dispose()
     {
-        _copilotOptionsSubscription?.Dispose();
+        _llmOptionsSubscription?.Dispose();
         _plcOptionsSubscription?.Dispose();
         _cts?.Dispose();
         AgentState.Changed -= OnAgentStateChanged;

@@ -12,12 +12,12 @@ namespace MOCHA.Services.Settings;
 /// </summary>
 public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
 {
-    private readonly IJSRuntime jsRuntime;
-    private const string StorageKey = "mocha.preferences";
+    private readonly IJSRuntime _jsRuntime;
+    private const string _storageKey = "mocha.preferences";
 
     public LocalStorageUserPreferencesStore(IJSRuntime jsRuntime)
     {
-        this.jsRuntime = jsRuntime;
+        this._jsRuntime = jsRuntime;
     }
 
     public async Task<UserPreferences?> GetAsync(CancellationToken cancellationToken = default)
@@ -25,10 +25,10 @@ public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
         string? json;
         try
         {
-            json = await jsRuntime.InvokeAsync<string?>(
+            json = await _jsRuntime.InvokeAsync<string?>(
                 "mochaPreferences.getStoredPreferences",
                 cancellationToken,
-                StorageKey);
+                _storageKey);
         }
         catch (JSException)
         {
@@ -68,10 +68,10 @@ public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
 
         try
         {
-            await jsRuntime.InvokeVoidAsync(
+            await _jsRuntime.InvokeVoidAsync(
                 "mochaPreferences.savePreferences",
                 cancellationToken,
-                StorageKey,
+                _storageKey,
                 json);
         }
         catch (JSException)

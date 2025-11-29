@@ -1,0 +1,62 @@
+ファイル名: HM-60252J_page303
+
+<overview>
+このページは「ダイレクトデータ運転」に関する説明で構成されています。  
+テキスト部分では、タイミングチャートの手順が箇条書きで示されています。  
+グラフ部分には、通信と各種出力（DCMD-RDY出力、PLS-RDY出力、READY出力、MOVE出力）およびモーター動作のタイミングを示す2つのタイミングチャートが掲載されています。  
+表はなく、図はタイミングチャートのみです。
+</overview>
+
+<contents>
+### テキスト
+#### タイミングチャート
+1. DCMD-RDY出力がONであることを確認します。  
+2. ダイレクトデータ運転を行なうクエリ（反映トリガとデータを含む）を送信します。  
+3. クライアントがクエリを受信するとREADY出力がOFF、MOVE出力がONになり、運転が始まります。  
+4. モーターが停止すると、READY出力がONになります。
+
+### 図
+#### タイミングチャート（上段）
+```mermaid
+sequenceDiagram
+    participant 通信
+    participant クライアント
+    participant サーバー
+
+    Note over 通信: DCMD-RDY出力 ON→OFF
+    Note over 通信: PLS-RDY出力 ON→OFF
+    Note over 通信: READY出力 ON→OFF→ON
+    Note over 通信: MOVE出力 OFF→ON→OFF
+    Note over 通信: モーター動作（ON期間あり）
+
+    サーバー->>クライアント: ① DCMD-RDY出力ON確認
+    クライアント->>サーバー: ② クエリ送信
+    サーバー->>クライアント: ③ レスポンス
+    Note right of 通信: READY出力OFF, MOVE出力ONで運転開始
+    Note right of 通信: モーター停止でREADY出力ON
+```
+
+#### タイミングチャート（下段）
+```mermaid
+sequenceDiagram
+    participant 通信
+    participant クライアント
+    participant サーバー
+
+    Note over 通信: DCMD-RDY出力 ON一定期間
+    Note over 通信: PLS-RDY出力 ON一定期間
+    Note over 通信: READY出力 ON→OFF→ON（※3）
+    Note over 通信: MOVE出力 OFF→ON→OFF（※3）
+    Note over 通信: モーター動作（ON期間あり）
+
+    クライアント->>サーバー: クエリ（※1）
+    サーバー->>クライアント: レスポンス（※2）
+```
+
+### 注釈
+| 記号 | 内容 |
+| :--- | :--- |
+| ※1 | RS-485通信によるクエリ |
+| ※2 | C3.5（サイレントインターバル）＋Tb5（クエリ処理時間（ドライバ））＋Tb2（送信待ち時間（ドライバ側）） |
+| ※3 | C3.5（サイレントインターバル）＋4ms以下 |
+</contents>

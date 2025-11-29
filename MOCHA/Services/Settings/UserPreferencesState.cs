@@ -10,19 +10,19 @@ namespace MOCHA.Services.Settings;
 /// </summary>
 public sealed class UserPreferencesState
 {
-    private readonly IUserPreferencesStore store;
-    private readonly IColorSchemeProvider schemeProvider;
-    private readonly IThemeApplicator themeApplicator;
-    private bool loaded;
+    private readonly IUserPreferencesStore _store;
+    private readonly IColorSchemeProvider _schemeProvider;
+    private readonly IThemeApplicator _themeApplicator;
+    private bool _loaded;
 
     public UserPreferencesState(
         IUserPreferencesStore store,
         IColorSchemeProvider schemeProvider,
         IThemeApplicator themeApplicator)
     {
-        this.store = store;
-        this.schemeProvider = schemeProvider;
-        this.themeApplicator = themeApplicator;
+        _store = store;
+        _schemeProvider = schemeProvider;
+        _themeApplicator = themeApplicator;
     }
 
     public event Action? Changed;
@@ -31,15 +31,15 @@ public sealed class UserPreferencesState
 
     public async Task LoadAsync(CancellationToken cancellationToken = default)
     {
-        if (loaded)
+        if (_loaded)
         {
             return;
         }
 
-        var saved = await store.GetAsync(cancellationToken);
+        var saved = await _store.GetAsync(cancellationToken);
         if (saved is null)
         {
-            var preferred = await schemeProvider.GetPreferredThemeAsync(cancellationToken);
+            var preferred = await _schemeProvider.GetPreferredThemeAsync(cancellationToken);
             Preferences = new UserPreferences(preferred);
         }
         else
@@ -47,16 +47,16 @@ public sealed class UserPreferencesState
             Preferences = saved;
         }
 
-        loaded = true;
-        await themeApplicator.ApplyAsync(Preferences.Theme, cancellationToken);
+        _loaded = true;
+        await _themeApplicator.ApplyAsync(Preferences.Theme, cancellationToken);
         Changed?.Invoke();
     }
 
     public async Task UpdateThemeAsync(Theme theme, CancellationToken cancellationToken = default)
     {
         Preferences = Preferences with { Theme = theme };
-        await store.SaveAsync(Preferences, cancellationToken);
-        await themeApplicator.ApplyAsync(theme, cancellationToken);
+        await _store.SaveAsync(Preferences, cancellationToken);
+        await _themeApplicator.ApplyAsync(theme, cancellationToken);
         Changed?.Invoke();
     }
 }

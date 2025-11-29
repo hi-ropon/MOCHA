@@ -1,0 +1,66 @@
+ファイル名: RSEL(MJ0392-4M)_page177
+
+<overview>
+このページは「3.5 SCON拡張ユニット、PIO/SIO/SCON拡張ユニット、PIOユニット」に関する説明で構成されています。
+テキスト部分では、SCON拡張ユニットの概要とその役割、接続方法について解説しています。
+図部分では、SCON拡張ユニットを中心としたシステム構成図が示されており、PLC、ティーチングツール、ファンユニット、電源ユニット、接続可能なアクチュエーターなどの各機器の接続関係が視覚的に表現されています。
+表はなく、主にテキストと図で構成されています。
+</overview>
+
+<contents>
+### テキスト
+#### 3.5.1 概要
+【SCON拡張ユニット】
+SCON拡張ユニットは、RSELシステムにSCONコントローラー（SCON2またはSCON-CBのRCON接続仕様）を接続するためのユニットです。これを使用することで、200Vドライバーユニット（RCON-SC）で接続できないアクチュエーターも接続可能になります。
+正面から見て、RSELシステムの左端にSELユニットを配置しますが、SCON拡張ユニットはSELユニットの右隣に配置して使用します。
+
+### 図
+```mermaid
+flowchart LR
+    PLC -->|フィールドネットワーク/PIO| SCON拡張ユニット
+    SCON拡張ユニット --> ファンユニット
+    SCON拡張ユニット --> 簡易アブソユニット
+    SCON拡張ユニット --> 接続可能アクチュエーター
+    SCON拡張ユニット --> 電源ユニット
+    ティーチングツール --> PLC
+
+    subgraph ティーチングツール
+        TB02[型式: TB-02, TB-03]
+        IA101[型式: IA-101-X, IA-101-N]
+    end
+
+    subgraph ファンユニット
+        FU[RCON-FU]
+        FUH[RCON-FUH]
+    end
+
+    subgraph 接続可能アクチュエーター
+        RCP[24V RCP]
+        RCA_RCL[RCA・RCL]
+        RCD[RCD]
+        RCS_ISB_DDA[200V RCS/ISB/DDAなど]
+    end
+
+    subgraph 電源ユニット
+        PSA24[型式: PSA-24]
+    end
+
+    subgraph SCONシリーズ
+        EXT[RCON-EXT, RCON-EXT-NP/PN]
+        RCS_ISB_DDA2[RCS/ISB/DDAなど]
+    end
+
+    subgraph 簡易アブソユニット
+        ABU_P[RCON-ABU-P (パルスモーター用)]
+        ABU_A[RCON-ABU-A (ACサーボモーター用)]
+        RCP_RCA[RCP/RCA]
+    end
+```
+
+**図の説明:**
+- PLCはフィールドネットワーク/PIOを介してSCON拡張ユニットに接続される。
+- SCON拡張ユニットはファンユニット（RCON-FU、RCON-FUH）、簡易アブソユニット（パルスモーター用、ACサーボモーター用）、接続可能なアクチュエーター（24V、200V対応）、電源ユニット（PSA-24）と接続される。
+- ティーチングツールはPLCに接続され、型式はTB-02、TB-03、IA-101-X、IA-101-Nがある。
+- SCONシリーズの拡張ユニット（RCON-EXT、RCON-EXT-NP/PN）も接続される。
+
+</contents>

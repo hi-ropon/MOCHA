@@ -1,0 +1,41 @@
+ファイル名: RSEL(MJ0392-4M)_page32
+
+<overview>
+本ページは、DC24V電源がプラス接地されたSELユニットにパソコンを接続する際の注意点について説明しています。構成は以下の通りです。
+- テキスト部分：接続時の注意事項の説明
+- 図部分：パソコンとSELユニット、DC24V電源間の配線と短絡の発生イメージ図
+- 画像部分：パソコンとSELユニットのEthernet接続例の写真
+</overview>
+
+<contents>
+### テキスト
+#### DC24V電源がプラス接地されたSELユニットへのパソコン接続時の注意
+SELユニットのDC24V電源のプラス側が接地されている場合、SELユニットのUSBコネクター（mini-B）にパソコンを直接接続できません。  
+直接接続すると、電源の短絡が発生し、パソコンの故障原因となります。
+
+SELユニットのDC24V電源のプラス側が接地されている場合は、Ethernetポートを使用してパソコンと接続してください。  
+Ethernetポートは内部電源の24Vや0Vとは絶縁されています。
+
+---
+
+### 図
+```mermaid
+flowchart LR
+    PC[パソコン\nUSB Aタイプ\n5V\n-DATA\n+DATA\nGND\nFG] --- USBケーブル --- SEL[SELユニット\nUSB mini-Bタイプ\n5V\n-DATA\n+DATA\nGND]
+    SEL --- DC24V[DC24V電源\n+24V\n0V]
+    PC -. GNDとFG短絡 .-> GND_FG[パソコン内でGNDとFGが短絡]
+    GND_FG -. 短絡 .-> DC24V
+    style GND_FG fill:#00ffff,stroke:#000,stroke-width:2px
+    style DC24V fill:#ffcc00,stroke:#000,stroke-width:2px
+```
+
+**図の説明:**  
+- パソコンのUSB AタイプコネクターとSELユニットのUSB mini-Bタイプコネクターが通信ケーブルで接続されている。  
+- パソコン内でGNDとFGが短絡しており、SELユニットのDC24V電源のプラス側が接地されているため、短絡が発生することを示している。
+
+---
+
+### 画像説明
+- パソコンとSELユニットをEthernetポートで接続している写真。  
+- Ethernetポートは内部電源の24Vや0Vと絶縁されているため、安全に接続可能であることを示す。
+</contents>

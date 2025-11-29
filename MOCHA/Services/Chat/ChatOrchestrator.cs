@@ -1,43 +1,52 @@
 using System.Runtime.CompilerServices;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
-using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// Copilot とのやり取りと PLC Gateway 呼び出しを仲介するサービス。
+/// エージェントとのやり取りと PLC Gateway 呼び出しを仲介するサービス。
 /// 実際の接続先がなくてもフェイク実装で動作をテストできるように抽象化している。
 /// </summary>
 internal sealed class ChatOrchestrator : IChatOrchestrator
 {
-    private readonly ICopilotChatClient _copilot;
+    private readonly IAgentChatClient _agentChatClient;
     private readonly IPlcGatewayClient _plcGateway;
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
+    private readonly IManualStore _manualStore;
+    private static readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
+    {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
+    };
 
     /// <summary>
     /// 依存するクライアントと状態管理を受け取って初期化する。
     /// </summary>
-    /// <param name="copilot">Copilot クライアント。</param>
+    /// <param name="agentChatClient">エージェント クライアント。</param>
     /// <param name="plcGateway">PLC Gateway クライアント。</param>
     /// <param name="chatRepository">チャットリポジトリ。</param>
     /// <param name="history">会話履歴状態。</param>
+    /// <param name="manualStore">マニュアルストア。</param>
     public ChatOrchestrator(
-        ICopilotChatClient copilot,
+        IAgentChatClient agentChatClient,
         IPlcGatewayClient plcGateway,
         IChatRepository chatRepository,
-        ConversationHistoryState history)
+        ConversationHistoryState history,
+        IManualStore manualStore)
     {
-        _copilot = copilot;
+        _agentChatClient = agentChatClient;
         _plcGateway = plcGateway;
         _chatRepository = chatRepository;
         _history = history;
+        _manualStore = manualStore;
     }
 
     /// <summary>
-    /// ユーザーの発話を Copilot に送り、ツール要求や応答をストリームで返す。
+    /// ユーザーの発話をエージェントに送り、ツール要求や応答をストリームで返す。
     /// </summary>
     /// <param name="user">ユーザー情報。</param>
     /// <param name="conversationId">既存の会話ID。未指定なら新規を生成。</param>
@@ -64,38 +73,50 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             new(ChatRole.User, text)
         });
 
-        var stream = await _copilot.SendAsync(turn, cancellationToken);
+        var stream = await _agentChatClient.SendAsync(turn, cancellationToken);
         await foreach (var ev in stream.WithCancellation(cancellationToken))
         {
             if (ev.Type == ChatStreamEventType.ActionRequest && ev.ActionRequest is not null)
             {
                 var actionRequest = ev.ActionRequest with { ConversationId = convId };
 
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[action] {actionRequest.ActionName}: {JsonSerializer.Serialize(actionRequest.Payload, _serializerOptions)}"),
+                    agentNumber,
+                    cancellationToken);
+
                 yield return ev; // UI に「ツール実行開始」を通知
 
                 var actionResult = await ExecuteActionAsync(actionRequest, cancellationToken);
+
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, _serializerOptions)}"),
+                    agentNumber,
+                    cancellationToken);
 
                 yield return new ChatStreamEvent(
                     ChatStreamEventType.ToolResult,
                     ActionResult: actionResult);
 
-                await _copilot.SubmitActionResultAsync(actionResult, cancellationToken);
+                await _agentChatClient.SubmitActionResultAsync(actionResult, cancellationToken);
+            }
+            else if (ev.Type == ChatStreamEventType.ToolResult && ev.ActionResult is not null)
+            {
+                var actionResult = ev.ActionResult with { ConversationId = ev.ActionResult.ConversationId ?? convId };
+                await SaveMessageAsync(
+                    user,
+                    convId,
+                    new ChatMessage(ChatRole.Tool, $"[result] {actionResult.ActionName}: {JsonSerializer.Serialize(actionResult.Payload, _serializerOptions)}"),
+                    agentNumber,
+                    cancellationToken);
 
-                var device = ReadString(actionResult.Payload, "device") ?? "D";
-                var addr = ReadInt(actionResult.Payload, "addr") ?? 0;
-                var values = ReadValues(actionResult.Payload, "values");
-
-                // ツール結果の簡易表示
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), agentNumber, cancellationToken));
-
-                // Copilot Studio に渡したことを示すフェイクメッセージ
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), agentNumber, cancellationToken));
-
-                // Copilot Studio が最終回答した想定のフェイクメッセージ
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildCopilotReplyText(device, addr, values, actionResult.Success, actionResult.Error)), agentNumber, cancellationToken));
+                yield return new ChatStreamEvent(
+                    ChatStreamEventType.ToolResult,
+                    ActionResult: actionResult);
             }
             else
             {
@@ -118,7 +139,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> ExecuteActionAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> ExecuteActionAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         switch (request.ActionName)
         {
@@ -126,8 +147,12 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                 return await HandleReadDeviceAsync(request, cancellationToken);
             case "batch_read_devices":
                 return await HandleBatchReadAsync(request, cancellationToken);
+            case "find_manuals":
+                return await HandleFindManualsAsync(request, cancellationToken);
+            case "read_manual":
+                return await HandleReadManualAsync(request, cancellationToken);
             default:
-                return new CopilotActionResult(
+                return new AgentActionResult(
                     request.ActionName,
                     request.ConversationId,
                     false,
@@ -142,7 +167,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> HandleReadDeviceAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleReadDeviceAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var device = ReadString(payload, "device") ?? "D";
@@ -162,7 +187,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             ["success"] = result.Success
         };
 
-        return new CopilotActionResult(
+        return new AgentActionResult(
             request.ActionName,
             request.ConversationId,
             result.Success,
@@ -176,7 +201,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="request">アクション要求。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>アクション結果。</returns>
-    private async Task<CopilotActionResult> HandleBatchReadAsync(CopilotActionRequest request, CancellationToken cancellationToken)
+    private async Task<AgentActionResult> HandleBatchReadAsync(AgentActionRequest request, CancellationToken cancellationToken)
     {
         var payload = request.Payload;
         var devices = ReadStringList(payload, "devices") ?? new List<string>();
@@ -198,12 +223,98 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             ["success"] = result.Success
         };
 
-        return new CopilotActionResult(
+        return new AgentActionResult(
             request.ActionName,
             request.ConversationId,
             result.Success,
             responsePayload,
             result.Error);
+    }
+
+    /// <summary>
+    /// マニュアル検索アクションを実行する。
+    /// </summary>
+    private async Task<AgentActionResult> HandleFindManualsAsync(AgentActionRequest request, CancellationToken cancellationToken)
+    {
+        var payload = request.Payload;
+        var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
+        var query = ReadString(payload, "query") ?? string.Empty;
+
+        try
+        {
+            var hits = await _manualStore.SearchAsync(agentName, query, cancellationToken);
+            var responsePayload = new Dictionary<string, object?>
+            {
+                ["agentName"] = agentName,
+                ["query"] = query,
+                ["hits"] = hits.Select(h => new { h.Title, h.RelativePath, h.Score }).ToList()
+            };
+
+            var success = responsePayload["hits"] is List<object?> list && list.Count > 0;
+            return new AgentActionResult(
+                request.ActionName,
+                request.ConversationId,
+                success,
+                responsePayload,
+                success ? null : "no manual hits");
+        }
+        catch (Exception ex)
+        {
+            return new AgentActionResult(
+                request.ActionName,
+                request.ConversationId,
+                false,
+                new Dictionary<string, object?>
+                {
+                    ["agentName"] = agentName,
+                    ["query"] = query
+                },
+                ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// マニュアル読取アクションを実行する。
+    /// </summary>
+    private async Task<AgentActionResult> HandleReadManualAsync(AgentActionRequest request, CancellationToken cancellationToken)
+    {
+        var payload = request.Payload;
+        var agentName = ReadString(payload, "agentName") ?? "iaiAgent";
+        var relativePath = ReadString(payload, "relativePath") ?? string.Empty;
+
+        try
+        {
+            var content = await _manualStore.ReadAsync(agentName, relativePath, cancellationToken: cancellationToken);
+            var success = content is not null;
+
+            var responsePayload = new Dictionary<string, object?>
+            {
+                ["agentName"] = agentName,
+                ["relativePath"] = relativePath,
+                ["content"] = content?.Content,
+                ["length"] = content?.Length
+            };
+
+            return new AgentActionResult(
+                request.ActionName,
+                request.ConversationId,
+                success,
+                responsePayload,
+                success ? null : "manual not found");
+        }
+        catch (Exception ex)
+        {
+            return new AgentActionResult(
+                request.ActionName,
+                request.ConversationId,
+                false,
+                new Dictionary<string, object?>
+                {
+                    ["agentName"] = agentName,
+                    ["relativePath"] = relativePath
+                },
+                ex.Message);
+        }
     }
 
     /// <summary>
@@ -277,95 +388,6 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         return asString
             .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
-    }
-
-    /// <summary>
-    /// 読み取り結果を UI 向けの文面に整形する。
-    /// </summary>
-    /// <param name="result">アクション結果。</param>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">取得値。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildActionResultText(CopilotActionResult result, string device, int addr, List<int> values)
-    {
-        if (result.Success)
-        {
-            var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
-            return $"(fake) {device}{addr} の読み取り結果: {valuesText}";
-        }
-
-        var error = result.Error ?? "unknown error";
-        return $"(fake) {device}{addr} の読み取りに失敗しました: {error}";
-    }
-
-    /// <summary>
-    /// ペイロードから整数リストを取り出す。型が合わない場合は空リストを返す。
-    /// </summary>
-    /// <param name="dict">ペイロード辞書。</param>
-    /// <param name="key">抽出するキー。</param>
-    /// <returns>取得した整数リスト。</returns>
-    private static List<int> ReadValues(IReadOnlyDictionary<string, object?> dict, string key)
-    {
-        if (!dict.TryGetValue(key, out var value) || value is null) return new List<int>();
-
-        if (value is IEnumerable<int> enumerable)
-        {
-            return enumerable.ToList();
-        }
-
-        if (value is JsonElement json && json.ValueKind == JsonValueKind.Array)
-        {
-            var list = new List<int>();
-            foreach (var item in json.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.Number && item.TryGetInt32(out var n))
-                {
-                    list.Add(n);
-                }
-            }
-            return list;
-        }
-
-        return new List<int>();
-    }
-
-    /// <summary>
-    /// Copilot Studio へ送信した旨の簡易メッセージを生成する。
-    /// </summary>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">送信値。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildActionSubmitText(string device, int addr, List<int> values)
-    {
-        var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
-        return $"(fake) Copilot Studio に送信: {device}{addr} -> [{valuesText}]";
-    }
-
-    /// <summary>
-    /// Copilot から返ってきたと想定したメッセージを生成する。
-    /// </summary>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">取得値。</param>
-    /// <param name="success">成功フラグ。</param>
-    /// <param name="error">エラー内容。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildCopilotReplyText(string device, int addr, List<int> values, bool success, string? error)
-    {
-        if (success && values.Any())
-        {
-            return $"(fake Copilot) {device}{addr} は {string.Join(", ", values)} でした。";
-        }
-
-        if (success)
-        {
-            return $"(fake Copilot) {device}{addr} の値は空でした。";
-        }
-
-        var err = error ?? "unknown error";
-        return $"(fake Copilot) {device}{addr} の読み取りに失敗しました: {err}";
     }
 
     /// <summary>

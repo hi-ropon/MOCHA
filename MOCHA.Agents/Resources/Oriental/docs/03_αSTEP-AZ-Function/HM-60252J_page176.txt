@@ -1,0 +1,108 @@
+ファイル名: HM-60252J_page176
+
+<overview>
+このページは「電流ソース出力回路との接続例」に関する内容で構成されています。  
+主に以下のセクションで構成されています。  
+- テキスト部分：接続例の説明と注意事項  
+- 図部分：コントローラとドライバ間の電流ソース出力回路の詳細な接続図  
+表やグラフはなく、回路図がメインの構成です。
+</overview>
+
+<contents>
+### テキスト
+#### 電流ソース出力回路との接続例
+位置決め機能内蔵タイプの接続例を示しています。  
+パルス列入力タイプとRS-485通信付きパルス列入力タイプの場合、ピンNo.1、2、13、14はパルス入力専用です。  
+詳細な接続例は177ページを参照してください。  
+※（ ）内は初期値を示しています。
+
+### 図
+```mermaid
+flowchart LR
+    subgraph コントローラ
+        direction TB
+        DC24V1[DC24 V △]
+        DC24V2[DC24 V △]
+        DC12_24V[DC12～24 V △]
+        GND0V[0 V ▽]
+        R0_1[R0]
+        R0_2[R0]
+        R0_3[R0]
+        R0_4[R0]
+        R0_5[R0]
+        R0_6[R0]
+        TwistedPair[ツイストペア線]
+    end
+
+    subgraph ドライバ
+        direction TB
+        IN0[IN0(START) 1]
+        IN1[IN1(M0) 13]
+        IN2[IN2(M1) 2]
+        IN3[IN3(M2) 14]
+        IN4[IN4(ZHOME) 3]
+        IN5[IN5(FREE) 15]
+        IN6[IN6(STOP) 4]
+        IN7[IN7(ALM-RST) 16]
+        INCOM0_7[IN-COM[0-7] 5]
+        IN8[IN8(FW-JOG) 6]
+        IN9[IN9(RV-JOG) 18]
+        INCOM8_9[IN-COM[8-9] 17]
+        OUT0[OUT0(HOME-END) 7]
+        OUT1[OUT1(IN-POS) 19]
+        OUT2[OUT2(PLS-RDY) 8]
+        OUT3[OUT3(READY) 20]
+        OUT4[OUT4(MOVE) 9]
+        OUT5[OUT5(ALM-B) 21]
+        OUTCOM[OUT-COM 10]
+        ASGplus[ASG+ 11]
+        ASGminus[ASG- 23]
+        BSGplus[BSG+ 12]
+        BSGminus[BSG- 24]
+        GND22[GND 22]
+    end
+
+    DC24V1 -->|電源供給| コントローラ
+    DC24V2 -->|電源供給| コントローラ
+    DC12_24V -->|電源供給| コントローラ
+    GND0V -->|接地| コントローラ
+    GND0V -->|接地| ドライバ
+
+    コントローラ -->|IN0(START)| IN0
+    コントローラ -->|IN1(M0)| IN1
+    コントローラ -->|IN2(M1)| IN2
+    コントローラ -->|IN3(M2)| IN3
+    コントローラ -->|IN4(ZHOME)| IN4
+    コントローラ -->|IN5(FREE)| IN5
+    コントローラ -->|IN6(STOP)| IN6
+    コントローラ -->|IN7(ALM-RST)| IN7
+    コントローラ -->|IN-COM[0-7]| INCOM0_7
+    コントローラ -->|IN8(FW-JOG)| IN8
+    コントローラ -->|IN9(RV-JOG)| IN9
+    コントローラ -->|IN-COM[8-9]| INCOM8_9
+
+    コントローラ -->|OUT0(HOME-END) R0←10mA以下| OUT0
+    コントローラ -->|OUT1(IN-POS) R0| OUT1
+    コントローラ -->|OUT2(PLS-RDY) R0| OUT2
+    コントローラ -->|OUT3(READY) R0| OUT3
+    コントローラ -->|OUT4(MOVE) R0| OUT4
+    コントローラ -->|OUT5(ALM-B) R0| OUT5
+    コントローラ -->|OUT-COM| OUTCOM
+
+    コントローラ -->|ツイストペア線| TwistedPair
+    TwistedPair --> ASGplus
+    TwistedPair --> ASGminus
+    TwistedPair --> BSGplus
+    TwistedPair --> BSGminus
+    GND0V --> GND22
+```
+
+**図の説明:**  
+- コントローラ側はDC24V電源とDC12～24V電源を供給し、複数の入力（IN0～IN9）と出力（OUT0～OUT5）端子を持つ。  
+- 出力は抵抗R0を介してドライバ側に接続されており、最大10mA以下の電流で駆動される。  
+- ドライバ側は各入力に4.7kΩと2.2kΩの抵抗を介してLEDなどの負荷を駆動。  
+- ツイストペア線でASG+/ASG-、BSG+/BSG-信号を送受信し、GNDは共通接地されている。  
+- ピン番号は丸数字で示され、対応する信号名と機能が記載されている。  
+- 出力飽和電圧は最大3V。  
+- （ ）内は初期値を示す。
+</contents>

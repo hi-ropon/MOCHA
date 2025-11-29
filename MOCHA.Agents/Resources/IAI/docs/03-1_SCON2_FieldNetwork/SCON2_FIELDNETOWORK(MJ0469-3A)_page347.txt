@@ -1,0 +1,72 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page347
+
+<overview>
+このページは「4.2.4 移動中のデータ変更」に関する説明で構成されています。  
+テキスト部分では、ハーフ直値モードおよびフル直値モードにおける出力データレジスターの値（速度データ、加減速データなど）を運転中に変更する方法について解説しています。  
+図部分は、速度・加減速度の変更タイミングを示すタイミングチャート（信号のオンオフのタイミングと速度変化の関係）を示しています。  
+注意事項として、速度設定がない場合や0の場合の挙動、移動中の設定変更に関する条件が箇条書きで記載されています。
+</overview>
+
+<contents>
+### テキスト
+#### 4.2.4 移動中のデータ変更
+ハーフ直値モード、フル直値モードでは、出力データレジスター（目標位置データ、加減速データ、速度データ、位置決め幅、押付け時電流制限値）で設定している値を運転中に変更できます。  
+以下に速度・加減速度を変更する場合の例を示します。
+
+1. 速度データ、加減速度データを各レジスターに設定します。  
+2. データ変更を行った後は、位置決め指令（DSTR）をtdpf以上“ON”にします。  
+3. DSTRを一度“OFF”にした後、次のデータ変更を行います。そして、twcsON＋twcsOFF以上時間を開けてから、次のDSTRをtdpf以上ONにします。
+
+---
+
+### 図（タイミングチャート）
+```mermaid
+flowchart LR
+    subgraph 速度・加減速度設定値 (PLC→コントローラー)
+        n1 --> n2 --> n3
+    end
+    subgraph 位置決め指令 DSTR (PLC→コントローラー)
+        DSTR_ON1((twcsON)) --> DSTR_OFF((twcsOFF)) --> DSTR_ON2((twcsON))
+    end
+    subgraph 位置決め完了 PEND (コントローラー→PLC)
+        PEND_signal
+    end
+    subgraph 移動中 MOVE (コントローラー→PLC)
+        MOVE_signal
+    end
+    subgraph アクチュエーター速度
+        speed_n2 --> speed_n3
+    end
+
+    n1 -- 1) --> DSTR_ON1
+    DSTR_ON1 -- 2) --> PEND_signal
+    PEND_signal -- 3) --> MOVE_signal
+    DSTR_OFF -.-> DSTR_ON2
+
+    %% 時間軸
+    style n1 stroke:#f66,stroke-width:2px
+    style DSTR_ON1 stroke:#f66,stroke-width:2px
+    style PEND_signal stroke:#f66,stroke-width:2px
+    style MOVE_signal stroke:#f66,stroke-width:2px
+
+    %% 時間表記
+    classDef timeLabel fill:#fff,stroke:#000,stroke-width:0.5px,font-size:10px;
+    class twcsON,twcsOFF timeLabel;
+```
+
+**図の説明:**  
+- 速度・加減速度設定値（n1→n2→n3）が時間経過とともに変化する。  
+- 位置決め指令DSTRはPLCからコントローラーへ送られ、twcsONとtwcsOFFの時間を含むON/OFF信号を送る。  
+- 位置決め完了（PEND）と移動中（MOVE）はコントローラーからPLCへ信号を返す。  
+- アクチュエーター速度はn2からn3へ変化する。  
+- twcsON ≧ Yt + Xt + 3 [ms]、twcsOFF ≧ Yt + Xt + 3 [ms]  
+- tdpfはYt + Xt ≦ tdpf ≦ Yt + Xt + 3 [ms]の範囲。
+
+---
+
+### 注意事項
+- 速度の設定がされていない場合または設定が0の場合は、停止したままになりますがアラームは発生しません。  
+- 移動中に速度設定を0に変更した場合は減速停止し、アラームにはなりません。  
+- 移動中に加減速度/速度データのみを変更する場合でも目標位置データの設定が必要です。  
+- 移動中に目標位置のみを変更する場合でも、加減速度・速度データの設定が必要です。
+</contents>

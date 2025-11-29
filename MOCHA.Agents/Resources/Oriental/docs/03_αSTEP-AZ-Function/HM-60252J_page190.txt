@@ -1,0 +1,87 @@
+ファイル名: HM-60252J_page190
+
+<overview>
+本ページは「入力信号」に関する説明で構成されている。内容は主に2つの運転モード（ストアードデータ運転・ダイレクトデータ運転、およびマクロ運転・高速原点復帰運転・原点復帰運転）におけるPAUSE入力の動作と、それに伴う各種出力信号（PLS-RDY出力、PAUSE-BSY出力、READY出力）およびモーターの動作状態の変化を示している。テキスト説明と複数のタイミングチャート（波形図）で構成されている。表や表形式のデータはなく、図はタイミングチャートである。
+</overview>
+
+<contents>
+### テキスト
+#### ストアードデータ運転、ダイレクトデータ運転の場合（減速停止中にPAUSE入力をOFFにしたとき）
+1. 運転中にPAUSE入力をONにすると、PLS-RDY出力がOFF、PAUSE-BSY出力がONになり、モーターが減速停止を開始する。
+2. 減速停止中にPAUSE入力をOFFにすると、モーターは起動速度まで減速してから加速を始める。
+
+#### マクロ運転、高速原点復帰運転、原点復帰運転の場合
+1. 運転中にPAUSE入力をONにすると、PLS-RDY出力がOFFになり、モーターが減速停止を開始する。
+2. PAUSE入力をOFFにすると、PLS-RDY出力とREADY出力がONになるが、モーターは運転を再開しない。
+
+### 図（タイミングチャート）
+
+#### ストアードデータ運転、ダイレクトデータ運転の場合の信号タイミング
+```mermaid
+flowchart TD
+    subgraph PAUSE入力
+        A1[ON] --> A2[OFF]
+    end
+    subgraph PLS-RDY出力
+        B1[ON] --> B2[OFF]
+    end
+    subgraph READY出力
+        C1[ON] --> C2[OFF]
+    end
+    subgraph PAUSE-BSY出力
+        D1[ON] --> D2[OFF]
+    end
+    subgraph モーター動作
+        E1[減速] --> E2[起動速度] --> E3[加速]
+    end
+    subgraph モーター励磁
+        F1[励磁] --> F2[無励磁]
+    end
+    subgraph 電磁ブレーキ
+        G1[保持] --> G2[解放]
+    end
+
+    %% タイミングの関係を示す矢印（概念的）
+    A1 -->|2ms以上| B2
+    B2 -->|2ms以下| D1
+    D1 -->|2ms以下| D2
+    E1 --> E3
+```
+
+#### マクロ運転、高速原点復帰運転、原点復帰運転の場合の信号タイミング
+```mermaid
+flowchart TD
+    subgraph PAUSE入力
+        A1[ON] --> A2[OFF]
+    end
+    subgraph PLS-RDY出力
+        B1[ON] --> B2[OFF]
+    end
+    subgraph READY出力
+        C1[ON] --> C2[OFF]
+    end
+    subgraph PAUSE-BSY出力
+        D1[ON] --> D2[OFF]
+    end
+    subgraph モーター動作
+        E1[減速停止]
+    end
+    subgraph モーター励磁
+        F1[励磁] --> F2[無励磁]
+    end
+    subgraph 電磁ブレーキ
+        G1[保持] --> G2[解放]
+    end
+
+    %% タイミングの関係を示す矢印（概念的）
+    A1 -->|2ms以上| B2
+    B2 -->|2ms以下| C2
+```
+
+### 図の説明
+- PAUSE入力がONになると、PLS-RDY出力がOFFになり、モーターは減速停止を開始する。
+- ストアードデータ運転・ダイレクトデータ運転では、PAUSE入力OFFでモーターが起動速度まで減速後、加速を開始する。
+- マクロ運転などでは、PAUSE入力OFF後もモーターは再起動せず、PLS-RDY出力とREADY出力がONになる。
+- モーター励磁と電磁ブレーキの状態も信号に連動して変化する。
+
+</contents>

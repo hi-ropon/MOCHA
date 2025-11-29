@@ -1,0 +1,74 @@
+<overview>
+ページ49は、JOG運転のタイミングチャートについて説明している。JOG運転では一定速運転が行われ、FW-JOG入力またはRV-JOG入力のON/OFF制御による運転シーケンスとタイミングチャートが記載されている。
+</overview>
+
+<contents>
+## ■ JOG運転
+
+JOG運転では、一定速運転が行なえます。FW-JOG入力またはRV-JOG入力がONになっている間、モーターは連続で運転します。
+
+**運転シーケンス:**
+
+1. 主電源と制御電源を投入します。
+   READY出力とPLS-RDY出力がONになります。
+
+2. READY出力がONであることを確認し、FW-JOG入力またはRV-JOG入力をONにします。
+   モーターが運転を始めます。
+   FW-JOG入力をONにしたときはFWD方向、RV-JOG入力をONにしたときはRVS方向へ回転します。
+
+3. 入力した信号をOFFにします。
+   モーターが減速停止します。モーターが停止すると、READY出力がONになります。
+
+**タイミングチャート:**
+
+```mermaid
+gantt
+    title JOG運転タイミングチャート
+    dateFormat X
+    axisFormat %s
+
+    section 制御電源
+    ON  :done, power, 0, 10
+
+    section 主電源
+    ON  :done, main, 0, 10
+
+    section FW-JOGまたはRV-JOG入力
+    OFF->ON->OFF :crit, jog, 2, 6
+
+    section READY出力
+    OFF->ON->OFF->ON :ready, 1, 10
+
+    section PLS-RDY出力
+    OFF->ON :plsrdy, 1, 10
+
+    section IN-POS出力
+    ON->OFF->ON :inpos, 0, 10
+
+    section MOVE出力
+    OFF->ON->OFF :move, 2, 7
+```
+
+**信号タイミング詳細:**
+
+| 信号名 | 状態変化 | タイミング | 説明 |
+|--------|----------|------------|------|
+| 制御電源 | OFF→ON | ① | 電源投入 |
+| 主電源 | OFF→ON | ① | 電源投入 |
+| FW-JOGまたはRV-JOG入力 | OFF→ON→OFF | ②③ | JOG運転開始・停止指令 |
+| READY出力 | OFF→ON→OFF→ON | ①②③ | 準備完了・運転中・運転完了 |
+| PLS-RDY出力 | OFF→ON | ② | パルス受付準備完了 |
+| IN-POS出力 | ON→OFF→ON | 運転中OFF | 位置決め状態表示 |
+| MOVE出力 | OFF→ON→OFF | 運転中 | モーター動作中表示 |
+| モーター動作 | 停止→動作→停止 | JOG信号に同期 | 一定速度での連続運転 |
+
+**動作説明:**
+- ①: 電源投入でREADY出力とPLS-RDY出力がON
+- ②: JOG入力でREADY出力がOFFになり運転開始
+- ③: JOG入力をOFFにすると減速停止開始
+- JOG入力がONの間は連続運転、OFFで停止
+- FW-JOG入力：FWD方向（正転）
+- RV-JOG入力：RVS方向（逆転）
+- 運転中はMOVE出力がON、IN-POS出力はOFF
+- 停止完了でREADY出力がON、IN-POS出力がONに戻る
+</contents>

@@ -1,0 +1,54 @@
+ファイル名: RSEL(MJ0392-4M)_page381
+
+<overview>
+本ページはPLCの入力・出力使用点数と対応するPLC側登録モジュールの関係を示した表が中心に構成されています。ページ上部に表、下部に使用例の説明テキストが配置されています。テキストは表の内容を具体的な数値例で解説しています。グラフや図はなく、表とテキストのみで構成されています。
+</overview>
+
+<contents>
+### 表
+#### PLC側登録モジュール対応表（入力・出力使用点数とモジュール）
+
+| 出力使用点数 | PLC側登録モジュール | 入力使用点数 | PLC側登録モジュール |
+| :---: | :--- | :---: | :--- |
+| 600 ～ 608 | Input 1Word×38 | 600 ～ 608 | Output 1Word×38 |
+| 616 ～ 624 | Input 1Word×39 | 616 ～ 624 | Output 1Word×39 |
+| 632 ～ 640 | Input 1Word×40 | 632 ～ 640 | Output 1Word×40 |
+| 648 ～ 656 | Input 1Word×41 | 648 ～ 656 | Output 1Word×41 |
+| 664 ～ 672 | Input 1Word×42 | 664 ～ 672 | Output 1Word×42 |
+| 680 ～ 688 | Input 1Word×43 | 680 ～ 688 | Output 1Word×43 |
+| 696 ～ 704 | Input 1Word×44 | 696 ～ 704 | Output 1Word×44 |
+| 712 ～ 720 | Input 1Word×45 | 712 ～ 720 | Output 1Word×45 |
+| 728 ～ 736 | Input 1Word×46 | 728 ～ 736 | Output 1Word×46 |
+| 744 ～ 752 | Input 1Word×47 | 744 ～ 752 | Output 1Word×47 |
+| 760 ～ 768 | Input 1Word×48 | 760 ～ 768 | Output 1Word×48 |
+| 776 ～ 784 | Input 1Word×49 | 776 ～ 784 | Output 1Word×49 |
+| 792 ～ 800 | Input 1Word×50 | 792 ～ 800 | Output 1Word×50 |
+| 808 ～ 816 | Input 1Word×51 | 808 ～ 816 | Output 1Word×51 |
+| 824 ～ 832 | Input 1Word×52 | 824 ～ 832 | Output 1Word×52 |
+| 840 ～ 848 | Input 1Word×53 | 840 ～ 848 | Output 1Word×53 |
+| 856 ～ 864 | Input 1Word×54 | 856 ～ 864 | Output 1Word×54 |
+| 872 ～ 880 | Input 1Word×55 | 872 ～ 880 | Output 1Word×55 |
+| 888 ～ 896 | Input 1Word×56 | 888 ～ 896 | Output 1Word×56 |
+| 904 ～ 912 | Input 1Word×57 | 904 ～ 912 | Output 1Word×57 |
+| 920 ～ 928 | Input 1Word×58 | 920 ～ 928 | Output 1Word×58 |
+| 936 ～ 944 | Input 1Word×59 | 936 ～ 944 | Output 1Word×59 |
+| 952 ～ 960 | Input 1Word×60 | 952 ～ 960 | Output 1Word×60 |
+| 968 ～ 976 | Input 1Word×61 | 968 ～ 976 | Output 1Word×61 |
+| 984 ～ 992 | Input 1Word×62 | 984 ～ 992 | Output 1Word×62 |
+| 1000 ～ 1008 | Input 1Word×63 | 1000 ～ 1008 | Output 1Word×63 |
+| 1016 ～ 1024 | Input 1Word×64 | 1016 ～ 1024 | Output 1Word×64 |
+
+---
+
+### テキスト
+#### 使用例
+- 入力208点、出力400点を使用する場合の計算例が示されています。
+- Input 4wordモジュール使用数は 208 ÷ 16 = 13
+- Output 4wordモジュール使用数は 400 ÷ 16 = 25
+- よって、PLC側登録モジュールはInput 4wordを13、Output 4wordを25使用することになる。
+
+---
+
+**補足説明**  
+本表はPLCの入力・出力点数に応じて、どのInput/Outputモジュールを何個使用するかを示すもので、1Wordは16点に相当します。点数範囲ごとに対応するモジュール数が割り当てられています。
+</contents>

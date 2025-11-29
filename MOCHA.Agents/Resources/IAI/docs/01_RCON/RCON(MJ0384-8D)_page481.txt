@@ -1,0 +1,83 @@
+ファイル名: RCON(MJ0384-8D)_page481
+
+<overview>
+本ページはPLC入力の軸状態信号に関する各種通信プロトコル（CC-Link、DeviceNet、PROFIBUS-DP、PROFINET-IOなど）におけるアドレス割付内容を示しています。ページ構成は以下の通りです。
+- テキスト部分：PLC入力＝軸状態信号のアドレス割付に関する説明
+- 表部分：各通信プロトコルごとのアドレス対応関係を示した表
+- グラフ部分：1ワード16ビットのビット割付図（ビットごとの意味を示す）
+</overview>
+
+<contents>
+### テキスト
+#### PLC入力＝軸状態信号のアドレス割付内容
+PLC入力としての軸状態信号のアドレス割付を、各種通信プロトコルごとに示しています。  
+対象プロトコルはCC-Link（CC-Link IE Field、CC-Link IE TSN含む）、DeviceNet、PROFIBUS-DP、EtherNet/IP、EtherCAT、PROFINET-IOです。
+
+### 表
+| 通信プロトコル | アドレス例（上位バイト・下位バイト） |
+| :------------- | :----------------------------------- |
+| CC-Link, CC-Link IE Field, CC-Link IE TSN | m+0 ～ m+7 |
+| DeviceNet | n+0 ～ n+7 |
+| PROFIBUS-DP, EtherNet/IP, EtherCAT | n+0 ～ n+15 |
+| PROFINET-IO | p+0, p+1 |
+
+### グラフ（ビット割付図）
+1ワード＝16ビット（ビット15b～0b）で構成され、各ビットの意味は以下の通りです。
+
+| ワード | 内容 |
+| :----- | :--- |
+| m+0 / n+0 / p+0 | 現在位置（L）（符号付整数） |
+| m+1 / n+1 / p+0 | 現在位置（H）（符号付整数） |
+| m+2 / n+2 / p+0 | 現在電流値（L） |
+| m+3 / n+3 / p+0 | 現在電流値（H） |
+| m+4 / n+4 / p+1 | 現在速度（L）（符号付整数） |
+| m+5 / n+5 / p+1 | 現在速度（H）（符号付整数） |
+| m+6 / n+6 / p+1 | アラームコード |
+| m+7 / n+7 / p+1 | 過負荷レベルモニター |
+
+### 図
+```mermaid
+flowchart TD
+    A[1ワード=16ビット] --> B[15b]
+    B --> C[14b]
+    C --> D[13b]
+    D --> E[12b]
+    E --> F[11b]
+    F --> G[10b]
+    G --> H[9b]
+    H --> I[8b]
+    I --> J[7b]
+    J --> K[6b]
+    K --> L[5b]
+    L --> M[4b]
+    M --> N[3b]
+    N --> O[2b]
+    O --> P[1b]
+    P --> Q[0b]
+
+    subgraph 現在位置(L)
+        B -->|ビット15b～0b| R
+    end
+    subgraph 現在位置(H)
+        B -->|ビット15b～0b| S
+    end
+    subgraph 現在電流値(L)
+        B -->|ビット15b～0b| T
+    end
+    subgraph 現在電流値(H)
+        B -->|ビット15b～0b| U
+    end
+    subgraph 現在速度(L)
+        B -->|ビット15b～0b| V
+    end
+    subgraph 現在速度(H)
+        B -->|ビット15b～0b| W
+    end
+    subgraph アラームコード
+        B -->|ビット15b～0b| X
+    end
+    subgraph 過負荷レベルモニター
+        B -->|ビット15b～0b| Y
+    end
+```
+</contents>

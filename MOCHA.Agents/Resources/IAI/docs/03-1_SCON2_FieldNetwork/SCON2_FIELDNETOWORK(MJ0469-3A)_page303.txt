@@ -1,0 +1,39 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page303
+
+<overview>
+このページは、PLCとSCON2間のポジションデータ取込み指令（PWRT）および取込み完了信号（WEND）に関する制御信号の説明で構成されています。テキスト部分ではPWRT信号の有効条件や動作手順、注意事項が記載されており、図部分ではMODE信号、PWRT信号、WEND信号のタイミング関係を示す波形図が掲載されています。表はなく、主にテキストとタイミング図で構成されています。
+</overview>
+
+<contents>
+### テキスト
+#### ポジションデータ取込み指令（PWRT）と取込み完了（WEND）信号の説明
+- PWRT信号は教示モード信号（MODES）がONの時に有効。
+- PWRT信号をONにすると、現在位置データがPLCの指定ポジションNo.レジスターの「位置」欄に書き込まれる。
+- 書き込み完了後、WEND信号がONになる。
+- 上位PLCではWEND信号がONになった後にPWRT信号をOFFにする必要がある。
+- WEND信号がONする前にPWRT信号をOFFにするとWEND信号はONにならない。
+- PWRT信号をOFFにするとWEND信号もOFFになる。
+
+##### 注意事項
+- PWRT信号は20ms以上連続でONにすること。20ms以下の場合は書き込みが行われない場合がある。
+- 位置以外のデータが未定義の場合はパラメーター初期値が書き込まれる。
+
+### 図
+```mermaid
+flowchart LR
+    MODES["MODES (SCON2 → PLC)"] ---|ON| PWRT["PWRT (PLC → SCON2)"]
+    PWRT ---|20ms以上| WEND["WEND (SCON2 → PLC)"]
+    WEND ---|OFF後| PWRT
+
+    style MODES stroke:#333,stroke-width:2px
+    style PWRT stroke:#333,stroke-width:2px
+    style WEND stroke:#333,stroke-width:2px
+```
+
+**図の説明:**
+- MODES信号がONになるとPWRT信号が有効になる。
+- PWRT信号は20ms以上ONに維持する必要がある。
+- PWRT信号ON後、WEND信号がONになる。
+- WEND信号がONになった後にPWRT信号をOFFにする必要がある。
+- PWRT信号OFFによりWEND信号もOFFになる。
+</contents>

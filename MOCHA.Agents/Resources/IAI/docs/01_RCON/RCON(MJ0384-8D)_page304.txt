@@ -1,0 +1,43 @@
+ファイル名: RCON(MJ0384-8D)_page304
+
+<overview>
+本ページは「4.7 アクチュエーターとドライバーユニットの配線」セクションの一部であり、主に「4.7.2 RCON接続ケーブル一覧表」が掲載されている。ページ構成は以下の通り。
+- テキスト部分：セクションタイトル、注釈、説明文
+- 表部分：24Vドライバーユニット接続ケーブル一覧表。アクチュエーターのシリーズ・対象タイプ、適用コントローラー記号、対応するRCON接続ケーブル、変換ユニットの有無、配線図の参照記号を詳細に示す。
+- グラフ・図部分はなし。
+</overview>
+
+<contents>
+### テキスト
+#### 4.7.2 RCON接続ケーブル 一覧表
+24Vドライバーユニット接続ケーブルの一覧を示す。
+
+**注釈**
+1. 高推力用パルスモーター（56SP、60P、86P）を使用しているアクチュエーターに関する注記。
+2. 各ドライバーユニットからアクチュエーターまでは、変換ユニットの有無に関わらず最大20m。ただし、DドライバーユニットからRCDアクチュエーターまでは最大長さ10m。
+3. CB-ADPC（2）-MPA□□□（-RB）は、アクチュエーター購入時にセットとなる型式設定がなく、使用時は別途手配が必要。
+
+### 表
+#### 24Vドライバーユニット接続ケーブル一覧
+
+| No. | シリーズ | 対象タイプ | 適用コントローラー記号 | RCON接続ケーブル (-RB：ロボットケーブル) | 変換ユニット | 配線図 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| (1) | RCP6, RCP6CR, RCP6W | 高推力タイプ（注1）以外 | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+| (2) | RCP5, RCP5CR, RCP5W | 高推力タイプ（注1） SA8/WSA16/RA8/RA10/RRA8/RRA10 | P6 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>CB-CAN-AJ002（変換ケーブル） | － | B |
+| (3) | － | グリッパー（GR＊）、ST4525E、SA3/RA3 | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+| (4) | RCP4, RCP4CR, RCP4W | 高推力タイプ（注1） RCP4-RA6（56SP）/RCP4W-RA7（56SP） | P6 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>CB-CAN-AJ002（変換ケーブル） | － | B |
+| (5) | － | (3)、(4)以外 | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>CB-CAN-AJ002（変換ケーブル） | － | B |
+| (6) | RCP3 | － | P5 | CB-RCAPC-MPA□□□ (-RB) | － | C |
+| (7) | RCP2 | RCP2（標準タイプ）のロータリー小型タイプ RCP2-RTBS/RTBSL/RTCS/RTCSL | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>[CB-RPSEP-MPA□□□] | 要 | D |
+| (8) | RCP2CR, RCP2W | RCP2CR（クリーンタイプ）、RCP2W（防塵防滴タイプ） 上記タイプのロータリー（RT＊） 上記タイプのGRS/GRM/GR3SS/GR3SM | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+| (9) | RCP2CR, RCP2W | 全（標準/クリーン/防塵防滴）タイプのGRSS/GRLS/GRST/GRHM/GRHB 全長ショートタイプ（RCP2のみ） RCP2-SRA4R/SRGS4R/SRGD4R | P5 | CB-RCAPC-MPA□□□ (-RB) | － | C |
+| (10) | － | 高推力タイプ（注1） HS8/RA8/RA10 | P6 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>[CB-CFA-MPA□□□-RB] | 要 | D |
+| (11) | － | (7)～(10)以外 | P5 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>[CB-PSEP-MPA□□□] | 要 | D |
+| (12) | RCA2/RCA2CR/RCA2W、RCL | － | A6 | CB-RCAPC-MPA□□□ (-RB) | － | C |
+| (13) | RCA2/RCA2CR/RCA2W 小型コネクター仕様（CNSオプション） | － | A6 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+| (14) | RCA, RCACR, RCAW | 全長ショートタイプ（RCAのみ） RCA-SRA4R/SRGS4R/SRGD4R | A6 | CB-RCAPC-MPA□□□ (-RB) | － | C |
+| (15) | － | (14)以外 | A6 | CB-ADPC (2) -MPA□□□ (-RB)（注3）<br>[CB-ASEP2-MPA□□□] | 要 | D |
+| (16) | RCD | RCD-RA1DA、RCD-GRSNA | D6 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+| (17) | WU | WU-S、WU-M | PM2 | CB-ADPC (2) -MPA□□□ (-RB)（注3） | － | A |
+
+</contents>

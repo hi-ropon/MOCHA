@@ -1,0 +1,33 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page78
+
+<overview>
+このページは「EtherCAT」に関する説明の一部で、主に以下の構成になっています。
+- テキスト部分：EtherCATに関連する各部の名称と機能の説明
+- 図部分：EtherCAT機器の一部の写真またはイラストに、各部の名称と機能を示すラベルが付けられている
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 2.4.2 各部の名称と機能
+EtherCATに関連する各部の名称を示しています。
+
+注記として、その他のLEDやスイッチの名称・機能説明の詳細は「SCON2取扱説明書（MJ0458）」を参照するよう案内しています。
+
+### 図
+EtherCAT機器の一部を示す図に、以下の名称と機能がラベル付けされています。
+
+```mermaid
+flowchart LR
+    A[EtherCAT機器外観] --> B[① ステータスLED]
+    A --> C[② EtherCAT通信ポート]
+
+    B --> D[RUN LED]
+    B --> E[ERR LED]
+```
+
+**図の説明:**
+- ① ステータスLED：RUN（動作中）、ERR（エラー）
+- ② EtherCAT通信ポート：EtherCATの通信に使用するポート
+
+</contents>

@@ -1,0 +1,110 @@
+ファイル名: HM-60252J_page304
+
+<overview>
+本ページは「ダイレクトデータ運転」に関する説明で構成されています。  
+主に以下のセクションで構成されています。  
+・テキスト部分：ダイレクトデータ運転の転送先の選択方法と動作説明  
+・表部分：転送先の設定値（Dec、Hex）と結合方法の対応表  
+・グラフ部分：転送先を「実行メモリ」または「バッファメモリ」に設定した場合の信号タイミング図が2つ掲載されている  
+</overview>
+
+<contents>
+### テキスト
+#### ダイレクトデータ運転
+■ 転送先  
+ダイレクトデータ運転中に、次のダイレクトデータが転送されたときの格納場所を選択します。
+
+● 転送先を「実行メモリ」に設定した場合  
+反映トリガを書き込むと、運転中のデータは次のダイレクトデータに書き換えられます。
+
+● 転送先を「バッファメモリ」に設定した場合  
+反映トリガを書き込むと、次のダイレクトデータはバッファメモリに保存されます。運転中のデータが終了すると、自動的にバッファメモリの運転が始まります。バッファメモリに保存できるダイレクトデータは1つです。  
+次のダイレクトデータがバッファメモリに書き込まれると、DCMD-FULL出力がONになります。  
+停止中および連続運転中は、「バッファメモリ」を指定してもバッファメモリには保存されず、すぐに次のダイレクトデータに書き換えられます。
+
+memo  
+DCMD-FULL出力がONになっている間は、ダイレクトデータをバッファメモリに書き込めません。
+
+---
+
+### 表
+#### 転送先設定値と結合方法
+
+| 設定値 Dec | 設定値 Hex    | 結合方法   |
+| :--------- | :------------ | :--------- |
+| 0          | 0000 0000h    | 実行メモリ |
+| 1          | 0000 0001h    | バッファメモリ |
+
+---
+
+### 図
+#### 転送先を「実行メモリ」に設定した場合の信号タイミング
+
+```mermaid
+flowchart TD
+    subgraph DCMD-RDY出力
+        direction LR
+        ON --- OFF
+    end
+    subgraph 反映トリガ
+        direction LR
+        ON --- OFF --- ON --- OFF --- ON --- OFF --- ON --- OFF
+    end
+    subgraph 転送先
+        direction LR
+        バッファメモリ --- 実行メモリ
+    end
+    subgraph ダイレクトデータ
+        direction LR
+        A --> B --> C --> D --> E
+    end
+    subgraph ダイレクトデータバッファメモリ
+        direction LR
+        --- --- --- --- ---
+    end
+    subgraph MOVE出力
+        direction LR
+        ON --- OFF
+        A --> B --> C --> D --> E
+    end
+    subgraph DCMD-FULL出力
+        direction LR
+        ON --- OFF
+    end
+```
+
+#### 転送先を「バッファメモリ」に設定した場合の信号タイミング
+
+```mermaid
+flowchart TD
+    subgraph DCMD-RDY出力
+        direction LR
+        ON --- OFF
+    end
+    subgraph 反映トリガ
+        direction LR
+        ON --- OFF --- ON --- OFF --- ON --- OFF --- ON --- OFF
+    end
+    subgraph 転送先
+        direction LR
+        バッファメモリ --- 実行メモリ
+    end
+    subgraph ダイレクトデータ
+        direction LR
+        A --> B --> C --> D --> E
+    end
+    subgraph ダイレクトデータバッファメモリ
+        direction LR
+        --- B --- C --- ---
+    end
+    subgraph MOVE出力
+        direction LR
+        ON --- OFF
+        A --> B --> C --> D --> E
+    end
+    subgraph DCMD-FULL出力
+        direction LR
+        ON --- OFF --- ON --- OFF
+    end
+```
+</contents>

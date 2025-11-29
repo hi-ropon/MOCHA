@@ -1,0 +1,55 @@
+ファイル名: SCON2(MJ0458-1E)_page32
+
+<overview>
+本ページは「1.2 システム構成」に関する内容で、以下の構成要素で成り立っています。
+- テキスト部分：システム構成の説明文
+- 図部分：システム全体の構成図（PLC、接続可能アクチュエーター、回生抵抗ユニット、ティーチングツール、DC24V電源、アブソバッテリーの接続関係を示す）
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### 1.2 システム構成
+システム構成は以下のとおりです。
+
+### 図
+```mermaid
+flowchart LR
+    PLC[PLC]
+    PIO[PIO]
+    RCS[RCSシリーズ]
+    IS[ISシリーズ]
+    LS[LSシリーズ]
+    NS[NSシリーズ]
+    IF[IFシリーズ]
+    DD[DDシリーズ]
+    Actuator[接続可能アクチュエーター]
+    Resistor[回生抵抗ユニット<br>型式：RESU-2]
+    AC[AC100V/200V]
+    TeachingBox[ティーチングボックス<br>型式：TB-02 / TB-03]
+    TeachingSoft[パソコン専用ティーチングソフト<br>型式：IA-OS]
+    DC24V[DC24V電源<br>型式：PSA-24<br>（ブレーキ解除用）]
+    Battery[アブソバッテリー<br>バッテリー単体：AB-5<br>バッテリーホルダー付き：AB-5-CS3]
+
+    PLC -->|フィールドネットワーク| TeachingBox
+    PLC -->|フィールドネットワーク| TeachingSoft
+    PLC -->|PIO| Actuator
+    Actuator --> RCS
+    Actuator --> IS
+    Actuator --> LS
+    Actuator --> NS
+    Actuator --> IF
+    Actuator --> DD
+    PLC --> Resistor
+    Resistor --> AC
+    PLC --> DC24V
+    PLC --> Battery
+```
+
+**図の説明:**
+- PLCを中心に、接続可能な各種アクチュエーター（RCSシリーズ、ISシリーズ、LSシリーズ、NSシリーズ、IFシリーズ、DDシリーズ）がPIO経由で接続されている。
+- PLCはフィールドネットワークを通じてティーチングツール（ティーチングボックス、パソコン専用ティーチングソフト）と接続されている。
+- 回生抵抗ユニット（型式：RESU-2）はAC100V/200V電源に接続されている。
+- DC24V電源（型式：PSA-24）はブレーキ解除用として使用される。
+- アブソバッテリー（単体：AB-5、ホルダー付き：AB-5-CS3）も接続されている。
+</contents>

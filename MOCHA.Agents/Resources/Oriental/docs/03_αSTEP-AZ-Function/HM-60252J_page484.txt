@@ -1,0 +1,58 @@
+ファイル名: HM-60252J_page484
+
+<overview>
+このページは「モニタ機能」に関する説明で構成されています。主にテキスト部分とタイミングチャート（グラフ部分）で構成されており、タイミングチャートを用いて信号のON/OFF状態や時間関係を示しています。表はなく、図はタイミングチャートのみです。
+</overview>
+
+<contents>
+### テキスト
+#### タイミングチャート
+1. PLSM-REQ入力をONにすると、その瞬間にASG出力とBSG出力がラッチされ、現在の指令位置と検出位置が記録されます。PLSM-REQ入力がOFFになるまでは、モーター軸が回転してもASG出力とBSG出力から現在の検出位置が出力されることはありません。
+2. PLS-OUTR出力がONになっていることを確認し、上位システムのエンコーダカウンタを「0」にクリアします。
+3. MON-CLK入力をONにします。ASG出力とBSG出力から、「PLSOUT対象設定」パラメータで設定した情報が出力されると、PLS-OUTR出力がOFFになります。
+4. PLS-OUTR出力がOFFになったことを確認し、PLSM-REQ入力をOFFにします。
+
+#### 重要事項
+座標情報を出力しているときは、モーターを運転しないでください。モーターを運転すると、ABZOセンサと上位システムの間で現在位置の同期が取れなくなります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph Signals
+        PLSM_REQ[PLSM-REQ]
+        MON_CLK[MON-CLK]
+        PLS_OUTR[PLS-OUTR]
+        ASG[ASG出力]
+        BSG[BSG出力]
+        ENC[上位システムエンコーダカウンタ]
+    end
+
+    PLSM_REQ -->|ON| PLSM_REQ_ON[0s以上]
+    PLSM_REQ_ON -->|2ms以上| PLSM_REQ_ON2
+    PLSM_REQ_ON2 -->|2ms以下| PLSM_REQ_OFF[OFF]
+
+    MON_CLK -->|2ms以下| MON_CLK_ON
+    MON_CLK_ON -->|2ms以下| MON_CLK_OFF
+
+    PLS_OUTR -->|2ms以下| PLS_OUTR_ON
+    PLS_OUTR_ON -->|2ms以下| PLS_OUTR_OFF
+
+    ASG -->|パルス出力| ASG_PULSE
+    BSG -->|パルス出力| BSG_PULSE
+
+    ENC -->|不定| ENC_OFF
+    ENC_OFF -->|0| ENC_CLEAR[カウンタクリア]
+
+    %% 矢印でタイミング関係を示す
+    PLSM_REQ_ON --> MON_CLK_ON
+    MON_CLK_ON --> PLS_OUTR_ON
+    PLS_OUTR_ON --> PLSM_REQ_OFF
+```
+
+**図の説明:**
+- PLSM-REQ入力がONになるとASG出力とBSG出力がラッチされる。
+- MON-CLK入力ONでASG/BSGから設定情報が出力され、PLS-OUTR出力がOFFになる。
+- PLS-OUTR出力OFFを確認後、PLSM-REQ入力をOFFにする。
+- 上位システムのエンコーダカウンタは0にクリアされる。
+
+</contents>

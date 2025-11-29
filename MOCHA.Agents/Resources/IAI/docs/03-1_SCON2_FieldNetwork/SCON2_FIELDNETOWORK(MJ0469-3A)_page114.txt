@@ -1,0 +1,55 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page114
+
+<overview>
+このページは「PROFINET IO」に関する説明で構成されています。内容は以下の3つのセクションに分かれています。
+1. テキスト部分：ステータスLEDの点滅周期に関する説明。
+2. グラフ部分：注1～注4のステータスLEDの点滅パターンを示す波形図。
+3. 図部分：PROFINET通信ポートのRJ-45コネクタのピン配置図とケーブル仕様の説明。
+</overview>
+
+<contents>
+### テキスト
+#### PROFINET IOのステータスLED点滅周期
+注1～注4のステータスLEDが点滅する周期は以下の通りである。
+
+#### PROFINET通信ポート仕様
+- ケーブル・コネクター仕様：Ethernet ANSI/TIA/EIA-568-B カテゴリー5以上
+- シールド付き8P8Cモジュラープラグ（RJ-45）
+
+### グラフ（ステータスLED点滅パターン）
+```mermaid
+flowchart LR
+    subgraph 注1
+        direction LR
+        OFF1((OFF)) -->|0.75s| ON1((ON)) -->|0.25s| OFF1
+    end
+    subgraph 注2
+        direction LR
+        OFF2((OFF)) -->|0.75s| ON2a((ON)) -->|0.25s| OFF2a((OFF)) -->|0.25s| ON2b((ON)) -->|0.25s| OFF2b
+    end
+    subgraph 注3
+        direction LR
+        OFF3((OFF)) -->|0.75s| ON3a((ON)) -->|0.25s| OFF3a((OFF)) -->|0.25s| ON3b((ON)) -->|0.25s| OFF3b((OFF)) -->|0.25s| ON3c((ON)) -->|0.25s| OFF3c
+    end
+    subgraph 注4
+        direction LR
+        OFF4((OFF)) -->|0.75s| ON4a((ON)) -->|0.25s| OFF4a((OFF)) -->|0.25s| ON4b((ON)) -->|0.25s| OFF4b((OFF)) -->|0.25s| ON4c((ON)) -->|0.25s| OFF4c((OFF)) -->|0.25s| ON4d((ON)) -->|0.25s| OFF4d
+    end
+```
+
+### 図（PROFINET通信ポートのRJ-45コネクタ）
+```
+┌─────────────┐
+│ 1           │
+│ ──────────  │
+│ 8           │
+└─────────────┘
+```
+- RJ-45 8ピンモジュラーコネクター（コントローラー側）
+
+### 表
+| 項目 | 内容 |
+| :--- | :--- |
+| ケーブル・コネクター仕様 | Ethernet ANSI/TIA/EIA-568-B カテゴリー5以上 |
+| コネクタータイプ | シールド付き8P8Cモジュラープラグ（RJ-45） |
+</contents>

@@ -1,0 +1,18 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page89
+
+<overview>
+このページは「2.5 EtherNet/IP」に関する説明で構成されています。テキスト部分のみで、表やグラフ、図は含まれていません。内容はEtherNet/IPの概要、特徴、管理団体、対応機能についての説明です。
+</overview>
+
+<contents>
+### テキスト
+#### 2.5 EtherNet/IP
+EtherNet/IP™とは、Ethernet Industrial Protocolの略称です。  
+TCP/IPプロトコルを採用し、アプリケーション層にCIP（Common Industrial Protocol）を制御用プロトコルとして実装した産業用オープンネットワークです。  
+ODVA（Open DeviceNet Vendor Association, Inc.）によって管理されています。  
+SCON2はオプションを選択することでEtherNet/IPに対応します。  
+オープンフィールドネットワークであるEtherNet/IPは、国際標準IEC61158シリーズで標準化されたグローバルオープンネットワークです。  
+このEtherNet/IPに接続することで、省配線によるシステム構築が可能です。  
+
+制御に関しては、リモートI/O制御のほかModbus/TCPによる通信にも対応しています。
+</contents>

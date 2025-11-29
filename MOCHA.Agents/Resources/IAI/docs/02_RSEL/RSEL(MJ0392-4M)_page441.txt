@@ -1,0 +1,28 @@
+ファイル名: RSEL(MJ0392-4M)_page441
+
+<overview>
+このページは「6.4 注意事項」セクションの一部であり、主に「6.4.1 ネットワーク設定用ファイル」について説明しています。構成は以下の通りです。
+- テキスト部分：ネットワーク設定用ファイルの説明と注意事項
+- 表部分：ネットワーク種別ごとの設定用ファイル名一覧
+- グラフや図はなし
+</overview>
+
+<contents>
+### テキスト
+#### 6.4.1 ネットワーク設定用ファイル
+RSELのネットワーク設定用ファイルは以下のとおりです。
+
+※ファイル名のバージョン（ファイル名後半の数字）は、バージョン更新時に変更されます。  
+URL：http://www.iai-robot.co.jp/download/network/
+
+### 表
+| 種別           | ファイル名                                 |
+| :------------- | :--------------------------------------- |
+| CC-Link        | 0x0226_SEL controller_A_ja.cspp          |
+| DeviceNet      | EDS_IANP3801_DN0_V_2_3.eds               |
+| PROFIBUS-DP    | IAI_0CEF.gsd                             |
+| EtherCAT       | ESI_IAI_SEL_ECT_V_1_08_Rev_1.xml         |
+| EtherNet/IP    | IANP3802-EP0_V_2_1.eds                   |
+| PROFINET IO    | GSDML-V2.3-IAI-IAI-PRT-20130807.xml     |
+| CC-Link IE Field | 0x0226_RSEL-G-CIE_1.0.0_ja.cspp         |
+</contents>

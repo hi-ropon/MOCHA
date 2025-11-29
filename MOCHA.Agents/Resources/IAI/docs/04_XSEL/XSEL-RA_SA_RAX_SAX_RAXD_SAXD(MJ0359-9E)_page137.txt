@@ -1,0 +1,120 @@
+ファイル名: XSEL-RA_SA_RAX_SAX_RAXD_SAXD(MJ0359-9E)_page137
+
+<overview>
+本ページは「3.3 非常停止回路（システムI/O）の配線」に関する内容で構成されています。  
+ページ構成は以下の通りです。  
+- テキスト部分：セクションタイトル、接続展開図の説明、注釈  
+- 図部分：XSEL-RA/RAX/RAXDの場合の非常停止回路の接続展開図（配線図）  
+- 表やグラフはなし  
+</overview>
+
+<contents>
+### テキスト
+#### 3.3 非常停止回路（システムI/O）の配線
+##### 3.3.1 接続展開図
+(1) XSEL-RA/RAX/RAXDの場合の接続展開図を示す。
+
+**注1**  
+外部スイッチを接続し、AUTO/MANUモードの切替えを行うことができる。  
+使用しない場合は短絡すること。  
+詳細は「3.3.2 非常停止回路（システムI/O）の仕様」を参照。
+
+### 図
+```mermaid
+flowchart TD
+    subgraph XSELコントローラー1台目
+        direction TB
+        AUTO2IN["AUTO2IN"]
+        AUTO2OUT["AUTO2OUT (常時)"]
+        ENBin["ENBin (IN)"]
+        ENBin1["ENBin1 (line+)"]
+        ENBin2["ENBin1 (line-)"]
+        X["X"]
+        RDYOut["RDY (Out+)"]
+        RDYOut2["RDY (Out-)"]
+        AUTO1IN["AUTO1IN"]
+        AUTO1OUT["AUTO1OUT (常時)"]
+        EMGin["EMGin (IN)"]
+        EMGin1["EMGin (line+)"]
+        EMGin2["EMGin (line-)"]
+        SDNOut1["SDN (Out+)"]
+        SDNOut2["SDN (Out-)"]
+    end
+
+    subgraph XSELコントローラー2台目
+        direction TB
+        AUTO2IN2["AUTO2IN"]
+        AUTO2OUT2["AUTO2OUT (常時)"]
+        ENBin3["ENBin (IN)"]
+        ENBin4["ENBin1 (line+)"]
+        ENBin5["ENBin1 (line-)"]
+        X2["X"]
+        RDYOut3["RDY (Out+)"]
+        RDYOut4["RDY (Out-)"]
+        AUTO1IN2["AUTO1IN"]
+        AUTO1OUT2["AUTO1OUT (常時)"]
+        EMGin3["EMGin (IN)"]
+        EMGin4["EMGin (line+)"]
+        EMGin5["EMGin (line-)"]
+        SDNOut3["SDN (Out+)"]
+        SDNOut4["SDN (Out-)"]
+    end
+
+    subgraph XSELコントローラーN台目
+        direction TB
+        AUTO2IN3["AUTO2IN"]
+        AUTO2OUT3["AUTO2OUT (常時)"]
+        ENBin6["ENBin (IN)"]
+        ENBin7["ENBin1 (line+)"]
+        ENBin8["ENBin1 (line-)"]
+        X3["X"]
+        RDYOut5["RDY (Out+)"]
+        RDYOut6["RDY (Out-)"]
+        AUTO1IN3["AUTO1IN"]
+        AUTO1OUT3["AUTO1OUT (常時)"]
+        EMGin6["EMGin (IN)"]
+        EMGin7["EMGin (line+)"]
+        EMGin8["EMGin (line-)"]
+        SDNOut5["SDN (Out+)"]
+        SDNOut6["SDN (Out-)"]
+    end
+
+    subgraph ティーチングボックス
+        direction LR
+        ENBTBX1["ENB TBX1"]
+        ENBVC1["ENB VC1"]
+        EMGIN1["EMG IN1"]
+        EMGOUT1["EMG OUT1"]
+    end
+
+    subgraph 外部EMGリセットスイッチ
+        CR1["CR1 (120mA以上)"]
+    end
+
+    subgraph セーフティーゲート
+        CR2["CR2 (10mA以上)"]
+    end
+
+    subgraph モーター駆動用電源
+        CR3["CR3"]
+        CR4["CR4"]
+    end
+
+    %% 配線の矢印
+    CR2 -->|システムI/Oコネクター| XSELコントローラー1台目
+    CR1 -->|外部EMG回路| XSELコントローラー1台目
+    XSELコントローラー1台目 --> ティーチングボックス
+    XSELコントローラー1台目 --> モーター駆動用電源
+    XSELコントローラー1台目 --> XSELコントローラー2台目
+    XSELコントローラー2台目 --> XSELコントローラーN台目
+    CR2 --> セーフティーゲート
+    CR1 --> 非常停止解除
+
+```
+
+**図の説明:**  
+- XSELコントローラー複数台（1台目、2台目、N台目）が直列に接続されている。  
+- 各コントローラーはAUTO2IN/OUT、ENBin、RDY出力、EMG入力、SDN出力などの端子を持つ。  
+- ティーチングボックス、外部EMGリセットスイッチ、セーフティーゲート、モーター駆動用電源が接続されている。  
+- 外部スイッチによりAUTO/MANUモードの切替えが可能。  
+</contents>

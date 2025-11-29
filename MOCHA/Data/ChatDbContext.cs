@@ -22,6 +22,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<ChatMessageEntity> Messages => Set<ChatMessageEntity>();
     public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
     public DbSet<DeviceAgentEntity> DeviceAgents => Set<DeviceAgentEntity>();
+    public DbSet<DevUserEntity> DevUsers => Set<DevUserEntity>();
 
     /// <summary>
     /// エンティティの制約やインデックスを構成する。
@@ -70,6 +71,15 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Number).HasMaxLength(100);
             builder.Property(x => x.Name).HasMaxLength(200);
             builder.HasIndex(x => new { x.UserObjectId, x.Number }).IsUnique();
+        });
+
+        modelBuilder.Entity<DevUserEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.Email).HasMaxLength(200).IsRequired();
+            builder.Property(x => x.DisplayName).HasMaxLength(200);
+            builder.Property(x => x.PasswordHash).IsRequired();
+            builder.HasIndex(x => x.Email).IsUnique();
         });
     }
 }

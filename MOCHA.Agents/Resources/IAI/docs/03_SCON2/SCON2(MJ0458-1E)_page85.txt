@@ -1,0 +1,72 @@
+ファイル名: SCON2(MJ0458-1E)_page85
+
+<overview>
+本ページは「3.1 ポジショナーモード（PIOモード）」の一部であり、主に以下の構成となっています。
+- テキスト部分：PIOパターンによるI/Oフラットケーブルの信号割付けについての説明。
+- 表部分：PIOパターン選択（パラメーターNo.25）に基づく各ピン番号の信号割付け詳細を示した表。
+- グラフ・図部分はなし。
+</overview>
+
+<contents>
+### テキスト
+#### PIOパターンと信号割付け
+PIOパターンによるI/Oフラットケーブルの信号割付けは表の通りである。
+この表に従い、外部機器（PLCなど）と接続を行う。
+
+### 表
+#### パラメーターNo.25 “PIOパターン選択”による信号割付け
+
+| ピン番号 | 区分 | PIO機能 | 0:位置決めモード 64点 | 1:教示モード 64点 | 2:256点モード | 3:384点モード |
+| :--- | :--- | :--- | :---: | :---: | :---: | :---: |
+| 入力 | 位置決め点数 | 64点 | 64点 | 256点 | 384点 |
+| 入力 | 原点復帰信号 | ○ | ○ | ○ | ○ |
+| 入力 | ジョグ信号 | × | ○ | × | × |
+| 入力 | 教示信号（現在位置書込み） | × | ○ | × | × |
+| 入力 | ブレーキ解除 | ○ | × | ○ | ○ |
+| 出力 | 移動中信号 | ○ | ○ | × | × |
+| 出力 | ゾーン信号 | ○ | △(注1) | △(注1) | × |
+| 出力 | ポジションゾーン信号 | ○ | ○ | ○ | × |
+| 1A | 24V |  | P24 |  |  |
+| 2A | 24V |  | P24 |  |  |
+| 3A | ー |  | ー |  |  |
+| 4A | ー |  | ー |  |  |
+| 5A | 入力 | IN0 | PC1 | PC1 | PC1 | PC1 |
+| 6A | 入力 | IN1 | PC2 | PC2 | PC2 | PC2 |
+| 7A | 入力 | IN2 | PC4 | PC4 | PC4 | PC4 |
+| 8A | 入力 | IN3 | PC8 | PC8 | PC8 | PC8 |
+| 9A | 入力 | IN4 | PC16 | PC16 | PC16 | PC16 |
+| 10A | 入力 | IN5 | PC32 | PC32 | PC32 | PC32 |
+| 11A | 入力 | IN6 | ー | MODE | PC64 | PC64 |
+| 12A | 入力 | IN7 | ー | JISL | PC128 | P128 |
+| 13A | 入力 | IN8 | ー | JOG+ | ー | PC256 |
+| 14A | 入力 | IN9 | BKRL | JOG− | BKRL | BKRL |
+| 15A | 入力 | IN10 | RMOD | RMOD | RMOD | RMOD |
+| 16A | 入力 | IN11 | HOME | HOME | HOME | HOME |
+| 17A | 入力 | IN12 | *STP | *STP | *STP | *STP |
+| 18A | 入力 | IN13 | CSTR | CSTR/PWRT | CSTR | CSTR |
+| 19A | 入力 | IN14 | RES | RES | RES | RES |
+| 20A | 入力 | IN15 | SON | SON | SON | SON |
+| 1B | 出力 | OUT0 | PM1 (ALM1) | PM1 (ALM1) | PM1 (ALM1) | PM1 (ALM1) |
+| 2B | 出力 | OUT1 | PM2 (ALM2) | PM2 (ALM2) | PM2 (ALM2) | PM2 (ALM2) |
+| 3B | 出力 | OUT2 | PM4 (ALM4) | PM4 (ALM4) | PM4 (ALM4) | PM4 (ALM4) |
+| 4B | 出力 | OUT3 | PM8 (ALM8) | PM8 (ALM8) | PM8 (ALM8) | PM8 (ALM8) |
+| 5B | 出力 | OUT4 | PM16 | PM16 | PM16 | PM16 |
+| 6B | 出力 | OUT5 | PM32 | PM32 | PM32 | PM32 |
+| 7B | 出力 | OUT6 | MOVE | MOVE | PM64 | PM64 |
+| 8B | 出力 | OUT7 | ZONE1 | MODES | PM128 | PM128 |
+| 9B | 出力 | OUT8 | PZONE/ZONE2 | PZONE/ZONE1 | PZONE/ZONE1 | PM256 |
+| 10B | 出力 | OUT9 | RMDS | RMDS | RMDS | RMDS |
+| 11B | 出力 | OUT10 | HEND | HEND | HEND | HEND |
+| 12B | 出力 | OUT11 | PEND | PEND/WEND | PEND | PEND |
+| 13B | 出力 | OUT12 | SV | SV | SV | SV |
+| 14B | 出力 | OUT13 | *EMGS | *EMGS | *EMGS | *EMGS |
+| 15B | 出力 | OUT14 | *ALM | *ALM | *ALM | *ALM |
+| 16B | 出力 | OUT15 | *ALML | *ALML | *ALML | *ALML |
+| 17B | ー |  | ー | ー | ー | ー |
+| 18B | ー |  | ー | ー | ー | ー |
+| 19B | 0V |  | N |  |  |  |
+| 20B | 0V |  | N |  |  |  |
+
+注1：PIOパターン3以外では、パラメーターNo.149の設定でPZONEと切替え可能。
+
+</contents>

@@ -1,0 +1,104 @@
+ファイル名: RCON(MJ0384-8D)_page299
+
+<overview>
+このページは「カテゴリー4（SCON拡張ユニットを使用してSCONを接続する場合）」に関する回路図と説明で構成されています。
+- テキスト部分：電磁接触器によるRCONとSCONのモーター電源遮断に関する注意書き
+- 図部分：ポジションコントローラー用TPアダプター、RCONシステム、SCONユニット、電磁接触器、モーター電源などの接続を示す詳細な回路図
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### カテゴリー4（SCON拡張ユニットを使用してSCONを接続する場合）
+
+- 電磁接触器によって、RCONとSCONのモーター電源を遮断します。
+- 本回路例では、ゲートウェイユニットの電源入力コネクターMP+24Vを遮断していますが、各ドライバーユニットの駆動源遮断コネクターMPO、MPIを遮断した回路とすることも可能です。
+
+### 図
+```mermaid
+flowchart TD
+    subgraph ポジションコントローラー用TPアダプター RCB-LB-TGS
+        direction TB
+        ENBOUT["ENBOUT (12)"]
+        ENBIN["ENBIN (11)"]
+        ENB2+["ENB2+ (10)"]
+        ENB2-["ENB2- (9)"]
+        ENB1+["ENB1+ (8)"]
+        ENB1-["ENB1- (7)"]
+        EMGOUT["EMGOUT (6)"]
+        EMG2+["EMG2+ (5)"]
+        EMG2-["EMG2- (4)"]
+        EMG1+["EMG1+ (3)"]
+        EMG1-["EMG1- (2)"]
+        DP4S["ダミープラグ: DP-4S"]
+    end
+
+    subgraph RCONシステム
+        direction TB
+        ゲートウェイユニット["ゲートウェイユニット RCON-GWG"]
+        拡張ユニット["拡張ユニット"]
+        SIOコネクター["SIOコネクター"]
+        システムI/Oコネクター["システムI/Oコネクター"]
+        S1["S1"]
+        S2["S2"]
+        STOP+["STOP+"]
+        STOP-["STOP-"]
+    end
+
+    subgraph モーター電源コネクター
+        MP+24V["MP+24V"]
+        0V["0V"]
+        モーター電源["モーター電源"]
+    end
+
+    subgraph 電磁接触器群
+        電磁接触器1["電磁接触器"]
+        電磁接触器2["電磁接触器"]
+        電磁接触器3["電磁接触器"]
+        電磁接触器4["電磁接触器"]
+    end
+
+    subgraph G9SA_301_OMRON_1
+        G9SA1["G9SA-301 (OMRON)"]
+    end
+
+    subgraph G9SA_301_OMRON_2
+        G9SA2["G9SA-301 (OMRON)"]
+    end
+
+    subgraph SCONユニット1
+        SCON1_IN["IN"]
+        SCON1_OUT["OUT"]
+        SCON1["SCON"]
+        モーター電源1["モーター電源"]
+    end
+
+    subgraph SCONユニット2
+        SCON2_IN["IN"]
+        SCON2_OUT["OUT"]
+        SCON2["SCON"]
+        モーター電源2["モーター電源"]
+    end
+
+    DP4S -->|接続| RCB-LB-TGS
+    RCB-LB-TGS -->|接続ケーブル CB-CON-LB□□□| ゲートウェイユニット
+    ゲートウェイユニット --> 拡張ユニット
+    拡張ユニット --> SIOコネクター
+    SIOコネクター --> システムI/Oコネクター
+    システムI/Oコネクター --> S1 & S2 & STOP+ & STOP-
+    モーター電源コネクター --> モーター電源
+    モーター電源 --> 電磁接触器群
+    電磁接触器群 --> G9SA1 & G9SA2
+    G9SA1 & G9SA2 --> RCB-LB-TGS
+    電磁接触器群 --> SCON1_IN & SCON2_IN
+    SCON1_OUT --> モーター電源1
+    SCON2_OUT --> モーター電源2
+```
+
+**図の説明:**
+- ポジションコントローラー用TPアダプターRCB-LB-TGSがダミープラグDP-4Sを接続し、ゲートウェイユニットRCON-GWGと接続ケーブルで接続されている。
+- ゲートウェイユニットは拡張ユニットを介してSIOコネクター、システムI/Oコネクターに接続され、各種スイッチ（S1、S2、STOP+、STOP-）が接続されている。
+- モーター電源はAC100V/AC200Vから電磁接触器を経由し、G9SA-301（OMRON）リレーを通ってTPアダプターに接続されている。
+- 電磁接触器はSCONユニットのモーター電源入力（IN）を遮断し、SCONユニットの出力（OUT）からモーター電源へ供給される構成。
+- 電磁接触器によってRCONとSCONのモーター電源を遮断する安全回路となっている。
+</contents>

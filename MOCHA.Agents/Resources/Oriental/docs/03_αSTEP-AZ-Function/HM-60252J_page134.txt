@@ -1,0 +1,64 @@
+ファイル名: HM-60252J_page134
+
+<overview>
+このページは「マクロ運転」に関する説明で構成されています。主にテキスト部分とグラフ（タイミングチャート）部分からなり、テキストでマクロ運転のタイミングチャートの動作手順を説明し、複数の信号のON/OFF状態とモーター動作を示すタイミングチャートが2種類掲載されています。表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転
+■ タイミングチャート
+
+1. READY出力がONであることを確認します。  
+2. FW-SPD入力（またはRV-SPD入力）をONにします。READY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。  
+3. FW-SPD入力（またはRV-SPD入力）をOFFにします。モーターが減速停止を開始します。  
+4. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※ 負荷、運転速度、速度フィルタなどによって異なります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph チャート1
+        direction TB
+        FWSPDON[FW-SPD入力 ON/OFF]
+        RVSPDON[RV-SPD入力 ON/OFF]
+        PLSRDYON[PLS-RDY出力 ON/OFF]
+        READYON[READY出力 ON/OFF]
+        MOVEON[MOVE出力 ON/OFF]
+        MOTOR[モーター動作]
+    end
+
+    subgraph チャート2
+        direction TB
+        FWSPDON2[FW-SPD入力 ON/OFF]
+        RVSPDON2[RV-SPD入力 ON/OFF]
+        PLSRDYON2[PLS-RDY出力 ON/OFF]
+        READYON2[READY出力 ON/OFF]
+        MOVEON2[MOVE出力 ON/OFF]
+        MOTOR2[モーター動作]
+    end
+
+    %% チャート1の流れ
+    FWSPDON -->|② ON| READYON
+    READYON -->|① ON| MOVEON
+    MOVEON --> MOTOR
+    FWSPDON -->|③ OFF| MOTOR
+    MOTOR -->|④ 停止| READYON
+    READYON -->|① ON| MOVEON
+
+    %% チャート2の流れ（時間制約付き）
+    FWSPDON2 -->|2ms以下| READYON2
+    READYON2 -->|2ms以下| MOVEON2
+    MOVEON2 --> MOTOR2
+    FWSPDON2 -->|2ms以下| MOTOR2
+    MOTOR2 -->|停止| READYON2
+```
+
+**図の説明:**  
+- 上段のタイミングチャートは、FW-SPD入力またはRV-SPD入力のON/OFFに伴うREADY出力、MOVE出力、モーター動作の状態変化を示しています。  
+- 下段のタイミングチャートは、各信号のON/OFF切り替えが2ms以内に行われることを示し、より詳細なタイミング制約を表しています。  
+- PLS-RDY出力は両チャートで一定の状態を保っています。  
+- モーター動作は信号の変化に応じて開始・停止します。
+
+</contents>

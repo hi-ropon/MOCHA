@@ -1,0 +1,53 @@
+ファイル名: HM-60252J_page136
+
+<overview>
+本ページは「マクロ運転」に関する説明で構成されており、主に以下のセクションで構成されています。
+- テキスト部分：マクロ運転のタイミングチャートの説明（4つのステップに分けた動作説明）
+- グラフ部分：タイミングチャートの図が2種類掲載されている。各信号のON/OFF状態とモーター動作の関係を示す。
+- 表部分はなし。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転 タイミングチャート
+1. READY出力がONであることを確認します。
+2. FW-PSH入力（またはRV-PSH入力）をONにします。READY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。
+3. FW-PSH入力（またはRV-PSH入力）をOFFにします。モーターが減速停止を開始します。
+4. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※負荷、運転速度、速度フィルタなどによって動作は異なります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 信号線
+        FWPSH_ON[FW-PSH入力 ON/OFF]
+        RVPSH_ON[RV-PSH入力 ON/OFF]
+        PLSRDY_ON[PLS-RDY出力 ON/OFF]
+        READY_ON[READY出力 ON/OFF]
+        MOVE_ON[MOVE出力 ON/OFF]
+        MOTOR[モーター動作]
+    end
+
+    %% 上段タイミングチャートの動き
+    READY_ON -->|①| FWPSH_ON
+    FWPSH_ON -->|②| READY_ON
+    FWPSH_ON -->|③| READY_ON
+    MOTOR -->|④| MOVE_ON
+
+    RVPSH_ON -->|②| READY_ON
+    RVPSH_ON -->|③| READY_ON
+
+    %% 下段タイミングチャートの時間制約
+    FWPSH_ON -.->|2ms以下| READY_ON
+    RVPSH_ON -.->|2ms以下| READY_ON
+    PLSRDY_ON -.->|2ms以下| READY_ON
+    READY_ON -.->|2ms以下| MOVE_ON
+```
+
+**図の説明:**
+- FW-PSH入力またはRV-PSH入力のON/OFFによりREADY出力とMOVE出力が変化し、モーターの動作開始・停止が制御される。
+- READY出力がONであることを確認後、FW-PSH入力（またはRV-PSH入力）をONにすると、READY出力がOFF、MOVE出力がONとなりモーターが運転開始。
+- FW-PSH入力（またはRV-PSH入力）をOFFにするとモーターが減速停止し、停止後READY出力がON、MOVE出力がOFFになる。
+- 各信号の切り替えは2ms以下の時間制約がある。
+</contents>

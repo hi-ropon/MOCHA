@@ -1,0 +1,196 @@
+ファイル名: RSEL(MJ0392-4M)_page275
+
+<overview>
+本ページは「ティーチングコネクターの接続」に関する内容で構成されています。  
+主に以下のセクションで構成されています。  
+・テキスト部分：パソコン専用ティーチングソフトの付属ケーブルおよび変換ユニットの仕様説明  
+・図部分：2種類のパソコン接続ケーブル（5m＋非常停止ボックス）の外観寸法図および接続図  
+・表部分：各ケーブルのD-Sub9ピンソケットの配線情報（信号名、線色、ピン番号）  
+グラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 4.8 ティーチングコネクターの接続
+●パソコン専用ティーチングソフトの付属ケーブル、変換ユニット仕様について説明。
+
+(1) パソコン接続ケーブル 5m + 非常停止ボックス  
+- 型式：CB-ST-E1MW050-EB（ケーブルのみの型式：CB-ST-E1MW050）  
+- 対応機種：IA-101-X-MW、IA-101-X-MW-JS、IA-101-X-USBMWに付属。
+
+(2) 安全カテゴリ4対応 パソコン接続ケーブル 5m + 非常停止ボックス  
+- 型式：CB-ST-A2MW050-EB（ケーブルのみの型式：CB-ST-A2MW050）  
+- 対応機種：IA-101-XA-MWに付属。
+
+### 図
+#### (1) パソコン接続ケーブル 5m + 非常停止ボックス 外観寸法図および接続図
+```mermaid
+flowchart LR
+    PC[パソコン側 D-Sub9ピンソケット] -->|ケーブル 5,000mm| Box[非常停止ボックス]
+    Box -->|ケーブル| Connector[ティーチングペンダント中継ボックス側 D-Sub25ピンソケット]
+
+    subgraph 配線図
+        PC_Pin2["2 茶"]
+        PC_Pin3["3 茶/黒"]
+        PC_Pin5["5 オレンジ"]
+        PC_Pin7["7 オレンジ/黒"]
+        PC_Pin4["4 (短絡)"]
+        PC_Pin6["6 (短絡)"]
+        PC_Pin7b["7 (短絡)"]
+        PC_Pin8["8 (短絡)"]
+        Box_Pin1["1 赤"]
+        Box_Pin2["2 黒"]
+
+        Connector_Pin2["2 茶"]
+        Connector_Pin3["3 茶/黒"]
+        Connector_Pin7["7 オレンジ"]
+        Connector_Pin4["4 (短絡)"]
+        Connector_Pin5["5 (短絡)"]
+        Connector_Pin6["6 (短絡)"]
+        Connector_Pin20["20"]
+        Connector_Pin18["18 (短絡)"]
+        Connector_Pin19["19"]
+        Connector_Pin13["13 赤"]
+        Connector_Pin12["12 赤/黒"]
+        Connector_Pin1["1 シールドFG"]
+
+        PC_Pin2 --- Connector_Pin2
+        PC_Pin3 --- Connector_Pin3
+        PC_Pin5 --- Connector_Pin7
+        PC_Pin7 --- Connector_Pin7
+        PC_Pin4 --- Connector_Pin4
+        PC_Pin6 --- Connector_Pin5
+        PC_Pin7b --- Connector_Pin6
+        PC_Pin8 --- Connector_Pin20
+        Box_Pin1 --- Connector_Pin13
+        Box_Pin2 --- Connector_Pin12
+        PC_Pin1 --- Connector_Pin1
+    end
+```
+
+#### (2) 安全カテゴリ4対応 パソコン接続ケーブル 5m + 非常停止ボックス 外観寸法図および接続図
+```mermaid
+flowchart LR
+    PC[パソコン側 D-Sub9ピンソケット] -->|ケーブル 5,000mm| Box[非常停止ボックス]
+    Box -->|ケーブル 1m| Connector[ティーチングペンダント中継ボックス側 D-Sub25ピンソケット]
+
+    subgraph 配線図
+        PC_RXD["RXD オレンジ/黒点 2"]
+        PC_TXD["TXD オレンジ/赤点 3"]
+        PC_SG["SG 灰/黒点 5"]
+        PC_DTR["DTR 4 (短絡)"]
+        PC_DSR["DSR 6"]
+        PC_RTS["RTS 7 (短絡)"]
+        PC_CTS["CTS 8"]
+
+        Box_EMG1["EMG1 オレンジ 1"]
+        Box_EMG1b["EMG1 灰 2"]
+        Box_EMG2["EMG2 白 3"]
+        Box_EMG2b["EMG2 黄 4"]
+
+        Connector_TXD["2 オレンジ/黒点 TXD"]
+        Connector_RXD["3 オレンジ/赤点 RXD"]
+        Connector_SG["7 灰/黒点 SG"]
+        Connector_RTS["4 (短絡) RTS"]
+        Connector_CTS["5 (短絡) CTS"]
+        Connector_DSR["6 DSR"]
+        Connector_DTR["20 DTR"]
+        Connector_ENB1["17 (短絡) ENB1"]
+        Connector_ENB1b["19 ENB1"]
+        Connector_ENB2["21 (短絡) ENB2"]
+        Connector_ENB2b["22 ENB2"]
+        Connector_EMG1["12 白/黒点 EMG1"]
+        Connector_EMG1b["13 白/赤点 EMG1"]
+        Connector_EMG2["16 黄/黒点 EMG2"]
+        Connector_EMG2b["24 黄/赤点 EMG2"]
+        Connector_FG["1 シールドFG"]
+
+        PC_RXD --- Connector_TXD
+        PC_TXD --- Connector_RXD
+        PC_SG --- Connector_SG
+        PC_DTR --- Connector_RTS
+        PC_DSR --- Connector_CTS
+        PC_RTS --- Connector_DSR
+        PC_CTS --- Connector_DTR
+
+        Box_EMG1 --- Connector_EMG1
+        Box_EMG1b --- Connector_EMG1b
+        Box_EMG2 --- Connector_EMG2
+        Box_EMG2b --- Connector_EMG2b
+
+        PC_Pin1 --- Connector_FG
+    end
+```
+
+### 表
+#### (1) パソコン接続ケーブル D-Sub9ピンソケット配線表
+
+| 信号名           | 線色       | No. |
+|------------------|------------|-----|
+| コネクターフードFG | -          | -   |
+| -                | 茶         | 2   |
+| -                | 茶/黒      | 3   |
+| -                | オレンジ   | 5   |
+| -                | オレンジ/黒| 7   |
+| (短絡)           | -          | 4,6,7,8 |
+| 非常停止ボックス 赤 | 赤         | 1   |
+| 非常停止ボックス 黒 | 黒         | 2   |
+
+#### (1) ティーチングペンダント中継ボックス側 D-Sub9ピンソケット配線表
+
+| No. | 線色       | 信号名           |
+|------|------------|------------------|
+| 2    | 茶         | -                |
+| 3    | 茶/黒      | -                |
+| 7    | オレンジ   | -                |
+| 4    | (短絡)     | -                |
+| 5    | (短絡)     | -                |
+| 6    | (短絡)     | -                |
+| 20   | -          | -                |
+| 18   | (短絡)     | -                |
+| 19   | -          | -                |
+| 13   | 赤         | -                |
+| 12   | 赤/黒      | -                |
+| 1    | シールドFG | -                |
+
+#### (2) 安全カテゴリ4対応 パソコン接続ケーブル D-Sub9ピンソケット配線表
+
+| 信号名 | 線色       | No. |
+|--------|------------|-----|
+| RXD    | オレンジ/黒点 | 2   |
+| TXD    | オレンジ/赤点 | 3   |
+| SG     | 灰/黒点    | 5   |
+| DTR    | -          | 4 (短絡) |
+| DSR    | -          | 6   |
+| RTS    | -          | 7 (短絡) |
+| CTS    | -          | 8   |
+| コネクターフードFG | -          | -   |
+
+| 信号名 | 線色 | No. |
+|--------|------|-----|
+| EMG1   | オレンジ | 1   |
+| EMG1   | 灰   | 2   |
+| EMG2   | 白   | 3   |
+| EMG2   | 黄   | 4   |
+
+#### (2) ティーチングペンダント中継ボックス側 D-Sub9ピンソケット配線表
+
+| No. | 線色       | 信号名 |
+|------|------------|--------|
+| 2    | オレンジ/黒点 | TXD    |
+| 3    | オレンジ/赤点 | RXD    |
+| 7    | 灰/黒点    | SG     |
+| 4    | (短絡)     | RTS    |
+| 5    | (短絡)     | CTS    |
+| 6    | -          | DSR    |
+| 20   | -          | DTR    |
+| 17   | (短絡)     | ENB1   |
+| 19   | -          | ENB1   |
+| 21   | (短絡)     | ENB2   |
+| 22   | -          | ENB2   |
+| 12   | 白/黒点    | EMG1   |
+| 13   | 白/赤点    | EMG1   |
+| 16   | 黄/黒点    | EMG2   |
+| 24   | 黄/赤点    | EMG2   |
+| 1    | シールドFG | -      |
+</contents>

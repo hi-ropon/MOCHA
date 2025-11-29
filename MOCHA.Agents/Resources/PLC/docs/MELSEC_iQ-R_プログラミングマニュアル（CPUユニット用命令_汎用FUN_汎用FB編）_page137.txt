@@ -1,0 +1,45 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page137
+
+<overview>
+このページは主に表形式で構成されており、各種データ型変換に関するファンクション（関数）一覧を示しています。テキスト部分は見出しと簡単な説明文で構成されており、表は「ファンクション記号」「処理内容」「参照先」の3列で整理されています。グラフや図は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### データ型変換ファンクション一覧
+INT型やDINT型のデータを他のデータ型に変換するためのファンクションがまとめられています。
+
+### 表
+#### 各データ型変換ファンクションの詳細
+
+| ファンクション記号       | 処理内容                                   | 参照先                         |
+|--------------------------|--------------------------------------------|--------------------------------|
+| **INT_TO_WORD**           | INT型データをWORD型データへ変換します。   | 1337ページ INT_TO_WORD(_E)     |
+| **INT_TO_WORD_E**         | 同上                                       | 同上                           |
+| **INT_TO_DWORD**          | INT型データをDWORD型データへ変換します。  | 1338ページ INT_TO_DWORD(_E)    |
+| **INT_TO_DWORD_E**        | 同上                                       | 同上                           |
+| **INT_TO_DINT**           | INT型データをDINT型データへ変換します。   | 1340ページ INT_TO_DINT(_E)     |
+| **INT_TO_DINT_E**         | 同上                                       | 同上                           |
+| **INT_TO_BCD**            | INT型データをBCD型データへ変換します。    | 1341ページ INT_TO_BCD(_E)      |
+| **INT_TO_BCD_E**          | 同上                                       | 同上                           |
+| **INT_TO_REAL**           | INT型データをREAL型データへ変換します。   | 1343ページ INT_TO_REAL(_E)     |
+| **INT_TO_REAL_E**         | 同上                                       | 同上                           |
+| **INT_TO_LREAL**          | INT型データをLREAL型データへ変換します。  | 1344ページ INT_TO_LREAL(_E)    |
+| **INT_TO_LREAL_E**        | 同上                                       | 同上                           |
+| **INT_TO_TIME**           | INT型データをTIME型データへ変換します。   | 1345ページ INT_TO_TIME(_E)     |
+| **INT_TO_TIME_E**         | 同上                                       | 同上                           |
+| **INT_TO_STRING**         | INT型データをSTRING型データへ変換します。 | 1346ページ INT_TO_STRING(_E)   |
+| **INT_TO_STRING_E**       | 同上                                       | 同上                           |
+| **DINT_TO_BOOL**          | DINT型データをBOOL型データへ変換します。  | 1348ページ DINT_TO_BOOL(_E)    |
+| **DINT_TO_BOOL_E**        | 同上                                       | 同上                           |
+| **DINT_TO_WORD**          | DINT型データをWORD型データへ変換します。  | 1349ページ DINT_TO_WORD(_E)    |
+| **DINT_TO_WORD_E**        | 同上                                       | 同上                           |
+| **DINT_TO_DWORD**         | DINT型データをDWORD型データへ変換します。 | 1351ページ DINT_TO_DWORD(_E)   |
+| **DINT_TO_DWORD_E**       | 同上                                       | 同上                           |
+| **DINT_TO_INT**           | DINT型データをINT型データへ変換します。   | 1352ページ DINT_TO_INT(_E)     |
+| **DINT_TO_INT_E**         | 同上                                       | 同上                           |
+
+- 「_E」が付くファンクションは拡張版やエラー処理付きの可能性があります（詳細は参照先ページを確認）。
+- 参照先ページはそれぞれのファンクションの詳細説明が記載されているページ番号を示しています。
+
+</contents>

@@ -1,0 +1,81 @@
+ファイル名: HM-60252J_page490
+
+<overview>
+このページは「T-MODE使用時停止中運転電流設定」パラメータが「運転電流」のときの各信号のタイミングを示すタイミングチャートで構成されています。テキストは簡単な説明文と注釈、図は複数の信号のON/OFF状態を時間軸に沿って示した波形図（タイミングチャート）で構成されています。表はなく、図は信号の状態変化を視覚的に表現しています。
+</overview>
+
+<contents>
+### テキスト
+#### 「T-MODE使用時停止中運転電流設定」パラメータが「運転電流」のとき
+
+- 指令速度、指令電流（運転電流・停止電流）、各種入力信号（T-MODE入力、CW入力、CCW入力）、各種出力信号（TLC出力、MOVE出力、PLS-RDY出力、READY出力、IN-POS出力、AUTO-CD出力）のON/OFF状態の変化を示すタイミングチャート。
+
+- 注釈
+  - ※1 負荷、運転速度、指令フィルタなどによって異なる。
+  - ※2 「オートカレントダウン判定時間」パラメータに設定した時間を経過してから、停止電流に切り替わる。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph 指令速度
+        direction LR
+        A1[指令速度]
+    end
+    subgraph 指令電流
+        direction LR
+        B1[運転電流]
+        B2[停止電流]
+    end
+    subgraph T-MODE入力
+        direction LR
+        C1[ON]
+        C2[OFF]
+    end
+    subgraph CW入力
+        direction LR
+        D1[ON]
+        D2[OFF]
+    end
+    subgraph CCW入力
+        direction LR
+        E1[ON]
+        E2[OFF]
+    end
+    subgraph TLC出力
+        direction LR
+        F1[ON]
+        F2[OFF]
+    end
+    subgraph MOVE出力
+        direction LR
+        G1[ON]
+        G2[OFF]
+    end
+    subgraph PLS-RDY出力
+        direction LR
+        H1[ON]
+        H2[OFF]
+    end
+    subgraph READY出力
+        direction LR
+        I1[ON]
+        I2[OFF]
+    end
+    subgraph IN-POS出力
+        direction LR
+        J1[ON]
+        J2[OFF]
+    end
+    subgraph AUTO-CD出力
+        direction LR
+        K1[ON]
+        K2[OFF]
+    end
+```
+
+**図の説明:**
+- 各信号のON/OFF状態が時間軸に沿って変化し、T-MODE入力がONの間にCW入力やCCW入力がパルス状にON/OFFを繰り返す。
+- TLC出力、MOVE出力、PLS-RDY出力、READY出力、IN-POS出力、AUTO-CD出力もそれぞれ特定のタイミングでON/OFFが切り替わる。
+- 指令電流は運転電流から停止電流に切り替わるタイミングが示されている。
+- 注釈により、負荷や運転速度、指令フィルタの影響でタイミングが変わること、停止電流への切り替えは設定時間経過後に行われることが説明されている。
+</contents>

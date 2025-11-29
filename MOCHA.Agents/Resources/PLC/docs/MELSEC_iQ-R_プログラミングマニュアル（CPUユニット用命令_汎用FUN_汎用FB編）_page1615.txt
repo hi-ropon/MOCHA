@@ -1,0 +1,39 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1615
+
+<overview>
+このページは表形式の構成で、主に「GX Works2命令名」と「互換用命令名」、それらの使用プログラム（ST、FBD）対応状況、及び参照先に関する情報が一覧で示されています。テキスト部分はほとんどなく、表がページ全体の主要な情報構成となっています。グラフや図は含まれていません。
+</overview>
+
+<contents>
+### 表
+#### GX Works2命令名と互換用命令名の対応表
+この表は、GX Works2で使用される命令名と、それに対応する互換用命令名を一覧化しています。また、それらの命令が使用可能なプログラム形式（ST言語、FBD言語）についても示されています。さらに、参照先として「MELSEC iQ-R プログラミングマニュアル（ユニット専用命令編）」が記載されています。
+
+| GX Works2命令名 | 互換用命令名 | 使用プログラム ST | 使用プログラム FBD | 参照先 |
+| :--- | :--- | :---: | :---: | :--- |
+| ZP_BUFRCV | ZP_BUFRCV_M2 | ○ | ○ | MELSEC iQ-R プログラミングマニュアル（ユニット専用命令編） |
+| ZP_BUFSND | ZP_BUFSND_M2 | ○ | ○ | 同上 |
+| ZP_CLOSE | ZP_CLOSE_M2 | ○ | ○ | 同上 |
+| ZP_CSET | ZP_CSET_M2 | ○ | ○ | 同上 |
+| ZP_ERRCLR | ZP_ERRCLR_M2 | ○ | ○ | 同上 |
+| ZP_ERRRD | ZP_ERRRD_M2 | ○ | ○ | 同上 |
+| ZP_OPEN | ZP_OPEN_M2 | ○ | ○ | 同上 |
+| ZP_PFWRT | ZP_PFWRT_M2 | ○ | ○ | 同上 |
+| ZP_PINIT | ZP_PINIT_M2 | ○ | ○ | 同上 |
+| ZP_PSTRT1 | ZP_PSTRT1_M2 | ○ | ○ | 同上 |
+| ZP_PSTRT2 | ZP_PSTRT2_M2 | ○ | ○ | 同上 |
+| ZP_PSTRT3 | ZP_PSTRT3_M2 | ○ | ○ | 同上 |
+| ZP_PSTRT4 | ZP_PSTRT4_M2 | ○ | ○ | 同上 |
+| ZP_REMTO | ZP_REMTO_M2 | ○ | ○ | 同上 |
+| ZP_TEACH1 | ZP_TEACH1_M2 | ○ | ○ | 同上 |
+| ZP_TEACH2 | ZP_TEACH2_M2 | ○ | ○ | 同上 |
+| ZP_TEACH3 | ZP_TEACH3_M2 | ○ | ○ | 同上 |
+| ZP_TEACH4 | ZP_TEACH4_M2 | ○ | ○ | 同上 |
+| ZP_UINI | ZP_UINI_M2 | ○ | ○ | 同上 |
+
+- 「○」は該当命令がそのプログラム形式で使用可能であることを示しています。
+- 参照先はすべて同一のマニュアルを指しており、詳細な命令仕様はそちらで確認可能です。
+
+### テキスト
+- ページ下部に「付録 付6 他形式プロジェクトからの置換え 1615」と記載されていますが、本文の説明テキストはありません。
+</contents>

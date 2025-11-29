@@ -1,0 +1,49 @@
+ファイル名: HM-60252J_page126
+
+<overview>
+本ページは「マクロ運転」に関する説明で構成されており、主にテキスト部分とタイミングチャート（グラフ部分）で構成されています。テキスト部分ではマクロ運転のタイミングチャートの手順を段階的に説明し、グラフ部分では各信号のON/OFF状態とモーター動作の関係を示すタイミングチャートが2種類掲載されています。表は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### マクロ運転
+■ タイミングチャート
+
+1. READY出力がONであることを確認します。  
+2. FW-JOG-H入力（またはRV-JOG-H入力）をONにします。  
+　READY出力がOFF、MOVE出力がONになり、モーターが運転を開始します。  
+3. FW-JOG-H入力（またはRV-JOG-H入力）をOFFにします。  
+　モーターが減速停止を開始します。  
+4. モーターが停止すると、READY出力がON、MOVE出力がOFFになります。
+
+※ 負荷、運転速度、速度フィルタなどによって異なります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph チャート1
+        direction LR
+        FWJOGH[FW-JOG-H入力] -->|ON/OFF| FWJOGH_state
+        RVJOGH[RV-JOG-H入力] -->|ON/OFF| RVJOGH_state
+        PLSRDY[PLS-RDY出力] -->|ON/OFF| PLSRDY_state
+        READY[READY出力] -->|ON/OFF| READY_state
+        MOVE[MOVE出力] -->|ON/OFF| MOVE_state
+        MOTOR[モーター動作]
+    end
+
+    subgraph チャート2
+        direction LR
+        FWJOGH2[FW-JOG-H入力] -->|ON/OFF| FWJOGH2_state
+        RVJOGH2[RV-JOG-H入力] -->|ON/OFF| RVJOGH2_state
+        PLSRDY2[PLS-RDY出力] -->|ON/OFF| PLSRDY2_state
+        READY2[READY出力] -->|ON/OFF| READY2_state
+        MOVE2[MOVE出力] -->|ON/OFF| MOVE2_state
+        MOTOR2[モーター動作]
+    end
+```
+
+**図の説明:**  
+- 上段のタイミングチャートは、FW-JOG-H入力またはRV-JOG-H入力のON/OFFに伴うREADY出力、MOVE出力、PLS-RDY出力、モーター動作の状態変化を示しています。  
+- 下段のタイミングチャートは、各信号のON/OFFの遅延時間（2ms以下）を示し、負荷や運転速度、速度フィルタによって変動することを注記しています。
+
+</contents>

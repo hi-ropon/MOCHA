@@ -1,0 +1,78 @@
+ファイル名: RCON(MJ0384-8D)_page480
+
+<overview>
+本ページは「6.2 各アドレスの割付け内容」に関する説明で構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：アドレスの定義や注釈、各種通信規格ごとのアドレス割付けの説明
+- 表部分：通信規格別のアドレス割付けの一覧表
+- 図部分：1ワード16ビットのビット割付けを示すビットマップ形式の図（ゾーン境界値、加速度、減速度、制御信号など）
+</overview>
+
+<contents>
+### テキスト
+#### 各アドレスの割付け内容
+- 「m」は各軸の先頭レジスターアドレス、「n」は各軸の先頭の相対アドレスを示す。
+- 「p」は各軸の先頭のモジュールアドレス。
+- CC-Link、CC-Link IE Field、CC-Link IE TSNとDeviceNetはワードアドレス。
+- PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス。
+- PROFINET-IOは4ワードモジュールのアドレス。
+- NTC0、NTC1は特定の機種（RCON-AC、RCON-SC、SCON-CB-RC、SCON2-CG-RC）のみ対応。
+- SMODはRCON-PC/PCFのみ対応。
+
+### 図（1ワード＝16ビットのビット割付け）
+```mermaid
+flowchart TD
+    A[ゾーン境界値 - (L) (符号付整数)] --> B[ゾーン境界値 - (H) (符号付整数)]
+    B --> C[加速度]
+    C --> D[減速度]
+    D --> E[押付け電流制限値]
+    E --> F[負荷電流しきい値]
+    F --> G[制御信号 1]
+    G --> H[制御信号 2]
+
+    subgraph 制御信号 1
+        I1[ I ] --> NTC0[NTC0※2]
+        NTC0 --> NTC1[NTC1※2]
+        NTC1 --> SMOD[SMOD※3]
+        SMOD --> ASO1[ASO1]
+        ASO1 --> ASO0[ASO0]
+        ASO0 --> MOD1[MOD1]
+        MOD1 --> MOD0[MOD0]
+        MOD0 --> GSL1[GSL1]
+        GSL1 --> GSL0[GSL0]
+        GSL0 --> INC[INC]
+        INC --> DIR[DIR]
+        DIR --> PUSH[PUSH]
+    end
+
+    subgraph 制御信号 2
+        BKRL[BKRL] --> I2[ I ]
+        I2 --> I3[ I ]
+        I3 --> I4[ I ]
+        I4 --> I5[ I ]
+        I5 --> I6[ I ]
+        I6 --> JOG+[JOG+]
+        JOG+ --> JOG-[JOG-]
+        JOG- --> JVEL[JVEL]
+        JVEL --> JSL[JSL]
+        JSL --> SON[SON]
+        SON --> RES[RES]
+        RES --> STP[STP]
+        STP --> HOME[HOME]
+        HOME --> DSTR[DSTR]
+    end
+```
+
+### 表
+#### 各通信規格のアドレス割付け一覧
+| 通信規格 | アドレス例（上位バイト） | アドレス例（下位バイト） | 備考 |
+| :--- | :--- | :--- | :--- |
+| CC-Link, CC-Link IE Field, CC-Link IE TSN | RWw m+8, m+9, m+A, m+B, m+C, m+D, m+E, m+F | - | ワードアドレス |
+| DeviceNet | n+8, n+9, n+A, n+B, n+C, n+D, n+E, n+F | - | ワードアドレス |
+| PROFIBUS-DP, EtherNet/IP, EtherCAT | n+16, n+17, n+18, n+19, n+20, n+21, n+22, n+23, n+24, n+25, n+26, n+27, n+28, n+29, n+30, n+31 | - | バイトアドレス |
+| PROFINET-IO | p+2, p+3, p+4 | - | 4ワードモジュールのアドレス |
+
+### 注釈
+- ※1 mは各軸の先頭レジスターアドレス、nは各軸の先頭の相対アドレス、pは各軸の先頭のモジュールアドレス。
+- ※2 NTC0、NTC1はRCON-AC、RCON-SC、SCON-CB-RC、SCON2-CG-RCのみ対応。
+- ※3 SMODはRCON-PC/PCFのみ対応。
+</contents>

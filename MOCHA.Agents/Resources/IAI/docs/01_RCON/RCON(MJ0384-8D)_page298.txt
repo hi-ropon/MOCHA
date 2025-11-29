@@ -1,0 +1,66 @@
+ファイル名: RCON(MJ0384-8D)_page298
+
+<overview>
+本ページは「安全カテゴリへの対応について」の一節であり、カテゴリ4（RCON-SC単相200V）を接続する場合の配線図を中心に構成されています。ページ全体は以下のセクションで構成されています。
+- テキスト部分：安全カテゴリ4の接続に関する説明と注意事項
+- 図（配線図）部分：RCON-SCシステムの接続構成を示す詳細な回路図
+- 表やグラフはなし
+</overview>
+
+<contents>
+### テキスト
+#### カテゴリー4（RCON-SC（単相200V））を接続する場合
+電磁接触器によって、24V系と200V系のモーター電源を遮断します。
+
+本回路例では、ゲートウェイユニットの電源入力コネクターMP+24V、RCON-PS2のAC200Vを遮断していますが、24Vドライバーユニットの駆動源遮断コネクターMP0、MP1を遮断した回路とすることも可能です。RCON-PS2は、AC200Vを遮断してください。
+
+---
+
+### 図（配線図）
+
+```mermaid
+flowchart TD
+    subgraph RCONシステム
+        direction TB
+        GWG[ゲートウェイユニット\nRCON-GWG]
+        SIO[SIOコネクター]
+        SYSIO[システムI/Oコネクター]
+        PS2[RCON-PS2]
+        SC[RCON-SC]
+    end
+
+    subgraph ポジションコントローラー用TPアダプター
+        direction TB
+        RCB[RCB-LB-TGS]
+        DP[ダミープラグ: DP-4S]
+    end
+
+    GWG -->|接続ケーブルCB-CON-LB□□□| RCB
+    RCB -->|ENBOUT, ENB1±, ENB2±, ENB3±, EMG1±, EMG2±, EMG3±| G9SA1[G9SA-301 (OMRON)]
+    RCB --> G9SA2[G9SA-301 (OMRON)]
+    DP --> RCB
+
+    G9SA1 -->|24V| 電磁接触器1[電磁接触器]
+    G9SA2 -->|24V| 電磁接触器2[電磁接触器]
+
+    電磁接触器1 -->|AC200V| モーター電源1[モーター電源]
+    電磁接触器2 -->|AC200V| モーター電源2[モーター電源]
+
+    PS2 -->|モーター電源コネクター| モーター電源1
+    PS2 -->|MP+24V, 0V| 電磁接触器1
+    SC -->|L1, L2| モーター電源2
+
+    SYSIO -->|S1, S2, STOP+, STOP-| RCB
+
+    classDef box fill:#f9f,stroke:#333,stroke-width:1px;
+    class RCB,DP,G9SA1,G9SA2,電磁接触器1,電磁接触器2,PS2,SC,GWG,SIO,SYSIO box
+```
+
+**図の説明:**
+- ポジションコントローラー用TPアダプター（RCB-LB-TGS）にダミープラグ（DP-4S）が接続されている。
+- RCB-LB-TGSから複数の信号線（ENB、EMGなど）がOMRON製の安全リレー（G9SA-301）2台に接続されている。
+- それぞれの安全リレーから24V電源が電磁接触器に供給され、電磁接触器がAC200Vのモーター電源を遮断する構成。
+- ゲートウェイユニット（RCON-GWG）とRCON-PS2、RCON-SCがそれぞれ接続されている。
+- システムI/Oコネクターからの信号線（S1、S2、STOP+、STOP-）がTPアダプターに入力されている。
+
+</contents>

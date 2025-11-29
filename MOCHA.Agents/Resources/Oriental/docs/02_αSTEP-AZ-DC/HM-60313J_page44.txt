@@ -1,0 +1,56 @@
+<overview>
+このページは、パルス列入力タイプでの1パルス入力方式設定と、高速原点復帰運転（ZHOME運転）の操作手順を説明している技術ガイダンスページです。パルス列入力タイプのSW1設定方法と、ZHOME運転のタイミング図が含まれています。
+</overview>
+
+<contents>
+# ガイダンス
+
+## パルス列入力タイプの場合
+
+1. SW1 の No.2 を ONにします。
+
+2. ドライバの主電源を再投入します。
+   変更した設定が有効になります。
+
+## 高速原点復帰運転（ZHOME運転）
+
+MEX502 または HOME PRESETスイッチで確定した原点に復帰します。
+
+1. 主電源を投入します。
+   READY出力と PLS-RDY出力が ONになります。
+
+2. READY出力が ONであることを確認し、ZHOME入力を ONにします。
+   READY出力が OFFになり、モーターが高速原点復帰運転を始めます。
+
+3. READY出力が OFFになったことを確認し、ZHOME入力を OFFにします。
+   原点に到達すると、運転が停止します。
+   HOME-END出力と READY出力が ONになります。
+
+```mermaid
+sequenceDiagram
+    participant 主電源 as 主電源
+    participant ZHOME入力 as ZHOME入力
+    participant HOME-END出力 as HOME-END出力
+    participant READY出力 as READY出力
+    participant PLS-RDY出力 as PLS-RDY出力
+    participant MOVE出力 as MOVE出力
+    participant モーター動作 as モーター動作
+
+    主電源->>主電源: ON①
+    READY出力->>READY出力: ON
+    PLS-RDY出力->>PLS-RDY出力: ON
+
+    ZHOME入力->>ZHOME入力: ON②
+    READY出力->>READY出力: OFF②
+    MOVE出力->>MOVE出力: ON
+
+    ZHOME入力->>ZHOME入力: OFF③
+
+    モーター動作->>モーター動作: 高速原点復帰運転中
+
+    Note over HOME-END出力, READY出力: 原点到達時
+    HOME-END出力->>HOME-END出力: ON③
+    READY出力->>READY出力: ON③
+    MOVE出力->>MOVE出力: OFF
+```
+</contents>

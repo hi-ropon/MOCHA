@@ -1,0 +1,108 @@
+ファイル名: RCON(MJ0384-8D)_page51
+
+<overview>
+本ページは「1.4 型式」についての説明で、主にゲートウェイユニットの型式構成を示しています。ページ構成は以下の通りです。
+- テキスト部分：ゲートウェイユニットの型式の構成要素（タイプ、I/O種類、オプション）とそれぞれの意味の説明。
+- 表部分：I/O種類やオプションの具体的な型式コードと対応仕様の一覧表。
+- 画像部分：実際のユニット写真に各ユニットの型式ラベルを付けて示した構成図。
+グラフはなく、図はユニット構成の写真と型式の関係図のみ。
+</overview>
+
+<contents>
+### テキスト
+#### 1.4.1 ゲートウェイユニット
+ゲートウェイユニットの型式は「RCON-タイプ-I/O種類-オプション」の形式で表されます。
+
+- タイプ
+  - GW：標準タイプ
+  - GWG：安全カテゴリー対応タイプ
+
+- I/O種類
+  - CC：CC-Link接続仕様
+  - CIE：CC-Link IE Field接続仕様
+  - CIT：CC-Link IE TSN接続仕様
+  - DV：DeviceNet接続仕様
+  - EC：EtherCAT接続仕様
+  - ECM：EtherCATモーション接続仕様
+  - EP：EtherNet/IP接続仕様
+  - ML3：MECHATROLINK-III接続仕様
+  - PR：PROFIBUS-DP接続仕様
+  - PRT：PROFINET IO接続仕様
+  - SSN：SSCNET Ⅲ/H接続仕様
+  - N：I/Oなし ※1
+
+- オプション
+  - EP：EtherNet/IP接続 ※1, ※2
+  - ET：Ethernet搭載 ※2
+  - FU*：ファンユニット装着（装着数1～8を指定）
+  - TRN：ターミナルユニットなし
+
+※1 I/O種類が「N」の場合、オプション「EP」は必ずセットで選択する必要があります。  
+※2 オプション「EP」と「ET」は同時に選択できません。
+
+### 表
+#### I/O種類一覧
+
+| コード | 内容                         |
+|--------|------------------------------|
+| CC     | CC-Link接続仕様              |
+| CIE    | CC-Link IE Field接続仕様     |
+| CIT    | CC-Link IE TSN接続仕様       |
+| DV     | DeviceNet接続仕様            |
+| EC     | EtherCAT接続仕様             |
+| ECM    | EtherCATモーション接続仕様   |
+| EP     | EtherNet/IP接続仕様          |
+| ML3    | MECHATROLINK-III接続仕様     |
+| PR     | PROFIBUS-DP接続仕様          |
+| PRT    | PROFINET IO接続仕様          |
+| SSN    | SSCNET Ⅲ/H接続仕様          |
+| N      | I/Oなし ※1                  |
+
+#### オプション一覧
+
+| コード | 内容                          |
+|--------|-------------------------------|
+| EP     | EtherNet/IP接続 ※1, ※2       |
+| ET     | Ethernet搭載 ※2              |
+| FU*    | ファンユニット装着（1～8台指定）|
+| TRN    | ターミナルユニットなし        |
+
+### 図
+#### ゲートウェイユニット型式構成図
+```mermaid
+flowchart LR
+    A[RCON] --> B[タイプ]
+    B -->|GW| C[標準タイプ]
+    B -->|GWG| D[安全カテゴリー対応タイプ]
+    A --> E[I/O種類]
+    E --> CC[CC-Link接続仕様]
+    E --> CIE[CC-Link IE Field接続仕様]
+    E --> CIT[CC-Link IE TSN接続仕様]
+    E --> DV[DeviceNet接続仕様]
+    E --> EC[EtherCAT接続仕様]
+    E --> ECM[EtherCATモーション接続仕様]
+    E --> EP[EtherNet/IP接続仕様]
+    E --> ML3[MECHATROLINK-III接続仕様]
+    E --> PR[PROFIBUS-DP接続仕様]
+    E --> PRT[PROFINET IO接続仕様]
+    E --> SSN[SSCNET Ⅲ/H接続仕様]
+    E --> N[I/Oなし]
+    A --> F[オプション]
+    F --> EP2[EtherNet/IP接続]
+    F --> ET[Ethernet搭載]
+    F --> FU[ファンユニット装着]
+    F --> TRN[ターミナルユニットなし]
+```
+
+#### ユニット構成写真と型式ラベル
+- ゲートウェイユニット（型式：RCON-GW-*）
+- SCON拡張ユニット（型式：RCON-□□□□）
+- ドライバーユニット（型式：RCON-PC-2、RCON-PCF-1、RCON-AC-2、RCON-DC-2）
+- ターミナルユニット（型式：RCON-GW-TR）
+
+（写真に各ユニットの位置と型式が矢印で示されている）
+
+---
+
+以上が本ページの内容詳細です。
+</contents>

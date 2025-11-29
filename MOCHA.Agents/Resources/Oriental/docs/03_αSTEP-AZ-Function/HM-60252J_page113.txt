@@ -1,0 +1,79 @@
+ファイル名: HM-60252J_page113
+
+<overview>
+本ページは「動作シーケンス」に関する説明で構成されています。テキスト部分では3センサ方式の動作原理と記号の説明があり、表部分では原点復帰運転の開始位置と方向に応じた動作軌跡を示す複数の図が配置されています。図は各開始位置（RV-LS、FW-LS、HOMES、HOMESとRV-LSの間、HOMESとFW-LSの間）に対して、原点復帰運転の開始方向（＋側、－側）別にモーターの動作軌跡を示すグラフ形式の図解となっています。
+</overview>
+
+<contents>
+### テキスト
+#### 動作シーケンス
+##### 3センサ方式
+運転中にリミットセンサを検出すると、モーターが反転してリミットセンサから脱出します。原点復帰運転速度で運転を行わない場合、HOMEセンサのONエッジを検出すると運転が停止し、停止した位置を原点とします。
+
+##### 記号の説明
+- VR: 原点復帰運転速度
+- VS: 原点復帰起動速度
+- VL: 原点検出速度
+- ---: 原点オフセットを設定した場合の軌跡
+
+### 表（原点復帰運転の開始位置と方向別の動作軌跡）
+
+| 原点復帰運転の開始位置 | 原点復帰運転の開始方向：＋側 | 原点復帰運転の開始方向：－側 |
+|------------------------|-----------------------------|-----------------------------|
+| RV-LS                  | ![図1](図1)                 | ![図2](図2)                 |
+| FW-LS                  | ![図3](図3)                 | ![図4](図4)                 |
+| HOMES                  | ![図5](図5)                 | ![図6](図6)                 |
+| HOMESとRV-LSの間       | ![図7](図7)                 | ![図8](図8)                 |
+| HOMESとFW-LSの間       | ![図9](図9)                 | ![図10](図10)               |
+
+（※図は以下のmermaid記法で表現）
+
+### 図（動作軌跡の模式図）
+
+```mermaid
+flowchart LR
+    subgraph RV-LS開始位置
+        direction TB
+        A1[+VR,+VS,+VL] --> B1[RV-LS]
+        B1 --> C1[HOMES]
+        C1 --> D1[FW-LS]
+        style A1 fill:#f9f,stroke:#333,stroke-width:1px
+        style B1 fill:#bbf,stroke:#333,stroke-width:1px
+        style C1 fill:#bbf,stroke:#333,stroke-width:1px
+        style D1 fill:#bbf,stroke:#333,stroke-width:1px
+    end
+
+    subgraph FW-LS開始位置
+        direction TB
+        A2[+VR,+VS,+VL] --> B2[RV-LS]
+        B2 --> C2[HOMES]
+        C2 --> D2[FW-LS]
+    end
+
+    subgraph HOMES開始位置
+        direction TB
+        A3[+VR,+VS,+VL] --> B3[RV-LS]
+        B3 --> C3[HOMES]
+        C3 --> D3[FW-LS]
+    end
+
+    subgraph HOMESとRV-LSの間
+        direction TB
+        A4[+VR,+VS,+VL] --> B4[RV-LS]
+        B4 --> C4[HOMES]
+        C4 --> D4[FW-LS]
+    end
+
+    subgraph HOMESとFW-LSの間
+        direction TB
+        A5[+VR,+VS,+VL] --> B5[RV-LS]
+        B5 --> C5[HOMES]
+        C5 --> D5[FW-LS]
+    end
+```
+
+**図の説明:**
+- 各開始位置から＋側または－側方向に原点復帰運転を行う際の速度変化（VR、VS、VL）とセンサ位置（RV-LS、HOMES、FW-LS）を示す。
+- 点線は原点オフセット設定時の軌跡を表す。
+
+</contents>

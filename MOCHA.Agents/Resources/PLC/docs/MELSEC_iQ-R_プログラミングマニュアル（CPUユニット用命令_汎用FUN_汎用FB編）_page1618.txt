@@ -1,0 +1,38 @@
+ファイル名: MELSEC_iQ-R_プログラミングマニュアル（CPUユニット用命令_汎用FUN_汎用FB編）_page1618
+
+<overview>
+本ページは表形式の情報で構成されており、主にGX Works2のファンクション名とその互換用ファンクション名、使用可能なプログラム種別（ST、FBD）、および参照先ページが一覧で示されています。テキストやグラフはなく、表のみで構成されています。
+</overview>
+
+<contents>
+### 表
+#### GX Works2ファンクションと互換用ファンクションの対応一覧
+本表は、GX Works2の各ファンクション名と、それに対応する互換用ファンクション名を示しています。また、それらのファンクションが使用可能なプログラム種別（ST言語、FBD言語）についても記載されています。さらに、各ファンクションの詳細な説明が記載されている参照先のページ番号も示されています。
+
+| GX Works2ファンクション名 | 互換用ファンクション名 | 使用プログラム ST | 使用プログラム FBD | 参照先 |
+|---------------------------|------------------------|------------------|------------------|---------|
+| STR_TO_INT_E              | STR_TO_INT_E_M2        | ○                | ×                | 1392ページ STRING_TO_INT(_E) |
+| STR_TO_REAL_E             | STR_TO_REAL_E_M2       | ○                | ×                | 1398ページ STRING_TO_REAL(_E) |
+| STR_TO_TIME_E             | STR_TO_TIME_E_M2       | ○                | ×                | 1401ページ STRING_TO_TIME(_E) |
+| STR_TO_WORD_E             | STR_TO_WORD_E_M2       | ○                | ×                | 1390ページ STRING_TO_WORD(_E) |
+| SUB_E                    | SUB_E_M2               | ○                | ×                | 1433ページ SUB(_E) |
+| SUB_TIME_E               | SUB_TIME_E_M2          | ○                | ×                | 1488ページ SUB_TIME(_E) |
+| TAN_E                    | TAN_E_M2               | ○                | ×                | 1424ページ TAN(_E) |
+| TIME_TO_BOOL_E           | TIME_TO_BOOL_E_M2      | ○                | ×                | 1382ページ TIME_TO_BOOL(_E) |
+| TIME_TO_DINT_E           | TIME_TO_DINT_E_M2      | ○                | ×                | 1386ページ TIME_TO_DINT(_E) |
+| TIME_TO_DWORD_E          | TIME_TO_DWORD_E_M2     | ○                | ×                | 1384ページ TIME_TO_DWORD(_E) |
+| TIME_TO_INT_E            | TIME_TO_INT_E_M2       | ○                | ×                | 1385ページ TIME_TO_INT(_E) |
+| TIME_TO_STR_E            | TIME_TO_STR_E_M2       | ○                | ×                | 1387ページ TIME_TO_STRING(_E) |
+| TIME_TO_WORD_E           | TIME_TO_WORD_E_M2      | ○                | ×                | 1383ページ TIME_TO_WORD(_E) |
+| WORD_TO_BOOL_E           | WORD_TO_BOOL_E_M2      | ○                | ×                | 1321ページ WORD_TO_BOOL(_E) |
+| WORD_TO_DINT_E           | WORD_TO_DINT_E_M2      | ○                | ×                | 1324ページ WORD_TO_DINT(_E) |
+| WORD_TO_DWORD_E          | WORD_TO_DWORD_E_M2     | ○                | ×                | 1322ページ WORD_TO_DWORD(_E) |
+| WORD_TO_INT_E            | WORD_TO_INT_E_M2       | ○                | ×                | 1323ページ WORD_TO_INT(_E) |
+| WORD_TO_STR_E            | WORD_TO_STR_E_M2       | ○                | ×                | 1327ページ WORD_TO_STRING(_E) |
+| WORD_TO_TIME_E           | WORD_TO_TIME_E_M2      | ○                | ×                | 1326ページ WORD_TO_TIME(_E) |
+| XOR_E                    | XOR_E_M2               | ○                | ×                | 1451ページ AND(_E), OR(_E), XOR(_E) |
+
+- 「○」は該当プログラムで使用可能、「×」は使用不可を示す。
+- 参照先ページには、各ファンクションの詳細な説明が記載されている。
+
+</contents>

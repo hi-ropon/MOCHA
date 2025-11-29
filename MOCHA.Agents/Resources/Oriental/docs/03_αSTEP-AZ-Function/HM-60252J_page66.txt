@@ -1,0 +1,94 @@
+ファイル名: HM-60252J_page66
+
+<overview>
+本ページは「ストアードデータ(SD)運転」に関する内容で構成されています。テキスト部分では「タイミングチャート」の説明があり、2つの運転モード（位置決め運転と連続運転）について記述されています。グラフ部分にはそれぞれの運転モードに対応したタイミングチャートが示されており、各信号のON/OFF状態と時間的関係が視覚的に表現されています。表やフローチャートは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### ストアードデータ(SD)運転
+■ タイミングチャート
+
+● 位置決め運転の場合  
+START入力、M0～M7入力、READY出力、MOVE出力、IN-POS出力の各信号のON/OFF状態と時間関係を示す。  
+- START入力は2ms以上ON、その後2ms以上OFF  
+- M0～M7入力はSTART入力のONに同期して変化  
+- READY出力は2ms以下の遅延でON/OFF切り替え  
+- MOVE出力も2ms以下の遅延でON/OFF切り替え  
+- IN-POS出力はMOVE出力のON期間に対応してON/OFF  
+- 内部速度指令はMOVE出力のON期間に合わせて変化
+
+● 連続運転の場合  
+位置決め運転と似た信号構成だが、READY出力、MOVE出力、IN-POS出力のON/OFFタイミングが異なる。  
+- START入力は2ms以上ON、その後2ms以上OFF  
+- M0～M7入力はSTART入力のONに同期して変化  
+- READY出力は2ms以下の遅延でOFF  
+- MOVE出力はREADY出力のOFF後にON  
+- IN-POS出力は常にOFF  
+- 内部速度指令はMOVE出力のON期間に合わせて変化
+
+### グラフ
+#### タイミングチャート（位置決め運転の場合）
+```mermaid
+flowchart TD
+    subgraph START入力
+        A1[OFF] -->|2ms以上| A2[ON]
+        A2 -->|2ms以上| A3[OFF]
+    end
+    subgraph M0～M7入力
+        B1[OFF] -.-> B2[ON]
+        B2 -.-> B3[OFF]
+    end
+    subgraph READY出力
+        C1[ON] -->|2ms以下| C2[OFF]
+        C2 --> C3[ON]
+    end
+    subgraph MOVE出力
+        D1[OFF] -->|2ms以下| D2[ON]
+        D2 --> D3[OFF]
+    end
+    subgraph IN-POS出力
+        E1[OFF] --> E2[ON]
+        E2 --> E3[OFF]
+    end
+    subgraph 内部速度指令
+        F1 --> F2 --> F3
+    end
+
+    A2 --> B2
+    B2 --> C2
+    C2 --> D2
+    D2 --> E2
+    D2 --> F2
+```
+
+#### タイミングチャート（連続運転の場合）
+```mermaid
+flowchart TD
+    subgraph START入力
+        A1[OFF] -->|2ms以上| A2[ON]
+        A2 -->|2ms以上| A3[OFF]
+    end
+    subgraph M0～M7入力
+        B1[OFF] -.-> B2[ON]
+        B2 -.-> B3[OFF]
+    end
+    subgraph READY出力
+        C1[ON] -->|2ms以下| C2[OFF]
+    end
+    subgraph MOVE出力
+        D1[OFF] --> D2[ON]
+    end
+    subgraph IN-POS出力
+        E1[OFF]
+    end
+    subgraph 内部速度指令
+        F1 --> F2
+    end
+
+    A2 --> B2
+    B2 --> C2
+    C2 --> D2
+    D2 --> F2
+```
+</contents>

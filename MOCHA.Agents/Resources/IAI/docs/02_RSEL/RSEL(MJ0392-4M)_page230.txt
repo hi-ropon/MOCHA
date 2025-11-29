@@ -1,0 +1,50 @@
+ファイル名: RSEL(MJ0392-4M)_page230
+
+<overview>
+本ページは「4.3 展開接続図（例）」の一部であり、単相仕様電源回路の接続構成を示しています。ページ構成は以下の通りです。
+- テキスト部分：章タイトル、節タイトル、回路図の説明タイトル
+- 図部分：単相仕様電源回路の展開接続図（回路図形式）
+- 表部分はなし
+- グラフ部分はなし
+</overview>
+
+<contents>
+### テキスト
+#### 4.3 展開接続図（例）
+##### 4.3.1 単相仕様電源回路
+
+### 図
+```mermaid
+flowchart TD
+    A[単相電源入力] --> B[サーキットブレーカー]
+    B --> C[200Vドライバー用モーター電源コネクター]
+    C --> D[200V電源ユニット (RCON-PS2-3)]
+    D --> E[200Vドライバーユニット (RCON-SC)]
+
+    subgraph RSELシステム
+        F[SELユニット (RSEL-G)]
+        G[24Vドライバーユニット (RCON-PC/PCF/AC/DC)]
+    end
+
+    H[24V電源] --> G
+    G --> F
+
+    style F fill:#fff,stroke:#000,stroke-width:1px
+    style G fill:#ccc,stroke:#000,stroke-width:1px
+    style D fill:#fff,stroke:#000,stroke-width:1px
+    style E fill:#ccc,stroke:#000,stroke-width:1px
+
+    subgraph 電源ライン
+        I[24V] -->|モーター電源コネクター| F
+        J[24V] -->|制御電源コネクター| F
+        K[0V] -->|共通接地| F
+    end
+```
+
+**図の説明:**
+- 単相電源（L, N）からサーキットブレーカーを経て200Vドライバー用モーター電源コネクターに接続
+- 200V電源ユニット（RCON-PS2-3）および200Vドライバーユニット（RCON-SC）に電源供給
+- 24V電源は24Vドライバーユニット（RCON-PC/PCF/AC/DC）に供給され、SELユニット（RSEL-G）に接続
+- 各ユニットの電源コネクターは24V、0V、FG（フレームグラウンド）で構成されている
+
+</contents>

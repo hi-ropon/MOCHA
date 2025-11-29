@@ -1,0 +1,61 @@
+ファイル名: HM-60252J_page156
+
+<overview>
+このページは「座標管理」に関する内容で構成されています。テキスト部分ではタイミングチャートの手順説明があり、図部分にはタイミングチャートの波形図が示されています。表はなく、図は信号のON/OFF状態と時間関係を示すタイミングチャートです。
+</overview>
+
+<contents>
+### テキスト
+#### 座標管理 - タイミングチャート
+1. PLSM-REQ入力をONにすると、その瞬間のASG出力とBSG出力がラッチされ、現在の指令位置と検出位置が記録されます。PLSM-REQ入力がOFFになるまでは、モーター軸が回転してもASG出力とBSG出力から現在の検出位置が出力されることはありません。
+2. PLS-OUTR出力がONになっていることを確認し、上位システムのエンコーダカウンタを「0」にクリアします。
+3. MON-CLK入力をONにします。ASG出力とBSG出力から、「PLSOUT対象設定」パラメータで設定した情報が出力されると、PLS-OUTR出力がOFFになります。
+4. PLS-OUTR出力がOFFになったことを確認し、PLSM-REQ入力をOFFにします。
+
+**重要**
+座標情報を出力しているときは、モーターを運転しないでください。モーターを運転すると、ABZOセンサと上位システムの間で現在位置の同期が取れなくなります。
+
+### 図（タイミングチャート）
+```mermaid
+flowchart TD
+    subgraph Signals
+        A[PLSM-REQ] 
+        B[MON-CLK]
+        C[PLS-OUTR]
+        D[ASG出力]
+        E[BSG出力]
+        F[上位システムエンコーダカウンタ]
+    end
+
+    A -->|ON| A_ON[ON状態]
+    A -->|OFF| A_OFF[OFF状態]
+
+    B -->|ON| B_ON[ON状態]
+    B -->|OFF| B_OFF[OFF状態]
+
+    C -->|ON| C_ON[ON状態]
+    C -->|OFF| C_OFF[OFF状態]
+
+    D -->|パルス出力| D_Pulse[パルス信号]
+    E -->|パルス出力| E_Pulse[パルス信号]
+
+    F -->|カウンタクリア| F_Clear[0にクリア]
+
+    %% 時間軸の関係
+    A_ON -->|0秒以上| B_ON
+    B_ON -->|2ms以上| C_ON
+    C_ON -->|2ms以下| C_OFF
+    C_OFF -->|2ms以下| A_OFF
+
+    %% 出力タイミング
+    D_Pulse -->|A相/B相出力無効| E_Pulse
+    F_Clear -->|不定→0| F_Clear
+```
+
+**図の説明:**
+- PLSM-REQ入力がONになるとASG出力とBSG出力がラッチされる。
+- PLS-OUTR出力がONの間に上位システムのエンコーダカウンタをクリア。
+- MON-CLK入力ONでASG/BSG出力から情報が出力され、PLS-OUTR出力がOFFになる。
+- 最後にPLSM-REQ入力をOFFにして処理を終了。
+
+</contents>

@@ -1,0 +1,83 @@
+ファイル名: RCON(MJ0384-8D)_page490
+
+<overview>
+本ページは「6.2 各アドレスの割付け内容」に関する説明で構成されています。  
+ページ全体は以下のセクションで構成されています。  
+- テキスト部分：アドレスの定義や注釈の説明  
+- 表部分：各通信規格（CC-Link、DeviceNet、PROFIBUS-DPなど）におけるアドレスの割付けの一覧  
+- 図部分：1ワード16ビットのビット割付けを示すビットフィールド図（ゾーン境界値、加速度、減速度、制御信号など）  
+</overview>
+
+<contents>
+### テキスト
+#### 6.2 各アドレスの割付け内容
+- アドレスは各軸の先頭レジスターアドレスをm、各軸の先頭の相対アドレスをn、各軸の先頭のモジュールアドレスをpとして表記。  
+- CC-Link、CC-Link IE Field、CC-Link IE TSNとDeviceNetはワードアドレス、PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス、PROFINET-IOは4ワードモジュールのアドレスである。  
+- NTC0、NTC1は特定のコントローラ（RCON-AC、RCON-SC、SCON-CB-RC、SCON2-CG-RC）のみ対応。  
+- SMODはRCON-PC/PCFのみ対応。
+
+### 表
+#### 各通信規格におけるアドレス割付け
+
+| 項目 | CC-Link, CC-Link IE Field, CC-Link IE TSN | DeviceNet | PROFIBUS-DP, EtherNet/IP, EtherCAT | PROFINET-IO |
+| :--- | :--- | :--- | :--- | :--- |
+| ゾーン境界値（L） | RWw m+8 | n+8 | (上位バイト) n+16 (下位バイト) n+17 | p+2 |
+| ゾーン境界値（H） | RWw m+9 | n+9 | n+18 n+19 |  |
+| 加速度 | RWw m+A | n+A | n+20 n+21 |  |
+| 減速度 | RWw m+B | n+B | n+22 n+23 |  |
+| 押付け電流制限値 | RWw m+C | n+C | n+24 n+25 | p+3 |
+| 負荷電流しきい値 | RWw m+D | n+D | n+26 n+27 |  |
+| 制御信号1 | RWw m+E | n+E | n+28 n+29 |  |
+| 制御信号2 | RWw m+F | n+F | n+30 n+31 | p+4 |
+
+### 図
+#### 1ワード16ビットのビット割付け（制御信号1、制御信号2など）
+
+```mermaid
+flowchart TD
+    subgraph ゾーン境界値（L）
+        direction LR
+        b15[15b] --> b14[14b] --> b13[13b] --> b12[12b] --> b11[11b] --> b10[10b] --> b9[9b] --> b8[8b] --> b7[7b] --> b6[6b] --> b5[5b] --> b4[4b] --> b3[3b] --> b2[2b] --> b1[1b] --> b0[0b]
+    end
+
+    subgraph ゾーン境界値（H）
+        direction LR
+        h15[15b] --> h14[14b] --> h13[13b] --> h12[12b] --> h11[11b] --> h10[10b] --> h9[9b] --> h8[8b] --> h7[7b] --> h6[6b] --> h5[5b] --> h4[4b] --> h3[3b] --> h2[2b] --> h1[1b] --> h0[0b]
+    end
+
+    subgraph 加速度
+        direction LR
+        a15[15b] --> a14[14b] --> a13[13b] --> a12[12b] --> a11[11b] --> a10[10b] --> a9[9b] --> a8[8b] --> a7[7b] --> a6[6b] --> a5[5b] --> a4[4b] --> a3[3b] --> a2[2b] --> a1[1b] --> a0[0b]
+    end
+
+    subgraph 減速度
+        direction LR
+        d15[15b] --> d14[14b] --> d13[13b] --> d12[12b] --> d11[11b] --> d10[10b] --> d9[9b] --> d8[8b] --> d7[7b] --> d6[6b] --> d5[5b] --> d4[4b] --> d3[3b] --> d2[2b] --> d1[1b] --> d0[0b]
+    end
+
+    subgraph 押付け電流制限値
+        direction LR
+        p15[15b] --> p14[14b] --> p13[13b] --> p12[12b] --> p11[11b] --> p10[10b] --> p9[9b] --> p8[8b] --> p7[7b] --> p6[6b] --> p5[5b] --> p4[4b] --> p3[3b] --> p2[2b] --> p1[1b] --> p0[0b]
+    end
+
+    subgraph 負荷電流しきい値
+        direction LR
+        l15[15b] --> l14[14b] --> l13[13b] --> l12[12b] --> l11[11b] --> l10[10b] --> l9[9b] --> l8[8b] --> l7[7b] --> l6[6b] --> l5[5b] --> l4[4b] --> l3[3b] --> l2[2b] --> l1[1b] --> l0[0b]
+    end
+
+    subgraph 制御信号1
+        direction LR
+        i15[I] --> ntc1[NTC1] --> ntc0[NTC0] --> smod[SMOD] --> aso1[ASO1] --> aso0[ASO0] --> mod1[MOD1] --> mod0[MOD0] --> gsl1[GSL1] --> gsl0[GSL0] --> inc[INC] --> dir[DIR] --> push[PUSH] --> i0[I]
+    end
+
+    subgraph 制御信号2
+        direction LR
+        bkrl[BKRL] --> i15[I] --> i14[I] --> i13[I] --> i12[I] --> i11[I] --> i10[I] --> jog_plus[JOG+] --> jog_minus[JOG-] --> jvel[JVEL] --> jsl[JSL] --> son[SON] --> res[RES] --> stp[STP] --> home[HOME] --> dstr[DSTR]
+    end
+```
+
+**図の説明:**  
+- 各ビットは16ビットワードのビット位置を示し、ゾーン境界値（L/H）、加速度、減速度、押付け電流制限値、負荷電流しきい値、制御信号1、制御信号2の各フィールドに割り当てられている。  
+- 制御信号1にはNTC0、NTC1、SMOD、ASO1、ASO0、MOD1、MOD0、GSL1、GSL0、INC、DIR、PUSHなどの信号ビットが含まれる。  
+- 制御信号2にはBKRL、JOG+、JOG-、JVEL、JSL、SON、RES、STP、HOME、DSTRなどの信号ビットが含まれる。  
+</contents>

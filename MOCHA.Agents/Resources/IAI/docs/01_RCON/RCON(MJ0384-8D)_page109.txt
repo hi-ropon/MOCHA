@@ -1,0 +1,85 @@
+ファイル名: RCON(MJ0384-8D)_page109
+
+<overview>
+このページは「ゲートウェイユニット、ターミナルユニット」の型式に関する説明で構成されています。  
+テキスト部分では型式の確認方法と型式の構成要素について説明しています。  
+表部分ではゲートウェイユニットのタイプ、I/O種類、オプションの各コードとその意味が一覧で示されています。  
+図部分ではゲートウェイユニットの実物写真に各部名称（フィールドネットワークコネクター、Ethernetポート、ファンユニット、ターミナルユニットなど）がラベル付けされています。
+</overview>
+
+<contents>
+### テキスト
+#### 3.1.2 型式
+##### （1）型式確認
+ゲートウェイユニットの型式は以下のように構成されています。
+
+```
+RCON - タイプ - I/O種類 - オプション
+```
+
+- タイプ  
+  - GW：標準タイプ  
+  - GWG：安全カテゴリ対応タイプ  
+
+- I/O種類  
+  - CC：CC-Link接続仕様  
+  - CIE：CC-Link IE Field接続仕様  
+  - CIT：CC-Link IE TSN接続仕様  
+  - DV：DeviceNet接続仕様  
+  - EC：EtherCAT接続仕様  
+  - EP：EtherNet/IP接続仕様  
+  - PR：PROFIBUS-DP接続仕様  
+  - PRT：PROFINET IO接続仕様  
+  - ECM：EtherCATモーション接続仕様  
+  - ML3：MECHATROLINK-III接続仕様  
+  - SSN：SSCNETⅢ/H接続仕様  
+  - N：I/Oなし（※1）  
+
+- オプション  
+  - EP：EtherNet/IP接続（※1、※2）  
+  - ET：Ethernet搭載（※2）  
+  - FU*：ファンユニット装着（*は装着数を指定、1～8）  
+  - TRN：ターミナルユニットなし  
+
+※1 I/O種類「N」とオプション「EP」は必ずセットで選択してください。  
+※2 オプション「EP」と「ET」は同時に選択できません。
+
+### 表
+#### ゲートウェイユニット型式一覧
+
+| コード | 内容                         |
+| :----- | :--------------------------- |
+| GW     | 標準タイプ                   |
+| GWG    | 安全カテゴリ対応タイプ       |
+| CC     | CC-Link接続仕様             |
+| CIE    | CC-Link IE Field接続仕様    |
+| CIT    | CC-Link IE TSN接続仕様      |
+| DV     | DeviceNet接続仕様           |
+| EC     | EtherCAT接続仕様            |
+| EP     | EtherNet/IP接続仕様         |
+| PR     | PROFIBUS-DP接続仕様         |
+| PRT    | PROFINET IO接続仕様         |
+| ECM    | EtherCATモーション接続仕様  |
+| ML3    | MECHATROLINK-III接続仕様    |
+| SSN    | SSCNETⅢ/H接続仕様           |
+| N      | I/Oなし（※1）              |
+| EP     | EtherNet/IP接続（オプション）|
+| ET     | Ethernet搭載（オプション）  |
+| FU*    | ファンユニット装着（1～8）  |
+| TRN    | ターミナルユニットなし      |
+
+### 図
+```mermaid
+flowchart LR
+    A[ゲートウェイユニット] --> B[フィールドネットワークコネクター（I/O種類）]
+    A --> C[Ethernetポート（オプション）]
+    A --> D[ファンユニット（単品型式：RCON-FU）]
+    A --> E[ターミナルユニット（単品型式：RCON-GW-TR）]
+```
+
+**図の説明:**  
+- ゲートウェイユニット本体にフィールドネットワークコネクターがあり、I/O種類に対応。  
+- オプションとしてEthernetポートが装備可能。  
+- ファンユニットは単品型式RCON-FUで装着可能。  
+- ターミナルユニットは単品型式RCON-GW-TRで装着される。
+</contents>

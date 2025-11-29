@@ -1,0 +1,95 @@
+ファイル名: HM-60252J_page219
+
+<overview>
+本ページは「動力遮断機能」に関する入出力信号の説明で構成されています。主にテキスト説明と回路図（図解）で構成されており、以下のセクションがあります。
+- テキスト部分：HWT01入力、HWT02入力の説明、EDM出力の説明
+- 図部分：HWT01/HWT02入力の回路図、自己診断用オフショットパルスのタイミング図、EDM出力の回路図
+- 表やグラフはなく、仕様は箇条書き形式で記載
+</overview>
+
+<contents>
+### テキスト
+#### 7-3 入出力信号
+
+■ HWT01入力、HWT02入力  
+動力遮断機能を動作させる信号です。  
+**重要**  
+HWT01入力、HWT02入力を操作する接点は、個別に設けてください。
+
+**外部機器の自己診断用オフショットパルス**  
+外部機器から出力される安全出力信号が自己診断用のオフショットパルスを含む場合は、パルス幅が1ms以下の外部機器を使用してください。  
+オフショットパルスによるHWT01入力やHWT02入力のOFF時間が1ms以下であれば、動力遮断機能は動作しません。
+
+■ EDM出力  
+動力遮断機能の故障を監視する信号です。  
+**重要**  
+EDM出力は安全出力ではありません。故障監視の用途以外には使用しないでください。
+
+### 図
+
+#### HWT01入力、HWT02入力回路図
+```mermaid
+flowchart LR
+    subgraph 外部機器
+        DC24V[DC24 V]
+        GND0V[0 V]
+    end
+    subgraph ドライバ
+        CN1[CN1]
+        R1[4.7 kΩ]
+        R2[2.2 kΩ]
+        LED1[LED]
+        R3[4.7 kΩ]
+        R4[2.2 kΩ]
+        LED2[LED]
+    end
+
+    DC24V -->|HWT01+| CN1
+    CN1 --> R1 --> R2 --> LED1
+    DC24V -->|HWT02+| CN1
+    CN1 --> R3 --> R4 --> LED2
+    CN1 -->|HWT01-| GND0V
+    CN1 -->|HWT02-| GND0V
+```
+
+#### 自己診断用オフショットパルスのタイミング図
+```mermaid
+flowchart LR
+    ON[ON] --> OFF[OFF]
+    OFF --> ON2[ON]
+    ON2 --> OFF2[OFF]
+    OFF2 -->|1 ms以下| ON3[ON]
+```
+- ON/OFFが短時間（1ms以下）で繰り返されるパルスが自己診断用オフショットパルス
+
+#### EDM出力回路図
+```mermaid
+flowchart LR
+    subgraph 外部機器
+        DC24V[DC24 V]
+        GND0V[0 V]
+        LED[LED]
+    end
+    subgraph ドライバ
+        CN1[CN1]
+        EDMplus[EDM+]
+        EDMminus[EDM-]
+        LEDdriver[LED]
+    end
+
+    DC24V --> LED --> GND0V
+    DC24V --> EDMplus
+    EDMminus --> GND0V
+    EDMplus --> LEDdriver
+```
+
+### 仕様
+
+| 項目 | 内容 |
+| :--- | :--- |
+| HWT01入力、HWT02入力 | 入力電圧：DC24 V ±10% |
+| EDM出力 | 電圧：DC30 V以下 |
+|  | 電流：50 mA以下 |
+|  | 出力飽和電圧：最大1.1 V |
+
+</contents>

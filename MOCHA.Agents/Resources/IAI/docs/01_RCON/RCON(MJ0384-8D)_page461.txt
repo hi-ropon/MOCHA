@@ -1,0 +1,65 @@
+ファイル名: RCON(MJ0384-8D)_page461
+
+<overview>
+このページはPLC入力の軸状態信号に関するアドレス割付内容を説明しています。  
+構成は以下の通りです。  
+・テキスト部分：PLC入力の軸状態信号のアドレスの説明、注意事項  
+・表部分：各通信方式（CC-Link、DeviceNet、PROFIBUS-DPなど）におけるアドレスの割付け一覧  
+・図部分：1ワード16ビットのビット割付け図（現在位置データ、現在電流値、現在速度、アラームコード、状態信号など）  
+</overview>
+
+<contents>
+### テキスト
+#### PLC入力＝軸状態信号 アドレス
+- 各通信方式（CC-Link、DeviceNet、PROFIBUS-DP、EtherNet/IP、EtherCAT、PROFINET-IO）における軸状態信号のアドレス割付けを示す。
+- 「m」は各軸の先頭レジスターアドレス、「n」は各軸の先頭の相対アドレス、「p」は各軸の先頭のモジュールアドレスを表す。
+- CC-Link、CC-Link IE Field、DeviceNetはワードアドレス、PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス、PROFINET-IOは4ワードモジュールのアドレス。
+- 現在電流値はパルスモーターの場合は指令電流値、ACサーボモーター（SCON接続含む）の場合はフィードバック電流値。
+- CC-Link、CC-Link IE Field、CC-Link IE TSN、EtherNet/IP（フロントポート）の場合、本モードでの最大接続軸数は16軸、それ以外は8軸。
+
+### 図
+```mermaid
+flowchart TD
+    subgraph ワード16ビット(15b~0b)
+        A1[15b] --> A2[14b] --> A3[13b] --> A4[12b] --> A5[11b] --> A6[10b] --> A7[9b] --> A8[8b] --> A9[7b] --> A10[6b] --> A11[5b] --> A12[4b] --> A13[3b] --> A14[2b] --> A15[1b] --> A16[0b]
+    end
+
+    subgraph 現在位置データ（符号付整数）
+        B1[上位バイト] --> B2[下位バイト]
+    end
+
+    subgraph 現在電流値（符号付整数）
+        C1[上位バイト] --> C2[下位バイト]
+    end
+
+    subgraph 現在速度
+        D1[16ビットデータ]
+    end
+
+    subgraph アラームコード
+        E1[16ビットデータ]
+    end
+
+    subgraph 状態信号
+        F1[EMGS] --> F2[CRDY] --> F3[ZONE2] --> F4[ZONE1] --> F5[I] --> F6[I] --> F7[I] --> F8[I] --> F9[MEND] --> F10[AML] --> F11[-] --> F12[PSFL] --> F13[SV] --> F14[ALM] --> F15[MOVE] --> F16[HEND] --> F17[PEND]
+    end
+```
+
+### 表
+| RWr | CC-Link (m) | DeviceNet (n) | PROFIBUS-DP, EtherNet/IP, EtherCAT (p) |
+| :--- | :--- | :--- | :--- |
+| m+0 | n+0 (上位バイト), n+1 (下位バイト) | p+0 | 現在位置データ（符号付整数） |
+| m+1 | n+1, n+2, n+3 | 現在位置データ（符号付整数） |
+| m+2 | n+2, n+4, n+5 | 現在電流値（符号付整数） |
+| m+3 | n+3, n+6, n+7 | 現在電流値（符号付整数） |
+| m+4 | n+4, n+8, n+9 | 現在速度 |
+| m+5 | n+5, n+10, n+11 | 使用不可 |
+| m+6 | n+6, n+12, n+13 | アラームコード |
+| m+7 | n+7, n+14, n+15 | 状態信号 |
+
+### 注釈
+- 1mは各軸の先頭レジスターアドレス、nは各軸の先頭の相対アドレス、pは各軸の先頭のモジュールアドレス。
+- CC-Link、CC-Link IE Field、DeviceNetはワードアドレス、PROFIBUS-DP、EtherNet/IP、EtherCATはバイトアドレス、PROFINET-IOは4ワードモジュールのアドレス。
+- 現在電流値はパルスモーターの場合は指令電流値、ACサーボモーターの場合はフィードバック電流値。
+- CC-Link、CC-Link IE Field、CC-Link IE TSN、EtherNet/IP（フロントポート）では最大接続軸数16軸、それ以外は8軸。
+</contents>

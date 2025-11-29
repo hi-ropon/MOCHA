@@ -1,0 +1,6 @@
+# 大容量のマニュアル系リソースはCodex検索対象から除外
+MOCHA.Agents/Resources/PLC/docs/**
+MOCHA.Agents/Resources/IAI/docs/**
+MOCHA.Agents/Resources/Oriental/docs/**
+MOCHA.Agents/Resources/Keyence/docs/**
+MOCHA.Agents/Resources/Mitsubishi/docs/**

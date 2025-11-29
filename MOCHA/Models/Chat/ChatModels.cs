@@ -24,26 +24,26 @@ public record ChatMessage(ChatRole Role, string Content);
 public record ChatTurn(string? ConversationId, IReadOnlyList<ChatMessage> Messages);
 
 /// <summary>
-/// Copilot からのアクション要求。
+/// Agent からのアクション要求。
 /// </summary>
 /// <param name="ActionName">アクション名。</param>
 /// <param name="ConversationId">対象の会話ID。</param>
 /// <param name="Payload">アクションに付随するペイロード。</param>
-public record CopilotActionRequest(
+public record AgentActionRequest(
     string ActionName,
     string ConversationId,
     IReadOnlyDictionary<string, object?> Payload
 );
 
 /// <summary>
-/// Copilot へのアクション実行結果。
+/// Agent へのアクション実行結果。
 /// </summary>
 /// <param name="ActionName">アクション名。</param>
 /// <param name="ConversationId">対象の会話ID。</param>
 /// <param name="Success">成功フラグ。</param>
 /// <param name="Payload">返却するペイロード。</param>
 /// <param name="Error">エラー内容（失敗時）。</param>
-public record CopilotActionResult(
+public record AgentActionResult(
     string ActionName,
     string ConversationId,
     bool Success,
@@ -64,7 +64,7 @@ public enum ChatStreamEventType
 }
 
 /// <summary>
-/// Copilot とのやり取りで使用するストリームイベント。
+/// Agent とのやり取りで使用するストリームイベント。
 /// </summary>
 /// <param name="Type">イベント種別。</param>
 /// <param name="Message">チャットメッセージ。</param>
@@ -74,8 +74,8 @@ public enum ChatStreamEventType
 public record ChatStreamEvent(
     ChatStreamEventType Type,
     ChatMessage? Message = null,
-    CopilotActionRequest? ActionRequest = null,
-    CopilotActionResult? ActionResult = null,
+    AgentActionRequest? ActionRequest = null,
+    AgentActionResult? ActionResult = null,
     string? Error = null
 )
 {

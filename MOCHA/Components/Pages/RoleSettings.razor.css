@@ -1,17 +1,18 @@
 .role-page {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.03));
+    background: color-mix(in srgb, var(--glass-bg) 75%, var(--panel-bg) 25%);
     border-radius: 20px;
     padding: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    box-shadow: 0 18px 42px rgba(0, 0, 0, 0.35);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
     backdrop-filter: blur(18px) saturate(150%);
     max-height: calc(100vh - 48px);
     overflow: auto;
+    color: var(--text-primary);
 }
 
 .page-title {
     margin-bottom: 16px;
-    color: #f5f7fb;
+    color: var(--text-primary);
 }
 
 .role-grid {
@@ -21,17 +22,18 @@
 }
 
 .card {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.18);
+    background: color-mix(in srgb, var(--panel-bg) 85%, var(--panel-strong-bg) 15%);
+    border: 1px solid var(--border-color);
     border-radius: 14px;
     padding: 16px;
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+    box-shadow: var(--soft-shadow);
     backdrop-filter: blur(14px) saturate(140%);
+    color: var(--text-primary);
 }
 
 .card.warning {
-    border-color: rgba(255, 175, 0, 0.4);
-    background: rgba(255, 175, 0, 0.08);
+    border-color: color-mix(in srgb, #ffaf00 60%, var(--border-color) 40%);
+    background: color-mix(in srgb, #ffaf00 10%, var(--panel-bg) 90%);
 }
 
 .card-header {
@@ -40,17 +42,17 @@
     justify-content: space-between;
     gap: 12px;
     margin-bottom: 12px;
-    color: #f5f7fb;
+    color: var(--text-primary);
 }
 
 .eyebrow {
     font-size: 12px;
-    color: #9bb6c3;
+    color: var(--text-muted);
     margin: 0;
 }
 
 .muted {
-    color: #9bb6c3;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -59,24 +61,24 @@
     flex-direction: column;
     gap: 6px;
     margin-bottom: 12px;
-    color: #f5f7fb;
+    color: var(--text-primary);
 }
 
 .input {
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    background: rgba(255, 255, 255, 0.06);
-    color: #f5f7fb;
+    border: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--panel-soft) 70%, var(--panel-bg) 30%);
+    color: var(--text-primary);
 }
 
 .input::placeholder {
-    color: #9bb6c3;
+    color: var(--text-muted);
 }
 
 .hint {
     font-size: 12px;
-    color: #9bb6c3;
+    color: var(--text-muted);
     margin: 0;
 }
 
@@ -92,19 +94,20 @@
     border: 1px solid transparent;
     cursor: pointer;
     font-weight: 600;
-    color: #0b0b0b;
+    color: var(--text-primary);
 }
 
 .btn.primary {
-    background: linear-gradient(135deg, #ffd54f, #ffb300);
-    color: #0d0d0d;
-    border: none;
+    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
+    color: var(--cta-text);
+    border: 1px solid var(--cta-border);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.12);
 }
 
 .btn.ghost {
-    background: rgba(255, 255, 255, 0.08);
-    color: #f5f7fb;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: color-mix(in srgb, var(--panel-soft) 70%, var(--panel-bg) 30%);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
 }
 
 .btn:disabled {
@@ -116,7 +119,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-    color: #f5f7fb;
+    color: var(--text-primary);
 }
 
 .role-item {
@@ -126,8 +129,8 @@
     gap: 10px;
     padding: 10px 12px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    background: color-mix(in srgb, var(--panel-bg) 82%, var(--panel-strong-bg) 18%);
 }
 
 .role-main {
@@ -144,11 +147,11 @@
 
 .role-name {
     font-weight: 700;
-    color: #f5f7fb;
+    color: var(--text-primary);
 }
 
 .role-desc {
-    color: #9bb6c3;
+    color: var(--text-muted);
     font-size: 13px;
 }
 
@@ -166,18 +169,18 @@
     border-radius: 999px;
     font-size: 12px;
     font-weight: 600;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    border: 1px solid var(--border-color);
 }
 
 .chip.info {
-    background: rgba(255, 215, 0, 0.15);
-    border-color: rgba(255, 215, 0, 0.3);
-    color: #ffda66;
+    background: color-mix(in srgb, var(--cta-start) 80%, transparent 20%);
+    border-color: color-mix(in srgb, var(--cta-border) 70%, transparent 30%);
+    color: var(--cta-text);
 }
 
 .chip.subtle {
-    background: rgba(255, 255, 255, 0.08);
-    color: #f5f7fb;
+    background: color-mix(in srgb, var(--panel-soft) 75%, transparent 25%);
+    color: var(--text-primary);
 }
 
 .current-roles {
@@ -192,19 +195,19 @@
 }
 
 .status.info {
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    color: #f5f7fb;
+    background: color-mix(in srgb, var(--panel-soft) 70%, transparent 30%);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
 }
 
 .status.success {
-    background: rgba(46, 204, 113, 0.12);
-    border: 1px solid rgba(46, 204, 113, 0.4);
-    color: #9ef0be;
+    background: color-mix(in srgb, #2ecc71 16%, var(--panel-bg) 84%);
+    border: 1px solid color-mix(in srgb, #2ecc71 40%, var(--border-color) 60%);
+    color: color-mix(in srgb, #2ecc71 75%, var(--text-primary) 25%);
 }
 
 .status.warn {
-    background: rgba(255, 193, 7, 0.1);
-    border: 1px solid rgba(255, 193, 7, 0.35);
-    color: #ffd54f;
+    background: color-mix(in srgb, #ffc107 14%, var(--panel-bg) 86%);
+    border: 1px solid color-mix(in srgb, #ffc107 45%, var(--border-color) 55%);
+    color: color-mix(in srgb, #ffc107 70%, var(--text-primary) 30%);
 }

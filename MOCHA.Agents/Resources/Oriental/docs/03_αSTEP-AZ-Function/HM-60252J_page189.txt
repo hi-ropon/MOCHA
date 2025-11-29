@@ -1,0 +1,53 @@
+ファイル名: HM-60252J_page189
+
+<overview>
+本ページは「ストアードデータ運転、ダイレクトデータ運転の場合」の動作説明に関する内容で構成されています。  
+テキスト部分では、PAUSE入力のON/OFFによるモーター動作の変化について説明しています。  
+図部分は、各信号（PAUSE入力、PLS-RDY出力、READY出力、MOVE出力、PAUSE-BSY出力）とモーター動作、モーター励磁、電磁ブレーキの状態変化を示すタイミングチャートが2つ掲載されています。  
+表はなく、グラフはタイミングチャートとして図に含まれています。
+</overview>
+
+<contents>
+### テキスト
+#### ストアードデータ運転、ダイレクトデータ運転の場合
+1. 運転中にPAUSE入力をONにすると、PLS-RDY出力がOFF、PAUSE-BSY出力がONになり、モーターが減速停止を開始します。  
+2. PAUSE入力をOFFにすると、PLS-RDY出力とMOVE出力がON、PAUSE-BSY出力がOFFになり、モーターが運転を再開します。
+
+※駆動条件によって動作は異なります。
+
+### 図（タイミングチャート）
+
+```mermaid
+flowchart TD
+    subgraph チャート1
+        direction TB
+        PAUSE_IN[PAUSE入力] -->|ON/OFF| PAUSE_IN_STATE
+        PLS_RDY[PLS-RDY出力] -->|ON/OFF| PLS_RDY_STATE
+        READY[READY出力] -->|ON/OFF| READY_STATE
+        MOVE[MOVE出力] -->|ON/OFF| MOVE_STATE
+        PAUSE_BSY[PAUSE-BSY出力] -->|ON/OFF| PAUSE_BSY_STATE
+        MOTOR[モーター動作] --> MOTOR_STATE
+        MOTOR_EXC[モーター励磁] --> MOTOR_EXC_STATE
+        EM_BRAKE[電磁ブレーキ] --> EM_BRAKE_STATE
+    end
+
+    subgraph チャート2
+        direction TB
+        PAUSE_IN2[PAUSE入力] -->|ON/OFF| PAUSE_IN2_STATE
+        PLS_RDY2[PLS-RDY出力] -->|ON/OFF| PLS_RDY2_STATE
+        READY2[READY出力] -->|ON/OFF| READY2_STATE
+        MOVE2[MOVE出力] -->|ON/OFF| MOVE2_STATE
+        PAUSE_BSY2[PAUSE-BSY出力] -->|ON/OFF| PAUSE_BSY2_STATE
+        MOTOR2[モーター動作] --> MOTOR2_STATE
+        MOTOR_EXC2[モーター励磁] --> MOTOR_EXC2_STATE
+        EM_BRAKE2[電磁ブレーキ] --> EM_BRAKE2_STATE
+    end
+```
+
+**図の説明:**  
+- 上段チャートはPAUSE入力のON/OFFに伴う各信号の状態変化とモーター動作の減速停止・再開を示す。  
+- 下段チャートは各信号のON/OFFの時間幅（2ms以上、2ms以下）を示し、タイミングの詳細を表現している。  
+- モーター励磁は常に励磁状態を維持し、電磁ブレーキは保持・解放の状態を示す。  
+- READY出力の動作は駆動条件によって異なる場合がある。
+
+</contents>

@@ -1,0 +1,65 @@
+ファイル名: HM-60252J_page215
+
+<overview>
+本ページはタイミングチャートで構成されており、主に「電源投入（DC電源ドライバ）」と「励磁」の2つのセクションに分かれています。各セクションは複数の信号のON/OFF状態とその時間的な関係を示すグラフ形式で表現されています。テキストは各信号の名称や時間条件の説明に限定されており、表やフローチャートは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 電源投入（DC電源ドライバ）
+- 電源ON/OFFの状態遷移と各信号の応答時間を示す。
+- SYS-RDY（出力確定・入力有効）信号は電源ON後1秒以内に確定し、OFF後1秒以内に未確定となる。
+- MPS出力、PLS-RDY出力、READY出力、DCMD-RDY出力はそれぞれ1.25秒以内にON/OFFが切り替わる。
+- モーター励磁は1.2秒以内に励磁/無励磁状態に切り替わる。
+- 電磁ブレーキは1.25秒以内に保持/解放状態に切り替わる。
+- 電源ON状態は10秒以上維持される必要がある。
+
+#### 励磁
+- 励磁指令のON/OFFに対する各信号の応答時間を示す。
+- CRNT出力は励磁指令ON後2ms以内にON、OFF後2ms以内にOFFとなる。
+- PLS-RDY出力、READY出力、DCMD-RDY出力は250ms以内にON、2ms以内にOFFとなる。
+- モーター励磁は200ms以内に励磁状態に入り、220ms以内に無励磁状態に戻る。
+
+### グラフ
+```mermaid
+flowchart TD
+    subgraph 電源投入（DC電源ドライバ）
+        電源[電源 ON/OFF]
+        SYSRDY[SYS-RDY 確定/未確定]
+        MPS[MPS 出力 ON/OFF]
+        PLSRDY[PLS-RDY 出力 ON/OFF]
+        READY[READY 出力 ON/OFF]
+        DCMD[DCMD-RDY 出力 ON/OFF]
+        MOTOR[モーター励磁 励磁/無励磁]
+        BRAKE[電磁ブレーキ 保持/解放]
+
+        電源 -->|1秒以下| SYSRDY
+        SYSRDY -->|1秒以下| MPS
+        MPS -->|1.25秒以下| PLSRDY
+        PLSRDY -->|1.25秒以下| READY
+        READY -->|1.25秒以下| DCMD
+        DCMD -->|1.2秒以下| MOTOR
+        MOTOR -->|1.25秒以下| BRAKE
+    end
+
+    subgraph 励磁
+        励磁指令[励磁指令 ON/OFF]
+        CRNT[CRNT 出力 ON/OFF]
+        PLSRDY2[PLS-RDY 出力 ON/OFF]
+        READY2[READY 出力 ON/OFF]
+        DCMD2[DCMD-RDY 出力 ON/OFF]
+        MOTOR2[モーター励磁 励磁/無励磁]
+
+        励磁指令 -->|2ms以下| CRNT
+        励磁指令 -->|250ms以下| PLSRDY2
+        励磁指令 -->|250ms以下| READY2
+        励磁指令 -->|250ms以下| DCMD2
+        DCMD2 -->|200ms以下| MOTOR2
+        MOTOR2 -->|220ms以下| 励磁指令
+    end
+```
+
+**図の説明:**
+- 電源投入時は各信号が順次ON/OFFし、一定時間内に状態が変化することを示す。
+- 励磁時は励磁指令に対して各信号が高速に応答し、モーター励磁状態が切り替わることを示す。
+</contents>

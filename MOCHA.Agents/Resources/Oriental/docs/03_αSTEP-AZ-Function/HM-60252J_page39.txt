@@ -1,0 +1,98 @@
+ファイル名: HM-60252J_page39
+
+<overview>
+このページは「原点復帰運転でセンサ入力を使用する場合」について説明しています。  
+構成は以下の通りです。  
+- テキスト部分：原点復帰運転に必要な入力信号の説明、位置決め機能内蔵タイプやRS-485通信付きパルス列入力タイプの割り付け方法の説明  
+- 表部分：原点復帰運転に必要な入力信号の一覧表  
+- 図部分：ダイレクトI/O割り付け例、リモートI/O割り付け例、RS-485通信付きパルス列入力タイプの割り付け例の画面キャプチャ  
+- メモ部分：外部センサに合わせた入力信号割り付けの注意点  
+</overview>
+
+<contents>
+### テキスト
+#### 原点復帰運転でセンサ入力を使用する場合
+MEXE02で原点復帰運転に使用する入力信号を割り付ける方法を説明。  
+ここでは3センサ方式で実行する例を示す。
+
+##### ■原点復帰運転に必要な入力信号
+- HOMES：原点センサ  
+- FW-LS：リミットセンサ（＋側）  
+- RV-LS：リミットセンサ（－側）  
+- HOME：原点復帰運転を開始する信号  
+
+##### ■位置決め機能内蔵タイプの場合
+- センサからの入力信号（HOMES、FW-LS、RV-LS）と位置決め運転に関する信号（M0、M1、START、STOP）をダイレクトI/Oに割り付ける。  
+- アラーム解除（ALM-RST）も割り付ける。  
+- ダイレクトI/OとリモートI/Oのどちらでも原点復帰運転を実行できるよう、HOMEを両方に割り付ける。
+
+##### ■RS-485通信付きパルス列入力タイプ、パルス列入力タイプの場合
+- センサからの入力信号（HOMES、FW-LS、RV-LS）とアラーム解除（ALM-RST）を割り付ける。  
+- 原点復帰運転を実行できるようHOMEも割り付ける。  
+- DINO～DIN3はパルス入力専用のため、他の信号は「未使用」に設定する。
+
+### 図
+#### ダイレクトI/Oの割り付け例
+```mermaid
+flowchart LR
+    DIN0["DIN0 (PULSE-I/タイプ除く)"] -->|START| START
+    DIN1["DIN1 (PULSE-I/タイプ除く)"] -->|M0| M0
+    DIN2["DIN2 (PULSE-I/タイプ除く)"] -->|M1| M1
+    DIN3["DIN3 (PULSE-I/タイプ除く)"] -->|HOME| HOME
+    DIN4["DIN4"] -->|ALM-RST| ALM_RST
+    DIN5["DIN5"] -->|FREE| FREE
+    DIN6["DIN6"] -->|STOP| STOP
+    DIN7["DIN7"] -->|HOMES| HOMES
+    DIN8["DIN8"] -->|FW-LS| FW_LS
+    DIN9["DIN9"] -->|RV-LS| RV_LS
+```
+
+#### リモートI/Oの割り付け例
+```mermaid
+flowchart LR
+    RIN0["R-IN/OUT0"] -->|M0| M0
+    RIN1["R-IN/OUT1"] -->|M1| M1
+    RIN2["R-IN/OUT2"] -->|START| START
+    RIN3["R-IN/OUT3"] -->|HOME| HOME
+    RIN4["R-IN/OUT4"] -->|STOP| STOP
+    RIN5["R-IN/OUT5"] -->|FREE| FREE
+    RIN6["R-IN/OUT6"] -->|ALM-RST| ALM_RST
+    RIN7["R-IN/OUT7"] -->|D-SEL0| D_SEL0
+    RIN8["R-IN/OUT8"] -->|D-SEL1| D_SEL1
+    RIN9["R-IN/OUT9"] -->|D-SEL2| D_SEL2
+    RIN10["R-IN/OUT10"] -->|SSTART| SSTART
+    RIN11["R-IN/OUT11"] -->|FW-JOG-P| FW_JOG_P
+    RIN12["R-IN/OUT12"] -->|RV-JOG-P| RV_JOG_P
+    RIN13["R-IN/OUT13"] -->|FW-POS| FW_POS
+    RIN14["R-IN/OUT14"] -->|RV-POS| RV_POS
+```
+
+#### RS-485通信付きパルス列入力タイプの割り付け例
+```mermaid
+flowchart LR
+    DIN0["DIN0 (PULSE-I/タイプ)"] -->|未使用| UNUSED0
+    DIN1["DIN1 (PULSE-I/タイプ)"] -->|未使用| UNUSED1
+    DIN2["DIN2 (PULSE-I/タイプ)"] -->|未使用| UNUSED2
+    DIN3["DIN3 (PULSE-I/タイプ)"] -->|未使用| UNUSED3
+    DIN4["DIN4"] -->|HOME| HOME
+    DIN5["DIN5"] -->|FREE| FREE
+    DIN6["DIN6"] -->|ALM-RST| ALM_RST
+    DIN7["DIN7"] -->|HOMES| HOMES
+    DIN8["DIN8"] -->|FW-LS| FW_LS
+    DIN9["DIN9"] -->|RV-LS| RV_LS
+```
+
+### 表
+#### 原点復帰運転に必要な入力信号
+| 入力信号名 | 内容                     |
+| :--------- | :----------------------- |
+| HOMES      | 原点センサ               |
+| FW-LS      | リミットセンサ（＋側）   |
+| RV-LS      | リミットセンサ（－側）   |
+| HOME       | 原点復帰運転を開始する信号 |
+
+### メモ
+- お使いになる外部センサに合わせて、入力信号を割り付けてください。  
+- リモートI/Oで原点復帰運転を行うときも、センサ入力はダイレクトI/Oに割り付けてください。  
+- RS-485通信付きパルス列入力タイプ、パルス列入力タイプの場合、DINO～DIN3はパルス入力専用のため、他の信号は「未使用」にしてください。  
+</contents>

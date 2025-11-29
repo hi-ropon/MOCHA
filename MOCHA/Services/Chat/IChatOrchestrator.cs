@@ -8,7 +8,7 @@ namespace MOCHA.Services.Chat;
 public interface IChatOrchestrator
 {
     /// <summary>
-    /// ユーザー発話を処理し、Copilot 応答やツール実行を含むストリームを返す。
+    /// ユーザー発話を処理し、エージェント応答やツール実行を含むストリームを返す。
     /// </summary>
     /// <param name="user">ユーザー情報。</param>
     /// <param name="conversationId">既存会話ID。未指定の場合は新規。</param>

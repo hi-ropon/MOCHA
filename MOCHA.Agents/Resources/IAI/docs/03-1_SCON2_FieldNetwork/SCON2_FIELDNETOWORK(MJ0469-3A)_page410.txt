@@ -1,0 +1,16 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page410
+
+<overview>
+このページは「7.2 Modbus/TCP通信（EtherNet/IP仕様限定）」の章の一部であり、テキスト部分のみで構成されています。内容はModbus/TCP通信の概要説明に特化しており、表やグラフ、図は含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 7.2 Modbus/TCP通信（EtherNet/IP仕様限定）
+##### 7.2.1 Modbus/TCP通信の概要
+- SCON2はModbus Protocolに対応しており、ホストから指令を行ったり、コントローラーの内部情報を参照したりすることが可能。
+- SCON2はシリアル伝送モードの一つであるRTUモードとEthernet接続によるTCPモードに対応。
+- Modbus/TCPはEIA-485に準拠したシリアル伝送モードのModbusプロトコルをEthernet（TCP/IP）上でも使えるようにしたプロトコル。
+- SCON2はEtherNet/IPモジュールを介してModbus/TCP通信を行うことができる。
+- TCP/IP上ではクライアント／サーバー方式で通信を行うが、Modbus/TCPではModbusマスターがTCPクライアント、ModbusスレーブがTCPサーバーとなる。
+</contents>

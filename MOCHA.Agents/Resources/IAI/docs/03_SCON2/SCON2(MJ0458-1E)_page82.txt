@@ -1,0 +1,46 @@
+ファイル名: SCON2(MJ0458-1E)_page82
+
+<overview>
+本ページは「ポジショナーモード（PIOモード）」に関する説明で構成されています。ページ上部に注意喚起のテキストがあり、その下に「オプション付きRCS2-RA13RおよびNSタイプの配線」に関する説明が2つのケースに分けて図解されています。構成はテキスト部分（注意事項と配線説明）、図部分（配線図）が中心です。表やグラフは含まれていません。
+</overview>
+
+<contents>
+### テキスト
+#### 注意
+- パソコン専用ティーチングソフトやティーチングボックスのコントローラー接続用コネクターの抜挿は、コントローラーの電源をOFFにしてから行うこと。
+- 電源ONのまま抜挿すると、コントローラーの故障の原因となる。
+
+#### オプション付きRCS2-RA13RおよびNSタイプの配線（アクチュエーター～コントローラー間配線図）
+
+1. RCS2-RA13Rのブレーキ付き・ロードセルなし、またはNSアクチュエーターのブレーキ付き仕様の場合
+
+2. RCS2-RA13Rのブレーキ付き、ロードセル付き仕様の場合
+
+### 図
+#### 1. ブレーキ付き・ロードセルなし、またはNSアクチュエーターのブレーキ付き仕様の配線図
+```mermaid
+flowchart LR
+    DC24V[DC24V ブレーキ用電源] --> Controller[コントローラー]
+    Controller -->|システムIOコネクター| SystemIO[システムIOコネクター]
+    Controller -->|モーターケーブル| MotorCable[モーターケーブル(アクチュエーターに付属)]
+    Controller -->|CB-RCS2-PLLA010 (ブレーキボックスに付属)| BrakeBox[ブレーキボックス RCB-110-RA13-0]
+    BrakeBox -->|LS(オプション)付き時| LS1[LS(オプション)付き]
+    BrakeBox -->|エンコーダーケーブル (アクチュエーターに付属)| EncoderCable[エンコーダーケーブル]
+    EncoderCable -->|LS(オプション)付き時| LS2[LS(オプション)付き]
+    MotorCable --> NSActuator[NSアクチュエーター]
+```
+
+#### 2. ブレーキ付き、ロードセル付き仕様の配線図
+```mermaid
+flowchart LR
+    DC24V[DC24V ブレーキ用電源] --> Controller[コントローラー]
+    Controller -->|システムIOコネクター| SystemIO[システムIOコネクター]
+    Controller -->|モーターケーブル CB-RCC-MA□□□-RB (アクチュエーターに付属)| MotorCable[モーターケーブル]
+    Controller -->|CB-LDC-CTL□□□-JY (ブレーキボックスに付属)| BrakeBox1[ブレーキボックス]
+    BrakeBox1 -->|ロードセル配線付きエンコーダーケーブル CB-RCS2-PLLA□□□(-RB) (ブレーキボックスに付属)| EncoderCable1[エンコーダーケーブル]
+    EncoderCable1 --> BrakeBox2[ブレーキボックス RCB-110-RA13-0]
+    BrakeBox2 -->|エンコーダーケーブル (アクチュエーターに付属)| EncoderCable2[エンコーダーケーブル]
+    BrakeBox2 -->|CB-LDC-CTL□□□ (アクチュエーターに付属)| BrakeBox3[ブレーキボックス]
+    MotorCable --> RCS2RA13R[RCS2-RA13R (ロードセル付き)]
+```
+</contents>

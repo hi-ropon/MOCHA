@@ -1,0 +1,19 @@
+ファイル名: SCON2_FIELDNETOWORK(MJ0469-3A)_page121
+
+<overview>
+このページは「2.7 PROFINET IO」セクションの一部で、主に「2.7.5 PROFINET IO用GSDMLファイル」について説明しています。構成は以下の通りです。
+- テキスト部分：GSDMLファイルの入手方法とダウンロード手順の説明
+- 表部分：なし
+- グラフ部分：なし
+</overview>
+
+<contents>
+### テキスト
+#### 2.7.5 PROFINET IO用GSDMLファイル
+GSDMLファイルが必要な場合は、当社ホームページからダウンロードして使用してください。
+
+【フィールドネットワーク設定用ファイル ダウンロードページ】
+https://www.iai-robot.co.jp/knowledge/support/network/index.html
+
+必要なファイルをアクセス先のリストから選択し、ダウンロードしてください。
+</contents>
