@@ -10,7 +10,7 @@ namespace MOCHA.Tests
     public class ChatOrchestratorUtilityTests
     {
         [TestMethod]
-        public void ReadInt_非数値文字列はnullを返す()
+        public void 非数値文字列はnullを返す()
         {
             var payload = new Dictionary<string, object?> { ["value"] = "abc" };
 
@@ -20,7 +20,7 @@ namespace MOCHA.Tests
         }
 
         [TestMethod]
-        public void ReadInt_数値以外のJsonElementはnullを返す()
+        public void 数値以外のJsonElementはnullを返す()
         {
             var json = JsonDocument.Parse("{\"v\":true}").RootElement.GetProperty("v");
             var payload = new Dictionary<string, object?> { ["value"] = json };
@@ -31,7 +31,7 @@ namespace MOCHA.Tests
         }
 
         [TestMethod]
-        public void ReadInt_キーが無ければnullを返す()
+        public void キーが無ければnullを返す()
         {
             var payload = new Dictionary<string, object?>();
 
@@ -41,7 +41,7 @@ namespace MOCHA.Tests
         }
 
         [TestMethod]
-        public void ReadStringList_数値Json配列は空リストを返す()
+        public void 数値Json配列は空リストを返す()
         {
             var json = JsonDocument.Parse("[1,2]").RootElement;
             var payload = new Dictionary<string, object?> { ["items"] = json };
@@ -53,7 +53,7 @@ namespace MOCHA.Tests
         }
 
         [TestMethod]
-        public void ReadStringList_空白のみの文字列はnullを返す()
+        public void 空白のみの文字列はnullを返す()
         {
             var payload = new Dictionary<string, object?> { ["items"] = "   " };
 
