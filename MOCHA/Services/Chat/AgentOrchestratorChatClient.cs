@@ -10,7 +10,7 @@ using DomainChatTurn = MOCHA.Agents.Domain.ChatTurn;
 using DomainAuthorRole = MOCHA.Agents.Domain.AuthorRole;
 using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 
-namespace MOCHA.Services.Copilot;
+namespace MOCHA.Services.Chat;
 
 /// <summary>
 /// IAgentOrchestrator を ICopilotChatClient としてラップするアダプタ。

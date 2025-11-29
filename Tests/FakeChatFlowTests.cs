@@ -4,11 +4,10 @@ using System.Linq;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
-using MOCHA.Services.Chat;
-using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 using MOCHA.Agents.Domain;
 using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
+using MOCHA.Services.Chat;
 
 namespace MOCHA.Tests;
 
@@ -42,21 +41,16 @@ public class FakeChatFlowTests
 
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ActionRequest));
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ToolResult));
-        Assert.IsTrue(events.Any(e =>
+        var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.AreEqual("D", toolResult.Payload["device"]);
+        Assert.AreEqual(100, (int)toolResult.Payload["addr"]);
+        var values = (toolResult.Payload["values"] as IEnumerable<int> ?? Array.Empty<int>()).ToList();
+        Assert.IsTrue(values.Contains(42));
+        var assistantMessages = events.Where(e =>
             e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("D100") &&
-            e.Message.Content.Contains("42")));
-        Assert.IsTrue(events.Any(e =>
-            e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("Agent") &&
-            e.Message.Content.Contains("D100")));
-        Assert.IsTrue(events.Any(e =>
-            e.Type == ChatStreamEventType.Message &&
-            e.Message?.Role == ChatRole.Assistant &&
-            e.Message.Content.Contains("fake Agent") &&
-            e.Message.Content.Contains("D100")));
+            e.Message?.Role == ChatRole.Assistant).ToList();
+        Assert.IsTrue(assistantMessages.Any(), "アシスタント応答が1件以上あること");
+        Assert.IsTrue(assistantMessages.All(m => !m.Message!.Content.Contains("fake Agent")), "フェイク応答を含まないこと");
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Completed));
     }
 
@@ -80,7 +74,8 @@ public class FakeChatFlowTests
         Assert.AreEqual("D", toolResult.Payload["device"]);
         Assert.AreEqual(0, (int)toolResult.Payload["addr"]);
         Assert.IsTrue((bool)toolResult.Payload["success"]);
-        Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.Message && e.Message?.Content.Contains("D0") == true));
+        var values = (toolResult.Payload["values"] as IEnumerable<int> ?? Array.Empty<int>()).ToList();
+        Assert.AreEqual(7, values.Single());
     }
 
     /// <summary>

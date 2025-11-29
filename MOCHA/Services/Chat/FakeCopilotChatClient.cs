@@ -1,7 +1,7 @@
 using System.Runtime.CompilerServices;
 using MOCHA.Models.Chat;
 
-namespace MOCHA.Services.Copilot;
+namespace MOCHA.Services.Chat;
 
 /// <summary>
 /// 実接続なしでも振る舞いを再現できるフェイク実装。

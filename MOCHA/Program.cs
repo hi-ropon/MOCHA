@@ -11,7 +11,6 @@ using MOCHA.Models.Auth;
 using MOCHA.Services.Agents;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
-using MOCHA.Services.Copilot;
 using MOCHA.Services.Plc;
 using MOCHA.Factories;
 using MOCHA.Services.Settings;

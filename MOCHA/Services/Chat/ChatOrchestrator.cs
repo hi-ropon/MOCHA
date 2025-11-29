@@ -1,9 +1,8 @@
 using System.Runtime.CompilerServices;
 using System.Text.Encodings.Web;
 using System.Text.Json;
-using MOCHA.Models.Chat;
 using MOCHA.Agents.Application;
-using MOCHA.Services.Copilot;
+using MOCHA.Models.Chat;
 using MOCHA.Services.Plc;
 
 namespace MOCHA.Services.Chat;
@@ -104,22 +103,6 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
                     ActionResult: actionResult);
 
                 await _agentChatClient.SubmitActionResultAsync(actionResult, cancellationToken);
-
-                var device = ReadString(actionResult.Payload, "device") ?? "D";
-                var addr = ReadInt(actionResult.Payload, "addr") ?? 0;
-                var values = ReadValues(actionResult.Payload, "values");
-
-                // ツール結果の簡易表示
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionResultText(actionResult, device, addr, values)), agentNumber, cancellationToken));
-
-                // エージェントにアクションを渡したことを示すフェイクメッセージ
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildActionSubmitText(device, addr, values)), agentNumber, cancellationToken));
-
-                // エージェントが最終回答した想定のフェイクメッセージ
-                yield return ChatStreamEvent.FromMessage(
-                    await SaveMessageAsync(user, convId, new ChatMessage(ChatRole.Assistant, BuildAgentReplyText(device, addr, values, actionResult.Success, actionResult.Error)), agentNumber, cancellationToken));
             }
             else
             {
@@ -391,95 +374,6 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         return asString
             .Split(new[] { ',', ';' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .ToList();
-    }
-
-    /// <summary>
-    /// 読み取り結果を UI 向けの文面に整形する。
-    /// </summary>
-    /// <param name="result">アクション結果。</param>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">取得値。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildActionResultText(CopilotActionResult result, string device, int addr, List<int> values)
-    {
-        if (result.Success)
-        {
-            var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
-            return $"(fake) {device}{addr} の読み取り結果: {valuesText}";
-        }
-
-        var error = result.Error ?? "unknown error";
-        return $"(fake) {device}{addr} の読み取りに失敗しました: {error}";
-    }
-
-    /// <summary>
-    /// ペイロードから整数リストを取り出す。型が合わない場合は空リストを返す。
-    /// </summary>
-    /// <param name="dict">ペイロード辞書。</param>
-    /// <param name="key">抽出するキー。</param>
-    /// <returns>取得した整数リスト。</returns>
-    private static List<int> ReadValues(IReadOnlyDictionary<string, object?> dict, string key)
-    {
-        if (!dict.TryGetValue(key, out var value) || value is null) return new List<int>();
-
-        if (value is IEnumerable<int> enumerable)
-        {
-            return enumerable.ToList();
-        }
-
-        if (value is JsonElement json && json.ValueKind == JsonValueKind.Array)
-        {
-            var list = new List<int>();
-            foreach (var item in json.EnumerateArray())
-            {
-                if (item.ValueKind == JsonValueKind.Number && item.TryGetInt32(out var n))
-                {
-                    list.Add(n);
-                }
-            }
-            return list;
-        }
-
-        return new List<int>();
-    }
-
-    /// <summary>
-    /// エージェントへ送信した旨の簡易メッセージを生成する。
-    /// </summary>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">送信値。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildActionSubmitText(string device, int addr, List<int> values)
-    {
-        var valuesText = values.Any() ? string.Join(", ", values) : "(no values)";
-        return $"(fake) Agent に送信: {device}{addr} -> [{valuesText}]";
-    }
-
-    /// <summary>
-    /// エージェントから返ってきたと想定したメッセージを生成する。
-    /// </summary>
-    /// <param name="device">デバイス種別。</param>
-    /// <param name="addr">アドレス。</param>
-    /// <param name="values">取得値。</param>
-    /// <param name="success">成功フラグ。</param>
-    /// <param name="error">エラー内容。</param>
-    /// <returns>表示用メッセージ。</returns>
-    private static string BuildAgentReplyText(string device, int addr, List<int> values, bool success, string? error)
-    {
-        if (success && values.Any())
-        {
-            return $"(fake Agent) {device}{addr} は {string.Join(", ", values)} でした。";
-        }
-
-        if (success)
-        {
-            return $"(fake Agent) {device}{addr} の値は空でした。";
-        }
-
-        var err = error ?? "unknown error";
-        return $"(fake Agent) {device}{addr} の読み取りに失敗しました: {err}";
     }
 
     /// <summary>
