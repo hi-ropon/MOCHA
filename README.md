@@ -8,20 +8,21 @@ Blazor Server (.NET 8) で構築した Microsoft Agent Framework + PLC Gateway �
 - 会話履歴とメッセージを SQLite（`chat.db`）へ永続化。初回起動時にスキーマ自動生成。
 - ユーザーロール管理（DB 持ち）。`/settings/roles` で Admin が付与/削除、API も提供。
 - テーマ・ユーザー設定をブラウザに保存（ライト/ダーク）。
-- 認証は Entra ID（Azure AD）と開発用フェイク認証を切替可能。
+- 認証は Entra ID（Azure AD）と開発用クッキー認証を切替可能。
 
 ## セットアップ
 1. 前提: .NET 8 SDK。SQLite バイナリは不要（内蔵プロバイダー利用）。
 2. 依存復元: `dotnet restore`
 3. ローカル起動: `dotnet run --project MOCHA/MOCHA.csproj`  
-   - 既定では `FakeAuth` が有効になり、`dev-user` としてログインした扱い。  
+   - 既定では開発用クッキー認証が有効。`/signup` でメールアドレス+パスワードを登録し、そのままサインイン（既存アカウントは `/login`）。  
    - 起動時に `chat.db` が同ディレクトリに作成される。
 4. テスト: `dotnet test`（MSTest ベース、フェイククライアントで外部依存なし）
 
 ## 設定ポイント（`MOCHA/appsettings*.json`）
 - `ConnectionStrings:ChatDb`: SQLite の場所（既定 `Data Source=chat.db`）。削除すれば再生成。
 - `AzureAd`: 本番用 OIDC 認証。`Enabled=true` で有効化し、`TenantId`/`ClientId`/`Domain`/`CallbackPath` をテナント値に置換。
-- `FakeAuth`: ローカル用フェイク認証。`Enabled=true` のままなら認証不要で固定ユーザーとして動作。
+- `Authentication`: 既定スキームの切替。開発時は `DevLogin`、本番は `OpenIdConnect` を設定。
+- `DevAuth`: ローカル用クッキー認証。`Enabled=true` なら `/login` でユーザーID/表示名を入力してサインイン。
 - `Llm`: Microsoft Agent Framework 用の LLM 設定（OpenAI/Azure OpenAI を切替）。未設定でもフェイクが動作。
 - `PlcGateway`: PLC Gateway への HTTP 呼び出し設定。`Enabled=false` なら `FakePlcGatewayClient` が応答。
 - `RoleBootstrap:AdminUserIds`: 起動時に Admin を付与するユーザーID 配列（付与後は空に戻す運用推奨）。
@@ -75,7 +76,7 @@ Azure OpenAI（ApiKey と Endpoint が必須）:
   - `Chat`: `ChatOrchestrator` がエージェントと PLC Gateway を仲介し、履歴 (`ConversationHistoryState`) とストレージ (`IChatRepository`) を更新。  
   - `AgentChat`/`Plc`: エージェントクライアントと PLC クライアントの実装/フェイクを DI 切替。  
   - `Agents`: ユーザーごとの装置エージェントを管理し、選択状態を UI に通知。  
-  - `Auth`: ユーザーロール永続化とフェイク認証、Admin ブートストラップ。  
+  - `Auth`: ユーザーロール永続化とクッキー認証、Admin ブートストラップ。  
   - `Settings`: テーマ/ユーザー設定の保存と適用。
 - インフラ: `MOCHA/Data` と `MOCHA/Factories` で SQLite スキーマを初期化し、EF Core の DbContext を提供。
 
@@ -83,7 +84,7 @@ Azure OpenAI（ApiKey と Endpoint が必須）:
 - サイドバーの「装置エージェント」を登録し、選択してからチャットを送信（エージェントごとに履歴が分かれる）。
 - メッセージ入力は `Ctrl+Enter` で送信。Stop ボタンでストリームをキャンセル。
 - 履歴はサイドバーに表示され、削除すると会話とメッセージが DB から除去される。
-- 右上メニューからテーマ切替、`/settings/roles` で Admin によるロール管理が可能（`FakeAuth` では `dev-user` が Admin）。
+- 右上メニューからテーマ切替、`/settings/roles` で Admin によるロール管理が可能（開発用クッキー認証時は `/login` で選んだユーザーに Admin を付与する設定が利用可）。
 
 ## テストと品質
 - `dotnet test` でユニットテスト実行（外部サービス不要）。  

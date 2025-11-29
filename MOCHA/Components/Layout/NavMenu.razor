@@ -93,12 +93,12 @@
         }
     </div>
 
-    <button type="button" class="user-info" @onclick="ToggleUserSettings" title="ユーザー設定">
-        <div class="user-avatar">@userInitial</div>
-        <div>
-            <div class="user-name">@userName</div>
-        </div>
-    </button>
+<button type="button" class="user-info" @onclick="OpenUserActions" title="ユーザー設定">
+    <div class="user-avatar">@userInitial</div>
+    <div>
+        <div class="user-name">@userName</div>
+    </div>
+</button>
 </div>
 
 @if (_settingsOpen)
@@ -176,32 +176,70 @@
 @if (_userSettingsOpen)
 {
     <div class="user-settings-overlay" @onclick="CloseUserSettings">
-        <div class="user-settings-dialog" @onclick:stopPropagation="true">
-            <div class="user-settings-header">
-                <div>
-                    <div class="user-settings-title">ユーザー設定</div>
-                    <div class="user-settings-subtitle">テーマなどの個人設定を管理します</div>
+        <div class="user-settings-shell" @onclick:stopPropagation="true">
+            <div class="user-settings-sidebar">
+                <div class="user-settings-sidebar-header">
+                    <span class="user-settings-sidebar-title">設定</span>
+                    <button type="button" class="user-settings-close" title="閉じる" @onclick="CloseUserSettings">×</button>
                 </div>
-                <button type="button" class="user-settings-close" title="閉じる" @onclick="CloseUserSettings">
-                    ×
+                <button type="button"
+                        class="user-settings-nav @(_selectedAction == UserAction.Theme ? "active" : string.Empty)"
+                        @onclick="() => SelectAction(UserAction.Theme)">
+                    <span class="icon">🎨</span>
+                    <span>テーマ</span>
+                </button>
+                <button type="button"
+                        class="user-settings-nav @(_selectedAction == UserAction.Logout ? "active" : string.Empty)"
+                        @onclick="() => SelectAction(UserAction.Logout)">
+                    <span class="icon">🔒</span>
+                    <span>ログアウト</span>
                 </button>
             </div>
-
-            <div class="user-settings-body">
-                <div class="field">
-                    <label for="theme-select">テーマ</label>
-                    <select id="theme-select" class="user-settings-select" @bind="_selectedTheme">
-                        <option value="@Theme.Light">ライト</option>
-                        <option value="@Theme.Dark">ダーク</option>
-                    </select>
-                </div>
-                <div class="user-settings-actions">
-                    <button type="button"
-                            class="user-settings-save"
-                            @onclick="SaveUserSettingsAsync">
-                        保存
-                    </button>
-                </div>
+            <div class="user-settings-content">
+                @if (_selectedAction == UserAction.Theme)
+                {
+                    <div class="user-settings-section">
+                        <div class="user-settings-title-row">
+                            <div>
+                                <div class="user-settings-title">外観</div>
+                                <div class="user-settings-subtitle">テーマカラーを切り替えます</div>
+                            </div>
+                        </div>
+                        <div class="user-settings-row">
+                            <div>
+                                <div class="user-settings-label">テーマ</div>
+                                <div class="user-settings-helper">ライト/ダークを選択</div>
+                            </div>
+                            <select class="user-settings-select" @bind="_selectedTheme">
+                                <option value="@Theme.Light">ライト</option>
+                                <option value="@Theme.Dark">ダーク</option>
+                            </select>
+                        </div>
+                        <div class="user-settings-actions">
+                            <button type="button" class="user-settings-save" @onclick="SaveUserSettingsAsync">保存</button>
+                        </div>
+                    </div>
+                }
+                else if (_selectedAction == UserAction.Logout)
+                {
+                    <div class="user-settings-section">
+                        <div class="user-settings-title-row">
+                            <div>
+                                <div class="user-settings-title">ログアウト</div>
+                                <div class="user-settings-subtitle">セッションを終了します</div>
+                            </div>
+                        </div>
+                        <div class="user-settings-row logout-row">
+                            <div>
+                                <div class="user-settings-label">現在のユーザー</div>
+                                <div class="user-settings-helper">@_userId</div>
+                            </div>
+                            <div class="user-settings-actions inline">
+                                <button type="button" class="user-settings-save danger" @onclick="ConfirmLogout">ログアウト</button>
+                            </div>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -219,6 +257,7 @@
     private bool _loaded;
     private bool _settingsOpen; // オーバーレイ表示フラグ
     private bool _userSettingsOpen;
+    private UserAction _selectedAction = UserAction.Theme;
     private bool isAdmin;
     private string selectedAgentNumber = string.Empty;
     private string selectedAgentName = string.Empty;
@@ -334,15 +373,26 @@
         }
     }
 
-    private void ToggleUserSettings()
+    private void OpenUserActions()
     {
-        _userSettingsOpen = true;
+        _selectedAction = UserAction.Theme;
         _selectedTheme = PreferencesState.Preferences.Theme;
+        _userSettingsOpen = true;
     }
 
     private void CloseUserSettings()
     {
         _userSettingsOpen = false;
+    }
+
+    private void SelectAction(UserAction action)
+    {
+        _selectedAction = action;
+    }
+
+    private void ConfirmLogout()
+    {
+        NavigationManager.NavigateTo("/logout?confirm=true", forceLoad: true);
     }
 
     private async Task SaveUserSettingsAsync()
@@ -450,5 +500,11 @@
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
         PreferencesState.Changed -= OnPreferencesChanged;
+    }
+
+    private enum UserAction
+    {
+        Theme,
+        Logout
     }
 }

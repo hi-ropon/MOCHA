@@ -1,0 +1,105 @@
+@page
+@model MOCHA.Pages.SignupModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="utf-8" />
+    <title>サインアップ - M.O.C.H.A.</title>
+    <style>
+        :root {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+            background: #eef2f8;
+            color: #0f172a;
+        }
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        .card {
+            width: 360px;
+            background: #ffffff;
+            border-radius: 14px;
+            border: 1px solid #dbe3f2;
+            box-shadow: 0 14px 30px rgba(38, 53, 77, 0.18);
+            padding: 1.25rem 1.5rem;
+        }
+        h1 {
+            margin: 0 0 1rem;
+            font-size: 1.4rem;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        label {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+        input[type="text"], input[type="password"] {
+            width: 100%;
+            padding: 0.6rem 0.65rem;
+            border-radius: 10px;
+            border: 1px solid #cbd5e1;
+            font-size: 1rem;
+            box-sizing: border-box;
+        }
+        .actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        button {
+            background: linear-gradient(135deg, #2f6ac8, #3d7cf0);
+            border: none;
+            color: #ffffff;
+            padding: 0.65rem 1.2rem;
+            border-radius: 10px;
+            font-weight: 700;
+            cursor: pointer;
+            box-shadow: 0 8px 16px rgba(47, 106, 200, 0.3);
+        }
+        .hint {
+            color: #475569;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+        .error {
+            color: #b22020;
+            font-size: 0.9rem;
+            margin-top: 0.25rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>アカウント登録</h1>
+        <form method="post" asp-page="/Signup" asp-route-returnUrl="@Model.ReturnUrl">
+            <input type="hidden" asp-for="ReturnUrl" />
+            <div>
+                <label asp-for="Input.Email"></label>
+                <input asp-for="Input.Email" />
+            </div>
+            <div>
+                <label asp-for="Input.Password"></label>
+                <input asp-for="Input.Password" type="password" />
+                <div class="hint">6文字以上</div>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.Error))
+            {
+                <div class="error">@Model.Error</div>
+            }
+            <div class="actions">
+                <button type="submit">登録してログイン</button>
+            </div>
+            <div class="hint"><a href="/login">既にアカウントをお持ちの場合はこちら</a></div>
+        </form>
+    </div>
+</body>
+</html>

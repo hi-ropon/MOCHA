@@ -76,6 +76,15 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 CreatedAt TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgents_UserObjectId_Number ON DeviceAgents(UserObjectId, Number);
+
+            CREATE TABLE IF NOT EXISTS DevUsers(
+                Id INTEGER NOT NULL CONSTRAINT PK_DevUsers PRIMARY KEY AUTOINCREMENT,
+                Email TEXT NOT NULL,
+                DisplayName TEXT NOT NULL,
+                PasswordHash TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_DevUsers_Email ON DevUsers(Email);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);

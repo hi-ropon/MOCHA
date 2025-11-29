@@ -13,7 +13,7 @@ namespace MOCHA.Services.Auth
                 return null;
             }
 
-            return input.Trim();
+            return input.Trim().ToLowerInvariant();
         }
 
         public static (IReadOnlyList<string> ToAssign, IReadOnlyList<string> ToRemove) CalculateDiff(IEnumerable<string> currentRoles, IEnumerable<string> selectedRoles)

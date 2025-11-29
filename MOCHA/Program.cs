@@ -1,8 +1,9 @@
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Options;
 using Microsoft.Identity.Web;
 using MOCHA.Agents;
 using MOCHA.Components;
@@ -14,51 +15,59 @@ using MOCHA.Services.Auth;
 using MOCHA.Services.Plc;
 using MOCHA.Factories;
 using MOCHA.Services.Settings;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var azureAdEnabled = builder.Configuration.GetValue<bool>("AzureAd:Enabled");
-var fakeAuthOptions = builder.Configuration.GetSection("FakeAuth").Get<FakeAuthOptions>() ?? new FakeAuthOptions();
+var devAuthOptions = builder.Configuration.GetSection("DevAuth").Get<DevAuthOptions>() ?? new DevAuthOptions();
+var configuredDefaultScheme = builder.Configuration["Authentication:DefaultScheme"];
+var configuredChallengeScheme = builder.Configuration["Authentication:DefaultChallengeScheme"];
+
+var chosenDefaultScheme = configuredDefaultScheme ?? (azureAdEnabled ? OpenIdConnectDefaults.AuthenticationScheme : DevAuthDefaults.scheme);
+var chosenChallengeScheme = configuredChallengeScheme ?? chosenDefaultScheme;
+
+var cookieLifetime = TimeSpan.FromHours(Math.Max(1, devAuthOptions.ExpireHours));
+
+var authBuilder = builder.Services.AddAuthentication(options =>
+    {
+        options.DefaultScheme = chosenDefaultScheme;
+        options.DefaultChallengeScheme = chosenChallengeScheme;
+    })
+    .AddCookie(DevAuthDefaults.scheme, options =>
+    {
+        options.LoginPath = devAuthOptions.LoginPath;
+        options.LogoutPath = devAuthOptions.LogoutPath;
+        options.AccessDeniedPath = devAuthOptions.AccessDeniedPath;
+        options.Cookie.Name = devAuthOptions.CookieName;
+        options.SlidingExpiration = true;
+        options.ExpireTimeSpan = cookieLifetime;
+    });
 
 if (azureAdEnabled)
 {
-    builder.Services.AddAuthentication(OpenIdConnectDefaults.AuthenticationScheme)
-        .AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
-
-    builder.Services.AddAuthorization(options =>
-    {
-        options.FallbackPolicy = options.DefaultPolicy;
-    });
+    authBuilder.AddMicrosoftIdentityWebApp(builder.Configuration.GetSection("AzureAd"));
 }
-else
-{
-    if (fakeAuthOptions.Enabled)
-    {
-        builder.Services.AddAuthentication(FakeAuthHandler.scheme)
-            .AddScheme<AuthenticationSchemeOptions, FakeAuthHandler>(FakeAuthHandler.scheme, _ => { });
 
-        builder.Services.AddAuthorization(options =>
-        {
-            var authenticatedOnly = new AuthorizationPolicyBuilder()
-                .AddAuthenticationSchemes(FakeAuthHandler.scheme)
-                .RequireAuthenticatedUser()
-                .Build();
-            options.DefaultPolicy = authenticatedOnly;
-            options.FallbackPolicy = authenticatedOnly;
-        });
+builder.Services.AddAuthorization(options =>
+{
+    if (azureAdEnabled || devAuthOptions.Enabled)
+    {
+        var authenticatedOnly = new AuthorizationPolicyBuilder()
+            .RequireAuthenticatedUser()
+            .Build();
+        options.DefaultPolicy = authenticatedOnly;
+        options.FallbackPolicy = authenticatedOnly;
     }
     else
     {
-        builder.Services.AddAuthorization(options =>
-        {
-            var allowAnonymous = new AuthorizationPolicyBuilder()
-                .RequireAssertion(_ => true)
-                .Build();
-            options.DefaultPolicy = allowAnonymous;
-            options.FallbackPolicy = allowAnonymous;
-        });
+        var allowAnonymous = new AuthorizationPolicyBuilder()
+            .RequireAssertion(_ => true)
+            .Build();
+        options.DefaultPolicy = allowAnonymous;
+        options.FallbackPolicy = allowAnonymous;
     }
-}
+});
 
 builder.Services.AddCascadingAuthenticationState();
 
@@ -108,11 +117,14 @@ builder.Services.AddScoped<IThemeApplicator, DomThemeApplicator>();
 builder.Services.AddScoped<UserPreferencesState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
 builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
-builder.Services.Configure<FakeAuthOptions>(builder.Configuration.GetSection("FakeAuth"));
+builder.Services.Configure<DevAuthOptions>(builder.Configuration.GetSection("DevAuth"));
 builder.Services.AddScoped<RoleBootstrapper>();
 builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
 builder.Services.AddMochaAgents(builder.Configuration);
 builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
+builder.Services.AddScoped<IDevLoginService, DevLoginService>();
+builder.Services.AddScoped<IDevUserService, DevUserService>();
+builder.Services.AddScoped<IPasswordHasher<DevUserEntity>, PasswordHasher<DevUserEntity>>();
 
 var app = builder.Build();
 
@@ -146,3 +158,5 @@ app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
 app.Run();
+
+public partial class Program;
