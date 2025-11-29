@@ -1,14 +1,21 @@
+@using System
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using System.IO
 @using MOCHA.Models.Chat
 @using MOCHA.Models.Agents
 @using MOCHA.Models.Settings
 @using MOCHA.Models.Auth
+@using MOCHA.Models.Drawings
+@using MOCHA.Models.Architecture
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject MOCHA.Services.Settings.UserPreferencesState PreferencesState
 @inject IUserRoleProvider RoleProvider
+@inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
+@inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
 @inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
 @implements IDisposable
@@ -168,6 +175,339 @@
                         }
                     </div>
                 </div>
+
+                <div class="agent-settings-section architecture-manager">
+                    <div class="drawing-header">
+                        <div>
+                            <div class="agent-settings-section-title">アーキテクチャ設定</div>
+                            <div class="drawing-subtitle">PLCユニットを複数台登録し、モジュールとファイルを管理</div>
+                        </div>
+                        <button type="button"
+                                class="new-chat-btn save-agent-btn drawing-open-btn"
+                                @onclick="OpenPlcModalForCreate"
+                                disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber))">
+                            PLCユニットを追加
+                        </button>
+                    </div>
+                    <div class="drawing-permission">装置エージェントごとにPLCを紐づけます</div>
+
+                    @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+                    {
+                        <div class="drawing-empty">装置エージェントを選択してください</div>
+                    }
+                    else if (_plcUnits.Any())
+                    {
+                        <div class="plc-list">
+                            @foreach (var plc in _plcUnits)
+                            {
+                                <div class="plc-card">
+                                    <div class="plc-title-row">
+                                        <div>
+                                            <div class="plc-name">@plc.Name</div>
+                                            <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
+                                        </div>
+                                        <div class="plc-actions">
+                                            <button type="button"
+                                                    class="agent-delete-btn drawing-edit-btn"
+                                                    @onclick="() => OpenPlcModalForEdit(plc)">
+                                                編集
+                                            </button>
+                                            <button type="button"
+                                                    class="agent-delete-btn danger-btn"
+                                                    @onclick="() => DeletePlcUnitAsync(plc)">
+                                                削除
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="plc-row">
+                                        <span class="plc-label">役割:</span>
+                                        <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
+                                    </div>
+                                    <div class="plc-row">
+                                        <span class="plc-label">IPアドレス:</span>
+                                        <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</span>
+                                    </div>
+                                    <div class="plc-row files-row">
+                                        <div>
+                                            <div class="plc-label">コメントファイル</div>
+                                            <div class="plc-value">@((plc.CommentFile is not null) ? plc.CommentFile.FileName : "未設定")</div>
+                                        </div>
+                                        <div>
+                                            <div class="plc-label">プログラムファイル</div>
+                                            <div class="plc-value">@((plc.ProgramFile is not null) ? plc.ProgramFile.FileName : "未設定")</div>
+                                        </div>
+                                    </div>
+                                    <div class="plc-row modules-row">
+                                        <div class="plc-label">モジュール</div>
+                                        <div class="plc-modules">
+                                            @if (plc.Modules.Any())
+                                            {
+                                                @foreach (var module in plc.Modules)
+                                                {
+                                                    <span class="plc-chip">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</span>
+                                                }
+                                            }
+                                            else
+                                            {
+                                                <span class="plc-value">未設定</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="drawing-empty">PLCユニットがありません</div>
+                    }
+                </div>
+
+                <div class="agent-settings-section drawing-manager">
+                    <div class="drawing-header">
+                        <div>
+                            <div class="agent-settings-section-title">図面管理</div>
+                            <div class="drawing-subtitle">MXia のアーキテクチャ設定を参考にした図面登録</div>
+                        </div>
+                        <button type="button"
+                                class="new-chat-btn save-agent-btn drawing-open-btn"
+                                @onclick="OpenDrawingModalForCreate"
+                                disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber) || !isAdmin)">
+                            図面を登録
+                        </button>
+                    </div>
+                    <div class="drawing-permission">管理者のみ作成と編集が可能です</div>
+
+                    @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+                    {
+                        <div class="drawing-empty">装置エージェントを選択してください</div>
+                    }
+                    else if (_drawings.Any())
+                    {
+                        <div class="drawing-list">
+                            @foreach (var drawing in _drawings)
+                            {
+                                <div class="drawing-card">
+                                    <div class="drawing-file">
+                                        <div class="drawing-file-name">@drawing.FileName</div>
+                                        <div class="drawing-meta">
+                                            <span>@FormatFileSize(drawing.FileSize)</span>
+                                            @if (!string.IsNullOrWhiteSpace(drawing.Description))
+                                            {
+                                                <span class="drawing-divider">•</span>
+                                                <span class="drawing-description">@drawing.Description</span>
+                                            }
+                                        </div>
+                                    </div>
+                                    <div class="drawing-actions">
+                                        <div class="drawing-updated">更新 @drawing.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
+                                        <button type="button"
+                                                class="agent-delete-btn drawing-edit-btn"
+                                                disabled="@( !isAdmin)"
+                                                @onclick="() => OpenDrawingModalForEdit(drawing)">
+                                            編集
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="drawing-empty">登録済みの図面がありません</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_drawingModalOpen)
+{
+    <div class="drawing-modal-overlay" @onclick="CloseDrawingModal">
+        <div class="drawing-modal-shell" @onclick:stopPropagation="true">
+            <div class="drawing-modal-header">
+                <div>
+                    <div class="drawing-modal-title">@(_editingDrawingId.HasValue ? "図面を編集" : "図面を登録")</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @selectedAgentNumber</div>
+                </div>
+                <button type="button" class="drawing-close" @onclick="CloseDrawingModal" aria-label="閉じる">×</button>
+            </div>
+
+            <div class="drawing-modal-body">
+                @if (!_editingDrawingId.HasValue)
+                {
+                    <div class="field">
+                        <label>図面ファイル</label>
+                        <div class="drawing-dropzone">
+                            <InputFile OnChange="OnDrawingFileSelected" accept=".pdf,.png,.jpg,.jpeg,.dwg" />
+                            <div class="drawing-drop-label">
+                                <div class="drop-primary">図面ファイルをドロップまたはクリックして選択</div>
+                                <div class="drop-secondary">PDF / DWG / PNG / JPG に対応・最大10MB</div>
+                            </div>
+                        </div>
+                        @if (!string.IsNullOrWhiteSpace(_selectedDrawingFileName))
+                        {
+                            <div class="drawing-file-chip">
+                                @_selectedDrawingFileName (@FormatFileSize(_selectedDrawingFileSize))
+                            </div>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="field">
+                        <label>図面ファイル</label>
+                        <div class="drawing-file-chip">
+                            @_selectedDrawingFileName (@FormatFileSize(_selectedDrawingFileSize))
+                        </div>
+                        <div class="drawing-file-hint">ファイル差し替えは新規登録で対応してください</div>
+                    </div>
+                }
+
+                <div class="field">
+                    <label>説明</label>
+                    <textarea class="agent-input drawing-description"
+                              rows="3"
+                              placeholder="図面の概要やリビジョンメモ"
+                              @bind="_drawingDescription"></textarea>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_drawingError))
+                {
+                    <div class="drawing-error">@_drawingError</div>
+                }
+            </div>
+
+            <div class="drawing-modal-actions">
+                <button type="button" class="agent-delete-btn cancel-btn" @onclick="CloseDrawingModal">キャンセル</button>
+                <button type="button"
+                        class="new-chat-btn save-agent-btn drawing-save-btn"
+                        disabled="@( !CanSaveDrawing)"
+                        @onclick="SaveDrawingAsync">
+                    @(_editingDrawingId.HasValue ? "保存" : "登録")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_plcModalOpen)
+{
+    <div class="drawing-modal-overlay" @onclick="ClosePlcModal">
+        <div class="plc-modal-shell" @onclick:stopPropagation="true">
+            <div class="drawing-modal-header">
+                <div>
+                    <div class="drawing-modal-title">@(_editingPlcId.HasValue ? "PLCユニット編集" : "PLCユニット追加")</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @selectedAgentNumber</div>
+                </div>
+                <button type="button" class="drawing-close" @onclick="ClosePlcModal" aria-label="閉じる">×</button>
+            </div>
+
+            <div class="drawing-modal-body">
+                <div class="field">
+                    <label>名前</label>
+                    <input class="agent-input" @bind="_plcName" placeholder="例: PLC1" />
+                </div>
+                <div class="field double">
+                    <div>
+                        <label>モデル</label>
+                        <input class="agent-input" @bind="_plcModel" placeholder="例: Q03UDV" />
+                    </div>
+                    <div>
+                        <label>役割</label>
+                        <input class="agent-input" @bind="_plcRole" placeholder="例: メイン制御" />
+                    </div>
+                </div>
+                <div class="field">
+                    <label>IPアドレス</label>
+                    <input class="agent-input" @bind="_plcIp" placeholder="例: 192.168.0.10" />
+                </div>
+
+                <div class="plc-file-group">
+                    <div class="plc-file-title">コメントファイル</div>
+                    <div class="plc-file-box">
+                        <InputFile OnChange="OnCommentFileSelected" />
+                        <div class="plc-file-info">
+                            @_commentFileName ?? "コメントファイルがありません"
+                            @if (_commentFileSize > 0)
+                            {
+                                <span class="plc-file-size">(@FormatFileSize(_commentFileSize))</span>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                    <div class="plc-file-group">
+                        <div class="plc-file-title">プログラムファイル</div>
+                        <div class="plc-file-box">
+                            <InputFile OnChange="OnProgramFileSelected" />
+                            <div class="plc-file-info">
+                                @_programFileName ?? "プログラムファイルがありません"
+                                @if (_programFileSize > 0)
+                                {
+                                    <span class="plc-file-size">(@FormatFileSize(_programFileSize))</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+
+                <div class="plc-modules-group">
+                    <div class="plc-module-header">
+                        <div>
+                            <div class="plc-file-title">モジュール</div>
+                            <div class="drawing-subtitle">使用しているモジュールを追加</div>
+                        </div>
+                        <button type="button" class="agent-delete-btn drawing-edit-btn" @onclick="AddOrUpdateModule" disabled="@string.IsNullOrWhiteSpace(_moduleNameInput)">
+                            @(_editingModuleIndex.HasValue ? "更新" : "追加")
+                        </button>
+                    </div>
+                    <div class="field double">
+                        <div>
+                            <label>種類</label>
+                            <input class="agent-input" @bind="_moduleNameInput" placeholder="例: 入力" />
+                        </div>
+                        <div>
+                            <label>仕様</label>
+                            <input class="agent-input" @bind="_moduleSpecInput" placeholder="例: 16点" />
+                        </div>
+                    </div>
+                    <div class="plc-module-list">
+                        @if (_moduleInputs.Count == 0)
+                        {
+                            <div class="drawing-empty">モジュールがありません</div>
+                        }
+                        else
+                        {
+                            @for (var i = 0; i < _moduleInputs.Count; i++)
+                            {
+                                var module = _moduleInputs[i];
+                                <div class="plc-module-row">
+                                    <div class="plc-module-name">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</div>
+                                    <div class="plc-actions">
+                                        <button type="button" class="agent-delete-btn drawing-edit-btn" @onclick="() => EditModule(i)">編集</button>
+                                        <button type="button" class="agent-delete-btn danger-btn" @onclick="() => RemoveModule(i)">削除</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_plcError))
+                {
+                    <div class="drawing-error">@_plcError</div>
+                }
+            </div>
+
+            <div class="drawing-modal-actions">
+                <button type="button" class="agent-delete-btn cancel-btn" @onclick="ClosePlcModal">キャンセル</button>
+                <button type="button"
+                        class="new-chat-btn save-agent-btn drawing-save-btn"
+                        disabled="@(!CanSavePlc)"
+                        @onclick="SavePlcAsync">
+                    保存
+                </button>
             </div>
         </div>
     </div>
@@ -265,6 +605,34 @@
     private string agentNameInput = string.Empty;
     private bool _isRegistering;
     private Theme _selectedTheme = Theme.Light;
+    private IReadOnlyList<DrawingDocument> _drawings = Array.Empty<DrawingDocument>();
+    private bool _drawingModalOpen;
+    private Guid? _editingDrawingId;
+    private string _drawingDescription = string.Empty;
+    private IBrowserFile? _drawingFile;
+    private string _selectedDrawingFileName = string.Empty;
+    private long _selectedDrawingFileSize;
+    private string? _drawingError;
+    private bool _drawingSaving;
+    private IReadOnlyList<PlcUnit> _plcUnits = Array.Empty<PlcUnit>();
+    private bool _plcModalOpen;
+    private Guid? _editingPlcId;
+    private string _plcName = string.Empty;
+    private string _plcModel = string.Empty;
+    private string _plcRole = string.Empty;
+    private string _plcIp = string.Empty;
+    private IBrowserFile? _programFile;
+    private IBrowserFile? _commentFile;
+    private string? _programFileName;
+    private long _programFileSize;
+    private string? _commentFileName;
+    private long _commentFileSize;
+    private List<PlcModuleDraft> _moduleInputs = new();
+    private int? _editingModuleIndex;
+    private string? _plcError;
+    private bool _plcSaving;
+    private string _moduleNameInput = string.Empty;
+    private string _moduleSpecInput = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -319,6 +687,8 @@
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
+        await LoadDrawingsAsync();
+        await LoadPlcUnitsAsync();
         _loaded = true;
     }
 
@@ -348,6 +718,8 @@
         AgentState.Select(number);
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+        await LoadDrawingsAsync();
+        await LoadPlcUnitsAsync();
     }
 
     private void OnAgentStateChanged()
@@ -359,6 +731,8 @@
             if (_userId is not null)
             {
                 await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
+                await LoadDrawingsAsync();
+                await LoadPlcUnitsAsync();
             }
             StateHasChanged();
         });
@@ -454,6 +828,397 @@
     {
         agentNumberInput = string.Empty;
         agentNameInput = string.Empty;
+    }
+
+    private async Task LoadDrawingsAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            _drawings = Array.Empty<DrawingDocument>();
+            return;
+        }
+
+        _drawings = await DrawingService.ListAsync(_userId, selectedAgentNumber);
+    }
+
+    private async Task LoadPlcUnitsAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            _plcUnits = Array.Empty<PlcUnit>();
+            return;
+        }
+
+        _plcUnits = await PlcService.ListAsync(_userId, selectedAgentNumber);
+    }
+
+    private async Task OpenDrawingModalForCreate()
+    {
+        if (!isAdmin)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "管理者のみ図面を登録できます");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
+            return;
+        }
+
+        _editingDrawingId = null;
+        _drawingDescription = string.Empty;
+        _drawingFile = null;
+        _selectedDrawingFileName = string.Empty;
+        _selectedDrawingFileSize = 0;
+        _drawingError = null;
+        _drawingModalOpen = true;
+    }
+
+    private async Task OpenDrawingModalForEdit(DrawingDocument drawing)
+    {
+        if (!isAdmin)
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "管理者のみ図面を編集できます");
+            return;
+        }
+
+        _editingDrawingId = drawing.Id;
+        _drawingDescription = drawing.Description ?? string.Empty;
+        _selectedDrawingFileName = drawing.FileName;
+        _selectedDrawingFileSize = drawing.FileSize;
+        _drawingFile = null;
+        _drawingError = null;
+        _drawingModalOpen = true;
+    }
+
+    private void CloseDrawingModal()
+    {
+        _drawingModalOpen = false;
+        _editingDrawingId = null;
+        _drawingDescription = string.Empty;
+        _drawingFile = null;
+        _selectedDrawingFileName = string.Empty;
+        _selectedDrawingFileSize = 0;
+        _drawingError = null;
+    }
+
+    private async Task OnDrawingFileSelected(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        _drawingFile = file;
+        _selectedDrawingFileName = Path.GetFileName(file.Name);
+        _selectedDrawingFileSize = file.Size;
+        _drawingError = null;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveDrawingAsync()
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        _drawingError = null;
+
+        if (!isAdmin)
+        {
+            _drawingError = "管理者のみ図面を登録できます";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            _drawingError = "装置エージェントを選択してください";
+            return;
+        }
+
+        _drawingSaving = true;
+        try
+        {
+            DrawingRegistrationResult result;
+            if (_editingDrawingId.HasValue)
+            {
+                result = await DrawingService.UpdateDescriptionAsync(_userId, _editingDrawingId.Value, _drawingDescription);
+            }
+            else
+            {
+                if (_drawingFile is null)
+                {
+                    _drawingError = "図面ファイルを選択してください";
+                    return;
+                }
+
+                var upload = new DrawingUpload
+                {
+                    FileName = _selectedDrawingFileName,
+                    ContentType = _drawingFile.ContentType,
+                    FileSize = _selectedDrawingFileSize,
+                    Description = _drawingDescription
+                };
+
+                result = await DrawingService.RegisterAsync(_userId, selectedAgentNumber, upload);
+            }
+
+            if (!result.Succeeded)
+            {
+                _drawingError = result.Error;
+                return;
+            }
+
+            await LoadDrawingsAsync();
+            CloseDrawingModal();
+        }
+        finally
+        {
+            _drawingSaving = false;
+        }
+    }
+
+    private bool CanSaveDrawing => !_drawingSaving
+                                   && isAdmin
+                                   && !string.IsNullOrWhiteSpace(selectedAgentNumber)
+                                   && (_editingDrawingId.HasValue || _drawingFile is not null);
+
+    private async Task OpenPlcModalForCreate()
+    {
+        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
+            return;
+        }
+
+        _editingPlcId = null;
+        _plcName = string.Empty;
+        _plcModel = string.Empty;
+        _plcRole = string.Empty;
+        _plcIp = string.Empty;
+        _programFile = null;
+        _commentFile = null;
+        _programFileName = null;
+        _commentFileName = null;
+        _programFileSize = 0;
+        _commentFileSize = 0;
+        _moduleInputs.Clear();
+        ResetModuleInput();
+        _plcError = null;
+        _plcModalOpen = true;
+    }
+
+    private async Task OpenPlcModalForEdit(PlcUnit unit)
+    {
+        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
+            return;
+        }
+
+        _editingPlcId = unit.Id;
+        _plcName = unit.Name;
+        _plcModel = unit.Model ?? string.Empty;
+        _plcRole = unit.Role ?? string.Empty;
+        _plcIp = unit.IpAddress ?? string.Empty;
+        _programFile = null;
+        _commentFile = null;
+        _programFileName = unit.ProgramFile?.FileName;
+        _programFileSize = unit.ProgramFile?.FileSize ?? 0;
+        _commentFileName = unit.CommentFile?.FileName;
+        _commentFileSize = unit.CommentFile?.FileSize ?? 0;
+        _moduleInputs = unit.Modules
+            .Select(m => new PlcModuleDraft { Name = m.Name, Specification = m.Specification })
+            .ToList();
+        ResetModuleInput();
+        _plcError = null;
+        _plcModalOpen = true;
+    }
+
+    private void ClosePlcModal()
+    {
+        _plcModalOpen = false;
+        _editingPlcId = null;
+        ResetModuleInput();
+    }
+
+    private async Task OnProgramFileSelected(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        _programFile = file;
+        _programFileName = Path.GetFileName(file.Name);
+        _programFileSize = file.Size;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnCommentFileSelected(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        _commentFile = file;
+        _commentFileName = Path.GetFileName(file.Name);
+        _commentFileSize = file.Size;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void AddOrUpdateModule()
+    {
+        if (string.IsNullOrWhiteSpace(_moduleNameInput))
+        {
+            return;
+        }
+
+        var draft = new PlcModuleDraft
+        {
+            Name = _moduleNameInput,
+            Specification = _moduleSpecInput
+        };
+
+        if (_editingModuleIndex.HasValue && _editingModuleIndex.Value >= 0 && _editingModuleIndex.Value < _moduleInputs.Count)
+        {
+            _moduleInputs[_editingModuleIndex.Value] = draft;
+        }
+        else
+        {
+            _moduleInputs.Add(draft);
+        }
+
+        ResetModuleInput();
+    }
+
+    private void EditModule(int index)
+    {
+        if (index < 0 || index >= _moduleInputs.Count)
+        {
+            return;
+        }
+
+        var module = _moduleInputs[index];
+        _moduleNameInput = module.Name;
+        _moduleSpecInput = module.Specification ?? string.Empty;
+        _editingModuleIndex = index;
+    }
+
+    private void RemoveModule(int index)
+    {
+        if (index < 0 || index >= _moduleInputs.Count)
+        {
+            return;
+        }
+
+        _moduleInputs.RemoveAt(index);
+        ResetModuleInput();
+    }
+
+    private async Task SavePlcAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            _plcError = "装置エージェントを選択してください";
+            return;
+        }
+
+        _plcError = null;
+        _plcSaving = true;
+        try
+        {
+            var draft = new PlcUnitDraft
+            {
+                Name = _plcName,
+                Model = _plcModel,
+                Role = _plcRole,
+                IpAddress = _plcIp,
+                Modules = _moduleInputs.ToList(),
+                CommentFile = _commentFile is not null
+                    ? new PlcFileUpload
+                    {
+                        FileName = _commentFileName ?? string.Empty,
+                        ContentType = _commentFile.ContentType,
+                        FileSize = _commentFileSize
+                    }
+                    : null,
+                ProgramFile = _programFile is not null
+                    ? new PlcFileUpload
+                    {
+                        FileName = _programFileName ?? string.Empty,
+                        ContentType = _programFile.ContentType,
+                        FileSize = _programFileSize
+                    }
+                    : null
+            };
+
+            PlcUnitResult result;
+            if (_editingPlcId.HasValue)
+            {
+                result = await PlcService.UpdateAsync(_userId, selectedAgentNumber, _editingPlcId.Value, draft);
+            }
+            else
+            {
+                result = await PlcService.AddAsync(_userId, selectedAgentNumber, draft);
+            }
+
+            if (!result.Succeeded)
+            {
+                _plcError = result.Error;
+                return;
+            }
+
+            await LoadPlcUnitsAsync();
+            ClosePlcModal();
+        }
+        finally
+        {
+            _plcSaving = false;
+        }
+    }
+
+    private async Task DeletePlcUnitAsync(PlcUnit unit)
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        {
+            return;
+        }
+
+        var confirmed = await JsRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"「{unit.Name}」を削除しますか？");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var deleted = await PlcService.DeleteAsync(_userId, selectedAgentNumber, unit.Id);
+        if (deleted)
+        {
+            await LoadPlcUnitsAsync();
+        }
+    }
+
+    private void ResetModuleInput()
+    {
+        _moduleNameInput = string.Empty;
+        _moduleSpecInput = string.Empty;
+        _editingModuleIndex = null;
+    }
+
+    private bool CanSavePlc => !_plcSaving
+                               && !string.IsNullOrWhiteSpace(selectedAgentNumber)
+                               && !string.IsNullOrWhiteSpace(_plcName);
+
+    private static string FormatFileSize(long size)
+    {
+        const double kilo = 1024d;
+        const double mega = kilo * 1024d;
+
+        if (size >= mega)
+        {
+            return $"{size / mega:0.0} MB";
+        }
+
+        if (size >= kilo)
+        {
+            return $"{size / kilo:0.0} KB";
+        }
+
+        return $"{size} B";
     }
 
     private async Task ConfirmDeleteAsync(ConversationSummary summary)
