@@ -219,6 +219,16 @@
         IsSending = true;
         Status = null;
 
+        if (Messages.Count == 1
+            && Messages[0].Role == ChatRole.Assistant
+            && string.Equals(Messages[0].Content, "こんにちは、何をお手伝いしましょうか？", StringComparison.Ordinal))
+        {
+            Messages.Clear();
+            TurnActivities.Clear();
+            SelectedTurnNumber = null;
+            _latestAssistant = null;
+        }
+
         ConversationId ??= Guid.NewGuid().ToString("N");
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
