@@ -12,12 +12,10 @@ using MOCHA.Models.Auth;
 using MOCHA.Services.Agents;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
-using MOCHA.Services.Plc;
 using MOCHA.Factories;
 using MOCHA.Services.Settings;
 using MOCHA.Services.Drawings;
 using MOCHA.Services.Architecture;
-using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -88,26 +86,6 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddMicrosoftIdentityConsentHandler();
 
-builder.Services.Configure<PlcGatewayOptions>(builder.Configuration.GetSection("PlcGateway"));
-builder.Services.AddHttpClient<HttpPlcGatewayClient>((sp, client) =>
-{
-    var options = sp.GetRequiredService<IOptions<PlcGatewayOptions>>().Value;
-    if (Uri.TryCreate(options.BaseAddress, UriKind.Absolute, out var uri))
-    {
-        client.BaseAddress = uri;
-    }
-    client.Timeout = options.Timeout;
-});
-builder.Services.AddScoped<IPlcGatewayClient>(sp =>
-{
-    var options = sp.GetRequiredService<IOptions<PlcGatewayOptions>>().Value;
-    if (options.Enabled)
-    {
-        return sp.GetRequiredService<HttpPlcGatewayClient>();
-    }
-
-    return new FakePlcGatewayClient();
-});
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatTitleGenerator, ClientChatTitleGenerator>();
 builder.Services.AddScoped<IChatTitleService, ChatTitleService>();

@@ -68,6 +68,7 @@ internal sealed class FakeAgentChatClient : IAgentChatClient
         }
 
         var text = latest.Content;
+        var conversationId = turn.ConversationId ?? Guid.NewGuid().ToString("N");
         // まずは受信確認のメッセージを返す
         yield return ChatStreamEvent.FromMessage(
             new ChatMessage(ChatRole.Assistant, $"(fake) 了解: {text}"));
@@ -77,15 +78,28 @@ internal sealed class FakeAgentChatClient : IAgentChatClient
         {
             var payload = new Dictionary<string, object?>
             {
+                ["question"] = text,
                 ["device"] = "D",
                 ["addr"] = 100,
-                ["length"] = 1
+                ["length"] = 1,
+                ["values"] = new List<int> { 42 },
+                ["success"] = true
             };
             yield return new ChatStreamEvent(
                 ChatStreamEventType.ActionRequest,
                 ActionRequest: new AgentActionRequest(
-                    "read_device",
-                    turn.ConversationId ?? Guid.NewGuid().ToString("N"),
+                    "invoke_plc_agent",
+                    conversationId,
+                    new Dictionary<string, object?>
+                    {
+                        ["question"] = text
+                    }));
+            yield return new ChatStreamEvent(
+                ChatStreamEventType.ToolResult,
+                ActionResult: new AgentActionResult(
+                    "invoke_plc_agent",
+                    conversationId,
+                    true,
                     payload));
         }
         else
@@ -94,6 +108,6 @@ internal sealed class FakeAgentChatClient : IAgentChatClient
                 new ChatMessage(ChatRole.Assistant, $"Echo: {text}"));
         }
 
-        yield return ChatStreamEvent.Completed(turn.ConversationId);
+        yield return ChatStreamEvent.Completed(conversationId);
     }
 }

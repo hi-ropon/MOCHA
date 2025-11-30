@@ -12,7 +12,6 @@
 @using MOCHA.Agents.Infrastructure.Options
 @using MOCHA.Models.Chat
 @using MOCHA.Services.Chat
-@using MOCHA.Services.Plc
 @using static MOCHA.Services.Chat.ActivityPanelService
 @using static MOCHA.Services.Chat.ActivityBuilder
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
@@ -20,7 +19,6 @@
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject IOptionsMonitor<LlmOptions> LlmOptions
-@inject IOptionsMonitor<PlcGatewayOptions> PlcOptions
 @implements IDisposable
 
 <PageTitle>M.O.C.H.A.</PageTitle>
@@ -33,7 +31,6 @@
                 <div class="env-badge">DEV</div>
                 <div class="status-line">
                     <span class="@AgentDotClass"></span> @AgentStatusLabel
-                    <span class="@GatewayDotClass"></span> @GatewayStatusLabel
                 </div>
             </div>
             <div class="actions">
@@ -135,7 +132,6 @@
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
     private IDisposable? _llmOptionsSubscription;
-    private IDisposable? _plcOptionsSubscription;
     private UserContext? _user;
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
@@ -149,11 +145,8 @@
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
     private bool AgentLive => IsLlmConfigured(LlmOptions.CurrentValue);
-    private bool GatewayLive => PlcOptions.CurrentValue.Enabled;
     private string AgentDotClass => $"dot {(AgentLive ? "dot-on" : "dot-off")}";
-    private string GatewayDotClass => $"dot {(GatewayLive ? "dot-on" : "dot-off")}";
     private string AgentStatusLabel => AgentLive ? "Agents" : "Agents (local)";
-    private string GatewayStatusLabel => GatewayLive ? "Gateway" : "Gateway (fake)";
 #if DEBUG
     private const bool IsDebug = true;
 #else
@@ -173,7 +166,6 @@
         }
 
         _llmOptionsSubscription = LlmOptions.OnChange(_ => InvokeAsync(StateHasChanged));
-        _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         AgentState.Changed += OnAgentStateChanged;
     }
 
@@ -657,7 +649,6 @@
     public void Dispose()
     {
         _llmOptionsSubscription?.Dispose();
-        _plcOptionsSubscription?.Dispose();
         _cts?.Dispose();
         AgentState.Changed -= OnAgentStateChanged;
     }

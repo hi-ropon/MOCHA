@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
-using MOCHA.Services.Plc;
-using MOCHA.Agents.Domain;
 using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 using MOCHA.Services.Chat;
 
@@ -43,6 +40,7 @@ public class FakeChatFlowTests
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ActionRequest));
         Assert.IsTrue(events.Any(e => e.Type == ChatStreamEventType.ToolResult));
         var toolResult = events.First(e => e.Type == ChatStreamEventType.ToolResult).ActionResult!;
+        Assert.AreEqual("invoke_plc_agent", toolResult.ActionName);
         Assert.AreEqual("D", toolResult.Payload["device"]);
         Assert.AreEqual(100, (int)toolResult.Payload["addr"]);
         var values = (toolResult.Payload["values"] as IEnumerable<int> ?? Array.Empty<int>()).ToList();
@@ -61,13 +59,31 @@ public class FakeChatFlowTests
     [TestMethod]
     public async Task 読み取り設定が欠落しても既定値で処理する()
     {
-        var plc = new FakePlcGatewayClient(new Dictionary<string, IReadOnlyList<int>> { ["D0"] = new List<int> { 7 } });
         var orchestrator = CreateOrchestrator(turn => new[]
         {
             ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "ack")),
-            new ChatStreamEvent(ChatStreamEventType.ActionRequest, ActionRequest: new AgentActionRequest("read_device", turn.ConversationId ?? "conv", new Dictionary<string, object?>())),
+            new ChatStreamEvent(
+                ChatStreamEventType.ActionRequest,
+                ActionRequest: new AgentActionRequest(
+                    "invoke_plc_agent",
+                    turn.ConversationId ?? "conv",
+                    new Dictionary<string, object?>())),
+            new ChatStreamEvent(
+                ChatStreamEventType.ToolResult,
+                ActionResult: new AgentActionResult(
+                    "invoke_plc_agent",
+                    turn.ConversationId ?? "conv",
+                    true,
+                    new Dictionary<string, object?>
+                    {
+                        ["device"] = "D",
+                        ["addr"] = 0,
+                        ["length"] = 1,
+                        ["values"] = new List<int> { 7 },
+                        ["success"] = true
+                    })),
             ChatStreamEvent.Completed(turn.ConversationId)
-        }, plc);
+        });
 
         var events = await CollectAsync(orchestrator, "read default");
 
@@ -91,11 +107,27 @@ public class FakeChatFlowTests
             new ChatStreamEvent(
                 ChatStreamEventType.ActionRequest,
                 ActionRequest: new AgentActionRequest(
-                    "batch_read_devices",
+                    "invoke_plc_agent",
                     turn.ConversationId ?? "conv",
                     new Dictionary<string, object?>
                     {
                         ["devices"] = new List<string> { "D100", "M10" }
+                    })),
+            new ChatStreamEvent(
+                ChatStreamEventType.ToolResult,
+                ActionResult: new AgentActionResult(
+                    "invoke_plc_agent",
+                    turn.ConversationId ?? "conv",
+                    true,
+                    new Dictionary<string, object?>
+                    {
+                        ["devices"] = new List<string> { "D100", "M10" },
+                        ["results"] = new List<object?>
+                        {
+                            new { Device = "D100", Values = new List<int> { 1, 2 }, Success = true, Error = (string?)null },
+                            new { Device = "M10", Values = new List<int> { 3 }, Success = true, Error = (string?)null }
+                        },
+                        ["success"] = true
                     })),
             ChatStreamEvent.Completed(turn.ConversationId)
         });
@@ -146,10 +178,8 @@ public class FakeChatFlowTests
                     ChatStreamEvent.Completed(convId)
                 };
             }),
-            new FakePlcGatewayClient(),
             repo,
             history,
-            new DummyManualStore(),
             new NoopChatTitleService());
 
         var user = new UserContext("persist-user", "Persist User");
@@ -162,7 +192,7 @@ public class FakeChatFlowTests
         var saved = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
         var toolResults = saved.Where(m => m.Role == ChatRole.Tool && m.Content.StartsWith("[result]")).ToList();
 
-        Assert.AreEqual(2, toolResults.Count, "オーケストレーター分とエージェント分の両方を保持すること");
+        Assert.AreEqual(1, toolResults.Count, "エージェントの結果を保持すること");
         Assert.IsTrue(toolResults.Any(r => r.Content.Contains("agent-side")), "エージェントの結果が保存されていること");
     }
 
@@ -183,11 +213,11 @@ public class FakeChatFlowTests
     /// <summary>
     /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーターを生成する。
     /// </summary>
-    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurnModel, IEnumerable<ChatStreamEvent>>? script = null, FakePlcGatewayClient? plc = null)
+    private static ChatOrchestrator CreateOrchestrator(Func<ChatTurnModel, IEnumerable<ChatStreamEvent>>? script = null)
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeAgentChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
+        return new ChatOrchestrator(new FakeAgentChatClient(script), repo, history, new NoopChatTitleService());
     }
 
     /// <summary>
@@ -198,7 +228,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -229,10 +259,8 @@ public class FakeChatFlowTests
                 ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "chunk-2")),
                 ChatStreamEvent.Completed(turn.ConversationId ?? "conv-stream")
             }),
-            new FakePlcGatewayClient(),
             repo,
             history,
-            new DummyManualStore(),
             new NoopChatTitleService());
 
         var user = new UserContext("stream-user", "Stream User");
@@ -257,7 +285,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -283,7 +311,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
@@ -293,20 +321,6 @@ public class FakeChatFlowTests
 
         await history.LoadAsync(user.UserId, "AG-77");
         Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId && s.AgentNumber == "AG-77"));
-    }
-
-    private sealed class DummyManualStore : IManualStore
-    {
-        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy manual", 12));
-        }
-
-        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
-        {
-            IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy manual", "dummy.txt", 1.0) };
-            return Task.FromResult(hits);
-        }
     }
 
     private sealed class NoopChatTitleService : IChatTitleService

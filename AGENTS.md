@@ -32,7 +32,7 @@
 - フレームワーク: MSTest。対象コードと同じ名前空間構成で `Tests/` に追加。
 - 命名: `メソッド_状態_期待結果`。テストメソッド名は日本語にすること
 - カバレッジ: ユーザーメッセージフロー、Copilot ツール要求、キャンセル経路などチャットオーケストレーションの分岐を重点。
-- 依存: `ICopilotChatClient`, `IPlcGatewayClient` はフェイク/モックで決定論的に。
+- 依存: `IAgentChatClient` はフェイク/モックで決定論的に。PlcAgentTool はエージェント側でフェイク化する。
 
 ## コミット・PR ガイド
 - コミット: 簡潔な現在形（例 `Add sidebar collapse toggle`, `Refine chat composer UI`）。関連変更はまとめる。
