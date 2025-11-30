@@ -13,7 +13,7 @@ namespace MOCHA.Services.Drawings;
 /// </summary>
 internal sealed class DrawingRegistrationService
 {
-    private const long MaxFileSizeBytes = 10 * 1024 * 1024;
+    private const long _maxFileSizeBytes = 10 * 1024 * 1024;
 
     private readonly IDrawingRepository _repository;
     private readonly IUserRoleProvider _roleProvider;
@@ -50,7 +50,7 @@ internal sealed class DrawingRegistrationService
             return DrawingRegistrationResult.Fail("装置エージェントを選択してください");
         }
 
-        var validation = upload.Validate(MaxFileSizeBytes);
+        var validation = upload.Validate(_maxFileSizeBytes);
         if (!validation.IsValid)
         {
             return DrawingRegistrationResult.Fail(validation.Error ?? "入力内容が正しくありません");

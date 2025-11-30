@@ -530,13 +530,11 @@
                 <button type="button"
                         class="user-settings-nav @(_selectedAction == UserAction.Theme ? "active" : string.Empty)"
                         @onclick="() => SelectAction(UserAction.Theme)">
-                    <span class="icon">🎨</span>
                     <span>テーマ</span>
                 </button>
                 <button type="button"
                         class="user-settings-nav @(_selectedAction == UserAction.Logout ? "active" : string.Empty)"
                         @onclick="() => SelectAction(UserAction.Logout)">
-                    <span class="icon">🔒</span>
                     <span>ログアウト</span>
                 </button>
             </div>

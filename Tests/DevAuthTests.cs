@@ -188,7 +188,7 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
     private static void ReplaceDbContext(IServiceCollection services)
     {
         ServiceDescriptor? descriptor;
-        while ((descriptor = services.SingleOrDefault(d => d.ServiceType == typeof(DbContextOptions<ChatDbContext>))) != null)
+        while ((descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(DbContextOptions<ChatDbContext>))) != null)
         {
             services.Remove(descriptor);
         }
@@ -196,11 +196,23 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
         services.RemoveAll<IConfigureOptions<DbContextOptions<ChatDbContext>>>();
         services.RemoveAll<IDbContextOptionsConfiguration<ChatDbContext>>();
         services.RemoveAll<IDatabaseProvider>();
+        while ((descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IDbContextFactory<ChatDbContext>))) != null)
+        {
+            services.Remove(descriptor);
+        }
+        while ((descriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ChatDbContext))) != null)
+        {
+            services.Remove(descriptor);
+        }
+
+        services.RemoveAll<IChatDbContext>();
+
         services.AddEntityFrameworkInMemoryDatabase();
-        services.AddDbContext<ChatDbContext>(options =>
+        services.AddDbContextFactory<ChatDbContext>(options =>
         {
             options.UseInMemoryDatabase("DevAuthTests");
         });
+        services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ChatDbContext>>().CreateDbContext());
         services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
     }
 
