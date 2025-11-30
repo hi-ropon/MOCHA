@@ -257,7 +257,7 @@
                         }
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
-                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber, preserveExistingTitle: true);
+                        await HistoryState.UpsertAsync(user.UserId, sendingConversationId, text, agentNumber, preserveExistingTitle: true);
                         if (!isStale)
                         {
                             ConversationId ??= ev.ActionRequest.ConversationId;
