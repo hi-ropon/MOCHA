@@ -20,4 +20,12 @@ public sealed class DevSignUpInput
     [Required(ErrorMessage = "パスワードは必須です")]
     [MinLength(6, ErrorMessage = "パスワードは6文字以上にしてください")]
     public string Password { get; set; } = string.Empty;
+
+    /// <summary>
+    /// パスワード確認
+    /// </summary>
+    [Required(ErrorMessage = "パスワード確認は必須です")]
+    [Compare(nameof(Password), ErrorMessage = "パスワードが一致しません")]
+    [Display(Name = "パスワード再入力")]
+    public string ConfirmPassword { get; set; } = string.Empty;
 }

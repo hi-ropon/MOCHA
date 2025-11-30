@@ -20,10 +20,9 @@ public interface IDevLoginService
     /// <summary>
     /// 認証プロパティを構成する
     /// </summary>
-    /// <param name="rememberMe">永続化フラグ</param>
     /// <param name="lifetime">有効期間</param>
     /// <returns>認証プロパティ</returns>
-    AuthenticationProperties CreateProperties(bool rememberMe, TimeSpan lifetime);
+    AuthenticationProperties CreateProperties(TimeSpan lifetime);
 }
 
 /// <summary>
@@ -56,11 +55,11 @@ internal sealed class DevLoginService : IDevLoginService
     }
 
     /// <inheritdoc />
-    public AuthenticationProperties CreateProperties(bool rememberMe, TimeSpan lifetime)
+    public AuthenticationProperties CreateProperties(TimeSpan lifetime)
     {
         return new AuthenticationProperties
         {
-            IsPersistent = rememberMe,
+            IsPersistent = true,
             AllowRefresh = true,
             ExpiresUtc = DateTimeOffset.UtcNow.Add(lifetime)
         };

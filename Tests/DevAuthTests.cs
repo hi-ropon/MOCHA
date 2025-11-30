@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -49,6 +50,26 @@ public class DevAuthTests
     }
 
     /// <summary>
+    /// ログイン画面のRememberMe非表示確認
+    /// </summary>
+    [TestMethod]
+    public async Task ログイン画面表示_RememberMeが含まれない()
+    {
+        using var factory = new AuthWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var response = await client.GetAsync("/login");
+        response.EnsureSuccessStatusCode();
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.IsFalse(body.Contains("Remember Me", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(body.Contains("RememberMe", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// ログイン成功後にトップページへ到達できることを確認する
     /// </summary>
     [TestMethod]
@@ -65,6 +86,7 @@ public class DevAuthTests
         {
             ["Input.Email"] = "dev-user@example.com",
             ["Input.Password"] = "Passw0rd!",
+            ["Input.ConfirmPassword"] = "Passw0rd!",
             ["ReturnUrl"] = "/",
             ["__RequestVerificationToken"] = antiforgery
         });
@@ -128,6 +150,32 @@ public class DevAuthTests
     }
 
     [TestMethod]
+    public async Task パスワード不一致は登録不可()
+    {
+        using var factory = new AuthWebApplicationFactory();
+        var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false
+        });
+
+        var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
+        var content = new FormUrlEncodedContent(new Dictionary<string, string>
+        {
+            ["Input.Email"] = "mismatch@example.com",
+            ["Input.Password"] = "Passw0rd!",
+            ["Input.ConfirmPassword"] = "Passw0rd?",
+            ["ReturnUrl"] = "/",
+            ["__RequestVerificationToken"] = antiforgery
+        });
+
+        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
+
+        Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
+        StringAssert.Contains(body, "パスワードが一致しません");
+    }
+
+    [TestMethod]
     public async Task パスワードは6文字以上()
     {
         using var factory = new AuthWebApplicationFactory();
@@ -151,6 +199,7 @@ public class DevAuthTests
         {
             ["Input.Email"] = email,
             ["Input.Password"] = password,
+            ["Input.ConfirmPassword"] = password,
             ["ReturnUrl"] = returnUrl,
             ["__RequestVerificationToken"] = token
         });

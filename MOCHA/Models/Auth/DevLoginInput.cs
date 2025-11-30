@@ -20,9 +20,4 @@ public sealed class DevLoginInput
     [Required(ErrorMessage = "パスワードは必須です")]
     [MinLength(6, ErrorMessage = "パスワードは6文字以上にしてください")]
     public string Password { get; set; } = string.Empty;
-
-    /// <summary>
-    /// ログイン状態を保持するか
-    /// </summary>
-    public bool RememberMe { get; set; }
 }

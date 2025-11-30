@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.Extensions.Options;
+using System.Linq;
 using MOCHA.Models.Auth;
 using MOCHA.Services.Auth;
 
@@ -73,7 +74,9 @@ public sealed class SignupModel : PageModel
 
         if (!ModelState.IsValid)
         {
-            Error = "入力を確認してください";
+            var confirmErrors = ModelState[nameof(Input.ConfirmPassword)]?.Errors;
+            var mismatch = confirmErrors?.Any(e => e.ErrorMessage.Contains("一致")) == true;
+            Error = mismatch ? "パスワードが一致しません" : "入力を確認してください";
             return Page();
         }
 
@@ -82,11 +85,12 @@ public sealed class SignupModel : PageModel
             var user = await _userService.SignUpAsync(new DevSignUpInput
             {
                 Email = Input.Email,
-                Password = Input.Password
+                Password = Input.Password,
+                ConfirmPassword = Input.ConfirmPassword
             });
 
             var principal = _loginService.CreatePrincipal(user.Email, user.Email);
-            var properties = _loginService.CreateProperties(true, TimeSpan.FromHours(Math.Max(1, _options.ExpireHours)));
+            var properties = _loginService.CreateProperties(TimeSpan.FromHours(Math.Max(1, _options.ExpireHours)));
             await HttpContext.SignInAsync(DevAuthDefaults.scheme, principal, properties);
         }
         catch (InvalidOperationException ex)
