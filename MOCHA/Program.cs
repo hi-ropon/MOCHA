@@ -74,11 +74,16 @@ builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddDbContext<ChatDbContext>(options =>
+builder.Services.AddDbContext<ChatDbContext>((sp, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Data Source=chat.db";
     options.UseSqlite(connectionString);
 });
+builder.Services.AddDbContextFactory<ChatDbContext>((sp, options) =>
+{
+    var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Data Source=chat.db";
+    options.UseSqlite(connectionString);
+}, ServiceLifetime.Scoped);
 builder.Services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
 
 // Add services to the container.

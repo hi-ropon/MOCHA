@@ -9,15 +9,15 @@ namespace MOCHA.Services.Chat;
 /// </summary>
 internal sealed class ChatRepository : IChatRepository
 {
-    private readonly IChatDbContext _dbContext;
+    private readonly IDbContextFactory<ChatDbContext> _dbContextFactory;
 
     /// <summary>
     /// DbContext を注入してリポジトリを初期化する。
     /// </summary>
     /// <param name="dbContext">チャット用 DbContext。</param>
-    public ChatRepository(IChatDbContext dbContext)
+    public ChatRepository(IDbContextFactory<ChatDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     /// <summary>
@@ -29,7 +29,9 @@ internal sealed class ChatRepository : IChatRepository
     /// <returns>会話要約リスト。</returns>
     public async Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
     {
-        var query = _dbContext.Conversations
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var query = db.Conversations
             .Where(x => x.UserObjectId == userObjectId);
 
         if (agentNumber is null)
@@ -60,13 +62,15 @@ internal sealed class ChatRepository : IChatRepository
     /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
     {
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
         var trimmed = title.Length > 30 ? title[..30] + "…" : title;
-        var existing = await _dbContext.Conversations
+        var existing = await db.Conversations
             .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
 
         if (existing is null)
         {
-            _dbContext.Conversations.Add(new ChatConversationEntity
+            db.Conversations.Add(new ChatConversationEntity
             {
                 Id = conversationId,
                 UserObjectId = userObjectId,
@@ -82,7 +86,7 @@ internal sealed class ChatRepository : IChatRepository
             existing.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -95,14 +99,16 @@ internal sealed class ChatRepository : IChatRepository
     /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
     {
-        var conversation = await _dbContext.Conversations
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var conversation = await db.Conversations
             .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
 
         var preview = message.Content.Length > 30 ? message.Content[..30] + "…" : message.Content;
 
         if (conversation is null)
         {
-            _dbContext.Conversations.Add(new ChatConversationEntity
+            db.Conversations.Add(new ChatConversationEntity
             {
                 Id = conversationId,
                 UserObjectId = userObjectId,
@@ -121,7 +127,7 @@ internal sealed class ChatRepository : IChatRepository
             conversation.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
-        _dbContext.Messages.Add(new ChatMessageEntity
+        db.Messages.Add(new ChatMessageEntity
         {
             ConversationId = conversationId,
             UserObjectId = userObjectId,
@@ -130,7 +136,7 @@ internal sealed class ChatRepository : IChatRepository
             CreatedAt = DateTimeOffset.UtcNow
         });
 
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -143,13 +149,15 @@ internal sealed class ChatRepository : IChatRepository
     /// <returns>メッセージ一覧。</returns>
     public async Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
     {
-        var messagesQuery = _dbContext.Messages
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var messagesQuery = db.Messages
             .Where(x => x.UserObjectId == userObjectId && x.ConversationId == conversationId);
 
         if (agentNumber is null)
         {
             messagesQuery = messagesQuery.Where(x =>
-                _dbContext.Conversations.Any(c =>
+                db.Conversations.Any(c =>
                     c.Id == x.ConversationId &&
                     c.UserObjectId == userObjectId &&
                     c.AgentNumber == null));
@@ -157,7 +165,7 @@ internal sealed class ChatRepository : IChatRepository
         else
         {
             messagesQuery = messagesQuery.Where(x =>
-                _dbContext.Conversations.Any(c =>
+                db.Conversations.Any(c =>
                     c.Id == x.ConversationId &&
                     c.UserObjectId == userObjectId &&
                     c.AgentNumber == agentNumber));
@@ -187,7 +195,9 @@ internal sealed class ChatRepository : IChatRepository
     /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
     {
-        var existing = await _dbContext.Conversations
+        await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
+
+        var existing = await db.Conversations
             .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
 
         if (existing is null)
@@ -200,8 +210,8 @@ internal sealed class ChatRepository : IChatRepository
             return;
         }
 
-        _dbContext.Conversations.Remove(existing);
-        await _dbContext.SaveChangesAsync(cancellationToken);
+        db.Conversations.Remove(existing);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>

@@ -660,7 +660,7 @@
 
     private void StartNewChat()
     {
-        NavigationManager.NavigateTo("/", forceLoad: true);
+        NavigationManager.NavigateTo("/");
     }
 
     private void NavigateToRoles()
@@ -710,7 +710,7 @@
     private void OpenConversation(string conversationId)
     {
         var uri = NavigationManager.GetUriWithQueryParameter("c", conversationId);
-        NavigationManager.NavigateTo(uri, forceLoad: true);
+        NavigationManager.NavigateTo(uri);
     }
 
     private async Task OnAgentChanged(ChangeEventArgs e)
@@ -1260,7 +1260,7 @@
 
         if (NavigationManager.Uri.Contains($"c={summary.Id}", StringComparison.Ordinal))
         {
-            NavigationManager.NavigateTo("/", forceLoad: true);
+            NavigationManager.NavigateTo("/");
         }
     }
 

@@ -17,8 +17,8 @@ public class ChatRepositoryTitleTests
     [TestMethod]
     public async Task 生成済みタイトルをメッセージ追加で上書きしない()
     {
-        await using var context = CreateContext("repo-title");
-        var repository = new ChatRepository(context);
+        var factory = CreateFactory("repo-title");
+        var repository = new ChatRepository(factory);
         var userId = "user-1";
         var conversationId = "conv-repo";
         var agentNumber = "AG-01";
@@ -31,12 +31,28 @@ public class ChatRepositoryTitleTests
         Assert.AreEqual("生成済みタイトル", summary.Title);
     }
 
-    private static ChatDbContext CreateContext(string name)
+    private static IDbContextFactory<ChatDbContext> CreateFactory(string name)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
             .UseInMemoryDatabase(name)
             .Options;
 
-        return new ChatDbContext(options);
+        return new InMemoryChatDbContextFactory(options);
+    }
+
+    private sealed class InMemoryChatDbContextFactory : IDbContextFactory<ChatDbContext>
+    {
+        private readonly DbContextOptions<ChatDbContext> _options;
+
+        public InMemoryChatDbContextFactory(DbContextOptions<ChatDbContext> options)
+        {
+            _options = options;
+        }
+
+        public ChatDbContext CreateDbContext()
+        {
+            return new ChatDbContext(_options);
+        }
     }
 }
+

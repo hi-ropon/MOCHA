@@ -223,6 +223,7 @@
         }
 
         ConversationId ??= Guid.NewGuid().ToString("N");
+        var sendingConversationId = ConversationId;
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
@@ -238,45 +239,65 @@
         {
             await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
             {
+                var isStale = !string.Equals(ConversationId, sendingConversationId, StringComparison.Ordinal);
+
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        if (ev.Message.Role == ChatRole.Assistant)
+                        if (!isStale)
                         {
-                            AppendAssistantChunk(ev.Message.Content);
-                        }
-                        else
-                        {
-                            Messages.Add(ev.Message);
+                            if (ev.Message.Role == ChatRole.Assistant)
+                            {
+                                AppendAssistantChunk(ev.Message.Content);
+                            }
+                            else
+                            {
+                                Messages.Add(ev.Message);
+                            }
                         }
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
-                        ConversationId ??= ev.ActionRequest.ConversationId;
                         await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber, preserveExistingTitle: true);
-                        RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
+                        if (!isStale)
+                        {
+                            ConversationId ??= ev.ActionRequest.ConversationId;
+                            RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
+                        }
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
-                        ConversationId ??= ev.ActionResult.ConversationId;
                         var payloadJson = SafeSerialize(ev.ActionResult.Payload);
-                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
+                        if (!isStale)
+                        {
+                            ConversationId ??= ev.ActionResult.ConversationId;
+                            RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
+                        }
                         break;
                     case ChatStreamEventType.Completed:
-                        Status = null;
-                        MarkActiveTurnCompleted();
-                        if (_latestAssistant is not null)
+                        if (!isStale)
                         {
-                            RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
+                            Status = null;
+                            MarkActiveTurnCompleted();
+                            if (_latestAssistant is not null)
+                            {
+                                RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
+                            }
+                            _streamingAssistantIndex = null;
                         }
-                        _streamingAssistantIndex = null;
                         break;
                     case ChatStreamEventType.Error:
-                        Status = ev.Error;
-                        RecordActivity(ActivityKind.Error, "エラー", ev.Error);
+                        if (!isStale)
+                        {
+                            Status = ev.Error;
+                            RecordActivity(ActivityKind.Error, "エラー", ev.Error);
+                        }
                         break;
                 }
 
-                await ScrollToBottom();
-                await InvokeAsync(StateHasChanged);
+                if (!isStale)
+                {
+                    await ScrollToBottom();
+                    await InvokeAsync(StateHasChanged);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -285,10 +306,14 @@
         }
         finally
         {
-            MarkActiveTurnCompleted();
-            IsSending = false;
-            _streamingAssistantIndex = null;
-            await InvokeAsync(StateHasChanged);
+            var isStale = !string.Equals(ConversationId, sendingConversationId, StringComparison.Ordinal);
+            if (!isStale)
+            {
+                MarkActiveTurnCompleted();
+                IsSending = false;
+                _streamingAssistantIndex = null;
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 
@@ -346,7 +371,6 @@
 
     private void ResetConversation()
     {
-        CancelStream();
         ConversationId = null;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
@@ -362,7 +386,6 @@
 
     private async Task LoadConversationAsync(string conversationId)
     {
-        CancelStream();
         ConversationId = conversationId;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
