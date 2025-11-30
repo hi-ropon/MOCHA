@@ -104,7 +104,7 @@ article.content:has(.chat-shell) {
 }
 
 article.content:has(.chat-shell) > .chat-shell {
-    padding: 0.75rem 1rem 1rem;
+    padding: 0rem 1rem 1rem;
 }
 
 h1:focus {
@@ -608,9 +608,32 @@ h1:focus {
     flex-direction: column;
     gap: 1rem;
     padding: 0.5rem 1.25rem 1rem;
-    height: calc(100vh - 12px);
+    width: 100%;
+    max-width: 1100px;
+    margin: 0 auto;
+    height: calc(100vh - 30px);
     box-sizing: border-box;
     position: relative;
+}
+
+.chat-shell::-webkit-scrollbar {
+    width: 10px;
+}
+
+.chat-shell::-webkit-scrollbar-track {
+    background: var(--panel-bg);
+    border-radius: 12px;
+}
+
+.chat-shell::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent), #1f9fb1);
+    border-radius: 12px;
+    border: 2px solid var(--panel-bg);
+}
+
+.chat-shell {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) var(--panel-bg);
 }
 
 .glass-card {
@@ -621,41 +644,6 @@ h1:focus {
     backdrop-filter: blur(22px);
 }
 
-.chat-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.25rem;
-}
-
-.chat-header .btn-outline-light {
-    color: var(--text-primary);
-    border-color: var(--border-color);
-    background: var(--panel-bg);
-}
-
-.chat-header .btn-outline-light:hover,
-.chat-header .btn-outline-light:focus {
-    color: var(--accent);
-    border-color: var(--accent);
-    background: var(--card-hover);
-}
-
-.env-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.2rem 0.75rem;
-    border-radius: 999px;
-    background: linear-gradient(135deg, #24c19a, #1b8f7d);
-    color: #0b1b1f;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    box-shadow: 0 10px 30px rgba(36, 193, 154, 0.35);
-}
-
 .status-line {
     margin-top: 0.4rem;
     color: var(--text-muted);
@@ -663,25 +651,6 @@ h1:focus {
     display: flex;
     gap: 1rem;
     align-items: center;
-}
-
-.dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: inline-block;
-    margin-right: 0.35rem;
-}
-
-.dot-on {
-    background: #24c19a;
-    box-shadow: 0 0 12px rgba(36, 193, 154, 0.7);
-}
-
-.dot-off {
-    background: #cbd5e1;
-    box-shadow: none;
-    opacity: 0.8;
 }
 
 .chat-body {

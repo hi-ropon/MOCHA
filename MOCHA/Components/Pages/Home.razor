@@ -25,21 +25,6 @@
 <PageTitle>M.O.C.H.A.</PageTitle>
 
 <div class="chat-shell">
-    @if (IsDebug)
-    {
-        <header class="chat-header glass-card">
-            <div>
-                <div class="env-badge">DEV</div>
-                <div class="status-line">
-                    <span class="@AgentDotClass"></span> @AgentStatusLabel
-                </div>
-            </div>
-            <div class="actions">
-                <button class="btn btn-sm btn-outline-light" @onclick="ResetConversation">Reset</button>
-            </div>
-        </header>
-    }
-
     <div class="chat-body">
         <main class="chat-main glass-card">
             <div class="messages" @ref="MessageList">
@@ -145,14 +130,6 @@
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
-    private bool AgentLive => IsLlmConfigured(LlmOptions.CurrentValue);
-    private string AgentDotClass => $"dot {(AgentLive ? "dot-on" : "dot-off")}";
-    private string AgentStatusLabel => AgentLive ? "Agents" : "Agents (local)";
-#if DEBUG
-    private const bool IsDebug = true;
-#else
-    private const bool IsDebug = false;
-#endif
 
     protected override async Task OnInitializedAsync()
     {
@@ -420,17 +397,6 @@
     {
         // Placeholder for future JS interop to auto-scroll.
         await Task.CompletedTask;
-    }
-
-    private static bool IsLlmConfigured(LlmOptions options)
-    {
-        if (options is null)
-        {
-            return false;
-        }
-
-        return !string.IsNullOrWhiteSpace(options.ApiKey)
-               || !string.IsNullOrWhiteSpace(options.Endpoint);
     }
 
     private async Task<UserContext> ResolveUserAsync()
