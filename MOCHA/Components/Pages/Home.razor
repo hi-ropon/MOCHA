@@ -235,6 +235,8 @@
         ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
+        var assistantDisplayBuffer = new StringBuilder();
+
         try
         {
             await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
@@ -244,16 +246,13 @@
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        if (!isStale)
+                        if (ev.Message.Role == ChatRole.Assistant)
                         {
-                            if (ev.Message.Role == ChatRole.Assistant)
-                            {
-                                AppendAssistantChunk(ev.Message.Content);
-                            }
-                            else
-                            {
-                                Messages.Add(ev.Message);
-                            }
+                            assistantDisplayBuffer.Append(ev.Message.Content);
+                        }
+                        else if (!isStale)
+                        {
+                            Messages.Add(ev.Message);
                         }
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
@@ -275,13 +274,20 @@
                     case ChatStreamEventType.Completed:
                         if (!isStale)
                         {
+                            if (assistantDisplayBuffer.Length > 0)
+                            {
+                                var finalAssistant = new ChatMessage(ChatRole.Assistant, assistantDisplayBuffer.ToString());
+                                Messages.Add(finalAssistant);
+                                _latestAssistant = finalAssistant;
+                                _streamingAssistantIndex = null;
+                            }
+
                             Status = null;
                             MarkActiveTurnCompleted();
                             if (_latestAssistant is not null)
                             {
                                 RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
                             }
-                            _streamingAssistantIndex = null;
                         }
                         break;
                     case ChatStreamEventType.Error:
@@ -311,7 +317,6 @@
             {
                 MarkActiveTurnCompleted();
                 IsSending = false;
-                _streamingAssistantIndex = null;
                 await InvokeAsync(StateHasChanged);
             }
         }
