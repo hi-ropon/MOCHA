@@ -9,6 +9,7 @@ namespace MOCHA.Services.Agents;
 internal sealed class DeviceAgentState
 {
     private readonly IDeviceAgentRepository _repository;
+    private readonly IDeviceAgentAccessService _accessService;
     private readonly List<DeviceAgentProfile> _agents = new();
     private readonly object _lock = new();
     private string? _currentUserId;
@@ -17,9 +18,11 @@ internal sealed class DeviceAgentState
     /// リポジトリを注入して状態管理を初期化する。
     /// </summary>
     /// <param name="repository">装置エージェントリポジトリ。</param>
-    public DeviceAgentState(IDeviceAgentRepository repository)
+    /// <param name="accessService">装置エージェント権限サービス。</param>
+    public DeviceAgentState(IDeviceAgentRepository repository, IDeviceAgentAccessService accessService)
     {
         _repository = repository;
+        _accessService = accessService;
     }
 
     /// <summary>
@@ -53,7 +56,7 @@ internal sealed class DeviceAgentState
     /// <param name="cancellationToken">キャンセル通知。</param>
     public async Task LoadAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var items = await _repository.GetAsync(userId, cancellationToken);
+        var items = await _accessService.GetAvailableAgentsAsync(userId, cancellationToken);
         lock (_lock)
         {
             _currentUserId = userId;

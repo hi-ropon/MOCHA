@@ -93,6 +93,8 @@ builder.Services.AddScoped<IChatTitleService, ChatTitleService>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();
+builder.Services.AddScoped<IDeviceAgentPermissionRepository, DeviceAgentPermissionRepository>();
+builder.Services.AddScoped<IDeviceAgentAccessService, DeviceAgentAccessService>();
 builder.Services.AddScoped<DeviceAgentState>();
 builder.Services.AddSingleton<IDrawingRepository, InMemoryDrawingRepository>();
 builder.Services.AddScoped<DrawingRegistrationService>();

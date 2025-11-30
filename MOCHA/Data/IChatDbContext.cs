@@ -19,6 +19,8 @@ internal interface IChatDbContext
     DbSet<UserRoleEntity> UserRoles { get; }
     /// <summary>装置エージェントエンティティのセット。</summary>
     DbSet<DeviceAgentEntity> DeviceAgents { get; }
+    /// <summary>装置エージェント利用許可エンティティのセット</summary>
+    DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions { get; }
     /// <summary>データベース操作用のファサード。</summary>
     Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
     /// <summary>

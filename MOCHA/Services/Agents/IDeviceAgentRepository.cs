@@ -8,12 +8,27 @@ namespace MOCHA.Services.Agents;
 internal interface IDeviceAgentRepository
 {
     /// <summary>
-    /// 指定ユーザーの装置エージェント一覧を取得する。
+    /// 指定ユーザーの装置エージェント一覧を取得する
     /// </summary>
     /// <param name="userId">ユーザーID。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
     /// <returns>エージェント一覧。</returns>
     Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 全ユーザーが登録した装置エージェント一覧を取得する
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>全エージェント一覧。</returns>
+    Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// 指定番号の装置エージェントをまとめて取得する
+    /// </summary>
+    /// <param name="agentNumbers">取得対象番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <returns>該当エージェント一覧。</returns>
+    Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// エージェントを追加または更新する。

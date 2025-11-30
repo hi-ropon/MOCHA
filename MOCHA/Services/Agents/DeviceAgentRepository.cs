@@ -54,6 +54,67 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
+    /// 全ユーザーが登録した装置エージェント一覧を取得する テーブルが無い場合は作成後リトライする
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    public async Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var list = await _dbContext.DeviceAgents
+                .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
+                .ToListAsync(cancellationToken);
+
+            return list
+                .OrderBy(x => x.CreatedAt)
+                .DistinctBy(x => x.Number, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        {
+            await EnsureTableAsync(cancellationToken);
+            return await GetAllAsync(cancellationToken);
+        }
+    }
+
+    /// <summary>
+    /// 指定番号の装置エージェントを取得する テーブルが無い場合は作成後リトライする
+    /// </summary>
+    /// <param name="agentNumbers">対象番号。</param>
+    /// <param name="cancellationToken">キャンセル通知。</param>
+    public async Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
+    {
+        var normalized = new HashSet<string>(
+            (agentNumbers ?? Array.Empty<string>())
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Select(x => x.Trim()),
+            StringComparer.OrdinalIgnoreCase);
+
+        if (normalized.Count == 0)
+        {
+            return Array.Empty<DeviceAgentProfile>();
+        }
+
+        try
+        {
+            var list = await _dbContext.DeviceAgents
+                .Where(x => normalized.Contains(x.Number))
+                .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
+                .ToListAsync(cancellationToken);
+
+            return list
+                .OrderBy(x => x.CreatedAt)
+                .DistinctBy(x => x.Number, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        {
+            await EnsureTableAsync(cancellationToken);
+            return await GetByNumbersAsync(normalized, cancellationToken);
+        }
+    }
+
+    /// <summary>
     /// 装置エージェントを追加または更新する。テーブルが無い場合は作成後にリトライする。
     /// </summary>
     /// <param name="userId">ユーザーID。</param>

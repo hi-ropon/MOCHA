@@ -22,6 +22,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<ChatMessageEntity> Messages => Set<ChatMessageEntity>();
     public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
     public DbSet<DeviceAgentEntity> DeviceAgents => Set<DeviceAgentEntity>();
+    public DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions => Set<DeviceAgentPermissionEntity>();
     public DbSet<DevUserEntity> DevUsers => Set<DevUserEntity>();
 
     /// <summary>
@@ -71,6 +72,14 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Number).HasMaxLength(100);
             builder.Property(x => x.Name).HasMaxLength(200);
             builder.HasIndex(x => new { x.UserObjectId, x.Number }).IsUnique();
+        });
+
+        modelBuilder.Entity<DeviceAgentPermissionEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.UserObjectId).HasMaxLength(200);
+            builder.Property(x => x.AgentNumber).HasMaxLength(100);
+            builder.HasIndex(x => new { x.UserObjectId, x.AgentNumber }).IsUnique();
         });
 
         modelBuilder.Entity<DevUserEntity>(builder =>

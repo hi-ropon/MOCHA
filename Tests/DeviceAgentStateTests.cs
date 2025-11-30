@@ -18,7 +18,8 @@ public class DeviceAgentStateTests
     public async Task エージェント登録すると選択状態が更新される()
     {
         var repo = new InMemoryDeviceAgentRepository();
-        var state = new DeviceAgentState(repo);
+        var access = new PassthroughAccessService(repo);
+        var state = new DeviceAgentState(repo, access);
         var userId = "user-1";
 
         await state.LoadAsync(userId);
@@ -37,7 +38,8 @@ public class DeviceAgentStateTests
     public async Task 別エージェントを選ぶとChangedが発火する()
     {
         var repo = new InMemoryDeviceAgentRepository();
-        var state = new DeviceAgentState(repo);
+        var access = new PassthroughAccessService(repo);
+        var state = new DeviceAgentState(repo, access);
         var userId = "user-1";
         await state.LoadAsync(userId);
         await state.AddOrUpdateAsync(userId, "001", "ライン1");
@@ -58,7 +60,8 @@ public class DeviceAgentStateTests
     public async Task エージェント削除で一覧と選択が更新される()
     {
         var repo = new InMemoryDeviceAgentRepository();
-        var state = new DeviceAgentState(repo);
+        var access = new PassthroughAccessService(repo);
+        var state = new DeviceAgentState(repo, access);
         var userId = "user-1";
         await state.LoadAsync(userId);
         await state.AddOrUpdateAsync(userId, "001", "ライン1");
@@ -78,7 +81,8 @@ public class DeviceAgentStateTests
     public async Task 存在しないエージェント削除は無視される()
     {
         var repo = new InMemoryDeviceAgentRepository();
-        var state = new DeviceAgentState(repo);
+        var access = new PassthroughAccessService(repo);
+        var state = new DeviceAgentState(repo, access);
         var userId = "user-1";
         await state.LoadAsync(userId);
         await state.AddOrUpdateAsync(userId, "001", "ライン1");
@@ -96,7 +100,8 @@ public class DeviceAgentStateTests
     public async Task 最後のエージェントを削除すると選択が解除される()
     {
         var repo = new InMemoryDeviceAgentRepository();
-        var state = new DeviceAgentState(repo);
+        var access = new PassthroughAccessService(repo);
+        var state = new DeviceAgentState(repo, access);
         var userId = "user-1";
         await state.LoadAsync(userId);
         await state.AddOrUpdateAsync(userId, "001", "ライン1");
@@ -124,6 +129,33 @@ public class DeviceAgentStateTests
             {
                 return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(
                     _entries.Where(e => e.UserId == userId)
+                        .Select(e => e.Agent)
+                        .ToList());
+            }
+        }
+
+        /// <summary>
+        /// 全エージェントを返す
+        /// </summary>
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            lock (_lock)
+            {
+                return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(
+                    _entries.Select(e => e.Agent).ToList());
+            }
+        }
+
+        /// <summary>
+        /// 指定番号のエージェントを返す
+        /// </summary>
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
+        {
+            var numbers = new HashSet<string>(agentNumbers ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            lock (_lock)
+            {
+                return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(
+                    _entries.Where(e => numbers.Contains(e.Agent.Number))
                         .Select(e => e.Agent)
                         .ToList());
             }
@@ -177,6 +209,36 @@ public class DeviceAgentStateTests
 
             public string UserId { get; }
             public DeviceAgentProfile Agent { get; }
+        }
+    }
+
+    private sealed class PassthroughAccessService : IDeviceAgentAccessService
+    {
+        private readonly InMemoryDeviceAgentRepository _repository;
+
+        public PassthroughAccessService(InMemoryDeviceAgentRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetAvailableAgentsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return _repository.GetAsync(userId, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<string>> GetAssignmentsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        }
+
+        public Task UpdateAssignmentsAsync(string userId, IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<DeviceAgentProfile>> ListDefinitionsAsync(CancellationToken cancellationToken = default)
+        {
+            return _repository.GetAllAsync(cancellationToken);
         }
     }
 }

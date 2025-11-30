@@ -6,7 +6,11 @@ using System.Runtime.CompilerServices;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
+using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Infrastructure.Options;
@@ -42,10 +46,12 @@ public class HomeHistoryUpdateTests
         await history.LoadAsync(userId, agentNumber);
 
         var agentRepository = new FakeDeviceAgentRepository(agentNumber);
-        var agentState = new DeviceAgentState(agentRepository);
+        var accessService = new PassthroughAccessService(agentRepository);
+        var agentState = new DeviceAgentState(agentRepository, accessService);
         await agentState.LoadAsync(userId);
 
         var home = new Home();
+        InitializeComponent(home);
 
         var orchestrator = new CallbackOrchestrator(
             () =>
@@ -96,6 +102,12 @@ public class HomeHistoryUpdateTests
         var field = typeof(Home).GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(field, $"{fieldName} が見つかること");
         field.SetValue(home, value);
+    }
+
+    private static void InitializeComponent(Home home)
+    {
+        var renderer = new TestRenderer();
+        renderer.AttachComponent(home);
     }
 
     private static void SetProperty(Home home, string propertyName, object? value)
@@ -214,9 +226,55 @@ public class HomeHistoryUpdateTests
             return Task.FromResult(list);
         }
 
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default)
+        {
+            return GetAsync(string.Empty, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
+        {
+            var numbers = new HashSet<string>(agentNumbers ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            if (numbers.Count == 0 || numbers.Contains(_agentNumber))
+            {
+                return GetAsync(string.Empty, cancellationToken);
+            }
+
+            return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(Array.Empty<DeviceAgentProfile>());
+        }
+
         public Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(new DeviceAgentProfile(number, name, DateTimeOffset.UtcNow));
+        }
+    }
+
+    private sealed class PassthroughAccessService : IDeviceAgentAccessService
+    {
+        private readonly IDeviceAgentRepository _repository;
+
+        public PassthroughAccessService(IDeviceAgentRepository repository)
+        {
+            _repository = repository;
+        }
+
+        public Task<IReadOnlyList<DeviceAgentProfile>> GetAvailableAgentsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return _repository.GetAsync(userId, cancellationToken);
+        }
+
+        public Task<IReadOnlyList<string>> GetAssignmentsAsync(string userId, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
+        }
+
+        public Task UpdateAssignmentsAsync(string userId, IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task<IReadOnlyList<DeviceAgentProfile>> ListDefinitionsAsync(CancellationToken cancellationToken = default)
+        {
+            return _repository.GetAllAsync(cancellationToken);
         }
     }
 
@@ -240,4 +298,51 @@ public class HomeHistoryUpdateTests
             }
         }
     }
+
+#pragma warning disable BL0006 // RenderTree 型のテスト利用を許容
+    private sealed class TestRenderer : Renderer
+    {
+        public TestRenderer() : base(new ServiceCollection().BuildServiceProvider(), NullLoggerFactory.Instance)
+        {
+            Dispatcher = new InlineDispatcher();
+        }
+
+        public override Dispatcher Dispatcher { get; }
+
+        public void AttachComponent(IComponent component)
+        {
+            AssignRootComponentId(component);
+        }
+
+        protected override Task UpdateDisplayAsync(in RenderBatch renderBatch) => Task.CompletedTask;
+
+        protected override void HandleException(Exception exception) => throw exception;
+
+        private sealed class InlineDispatcher : Dispatcher
+        {
+            public override bool CheckAccess() => true;
+
+            public override Task InvokeAsync(Action workItem)
+            {
+                workItem();
+                return Task.CompletedTask;
+            }
+
+            public override Task InvokeAsync(Func<Task> workItem)
+            {
+                return workItem();
+            }
+
+            public override Task<TResult> InvokeAsync<TResult>(Func<TResult> workItem)
+            {
+                return Task.FromResult(workItem());
+            }
+
+            public override Task<TResult> InvokeAsync<TResult>(Func<Task<TResult>> workItem)
+            {
+                return workItem();
+            }
+        }
+    }
+#pragma warning restore BL0006
 }

@@ -77,6 +77,14 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgents_UserObjectId_Number ON DeviceAgents(UserObjectId, Number);
 
+            CREATE TABLE IF NOT EXISTS DeviceAgentPermissions(
+                Id INTEGER NOT NULL CONSTRAINT PK_DeviceAgentPermissions PRIMARY KEY AUTOINCREMENT,
+                UserObjectId TEXT NOT NULL,
+                AgentNumber TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgentPermissions_UserObjectId_AgentNumber ON DeviceAgentPermissions(UserObjectId, AgentNumber);
+
             CREATE TABLE IF NOT EXISTS DevUsers(
                 Id INTEGER NOT NULL CONSTRAINT PK_DevUsers PRIMARY KEY AUTOINCREMENT,
                 Email TEXT NOT NULL,
