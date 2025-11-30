@@ -213,6 +213,40 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
+    /// ストリーミングのチャンクは1件のアシスタント発話として永続化されることを確認する。
+    /// </summary>
+    [TestMethod]
+    public async Task ストリームはまとめて1件保存する()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var orchestrator = new ChatOrchestrator(
+            new FakeAgentChatClient(turn => new[]
+            {
+                ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "chunk-1")),
+                ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "chunk-2")),
+                ChatStreamEvent.Completed(turn.ConversationId ?? "conv-stream")
+            }),
+            new FakePlcGatewayClient(),
+            repo,
+            history,
+            new DummyManualStore());
+
+        var user = new UserContext("stream-user", "Stream User");
+        var conversationId = "conv-stream";
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, conversationId, "hello", "AG-01"))
+        {
+        }
+
+        var saved = await repo.GetMessagesAsync(user.UserId, conversationId, "AG-01");
+        var assistantMessages = saved.Where(m => m.Role == ChatRole.Assistant).ToList();
+
+        Assert.AreEqual(1, assistantMessages.Count, "アシスタント発話が1件だけ保存されること");
+        Assert.AreEqual("chunk-1chunk-2", assistantMessages.Single().Content);
+    }
+
+    /// <summary>
     /// 履歴削除でサマリとメッセージが除去されることを確認する。
     /// </summary>
     [TestMethod]

@@ -1,4 +1,5 @@
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using MOCHA.Agents.Application;
@@ -74,6 +75,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         });
 
         var stream = await _agentChatClient.SendAsync(turn, cancellationToken);
+        var assistantBuffer = new StringBuilder();
         await foreach (var ev in stream.WithCancellation(cancellationToken))
         {
             if (ev.Type == ChatStreamEventType.ActionRequest && ev.ActionRequest is not null)
@@ -120,14 +122,29 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             }
             else
             {
-                if (ev.Message is not null)
+                switch (ev.Type)
                 {
-                    yield return ChatStreamEvent.FromMessage(
-                        await SaveMessageAsync(user, convId, ev.Message, agentNumber, cancellationToken));
-                }
-                else
-                {
-                    yield return ev;
+                    case ChatStreamEventType.Message when ev.Message is not null:
+                        if (ev.Message.Role == ChatRole.Assistant)
+                        {
+                            assistantBuffer.Append(ev.Message.Content);
+                        }
+
+                        yield return ChatStreamEvent.FromMessage(ev.Message);
+                        break;
+                    case ChatStreamEventType.Completed:
+                        if (assistantBuffer.Length > 0)
+                        {
+                            var finalAssistant = new ChatMessage(ChatRole.Assistant, assistantBuffer.ToString());
+                            await SaveMessageAsync(user, convId, finalAssistant, agentNumber, cancellationToken);
+                        }
+
+                        yield return ev;
+                        assistantBuffer.Clear();
+                        break;
+                    default:
+                        yield return ev;
+                        break;
                 }
             }
         }

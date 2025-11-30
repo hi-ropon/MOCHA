@@ -1,5 +1,6 @@
 using System.ClientModel;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using Azure;
 using Azure.AI.OpenAI;
 using Microsoft.Agents.AI.OpenAI;
@@ -92,12 +93,22 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
 
         public IAsyncEnumerable<ChatResponseUpdate> GetStreamingResponseAsync(IEnumerable<ChatMessage> messages, ChatOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return AsyncEnumerable.Empty<ChatResponseUpdate>();
+            var lastUser = messages.LastOrDefault(m => m.Role == ChatRole.User);
+            var text = lastUser?.Text ?? "(no input)";
+            return EchoAsync($"[local echo] {text}", cancellationToken);
         }
 
         public object? GetService(Type serviceType, object? serviceKey = null) => null;
         public void Dispose()
         {
+        }
+
+        private static async IAsyncEnumerable<ChatResponseUpdate> EchoAsync(
+            string content,
+            [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return new ChatResponseUpdate(ChatRole.Assistant, content);
         }
     }
 }

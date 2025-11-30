@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
-using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Metadata;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -28,11 +26,6 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
     private readonly LlmOptions _options;
     private readonly ILogger<AgentFrameworkOrchestrator> _logger;
     private readonly ConcurrentDictionary<string, AgentThread> _threads = new();
-    private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
-    {
-        // Agent SDK が options を読み取り専用にする前に型情報リゾルバーを設定しておく
-        TypeInfoResolver = new DefaultJsonTypeInfoResolver()
-    };
 
     public AgentFrameworkOrchestrator(
         ILlmChatClientFactory chatClientFactory,
@@ -91,20 +84,19 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         {
             try
             {
-                var response = await _agent.RunAsync<string>(
+                var updates = _agent.RunStreamingAsync(
                     messages,
                     thread,
-                    _serializerOptions,
-                    options: new AgentRunOptions(),
-                    useJsonSchemaResponseFormat: false,
+                    new AgentRunOptions(),
                     cancellationToken);
 
-                var rawText = ExtractResultSafe(response);
-                var replyText = ExtractPlainText(rawText);
-
-                if (!string.IsNullOrWhiteSpace(replyText))
+                await foreach (var update in updates.WithCancellation(cancellationToken))
                 {
-                    Emit(AgentEventFactory.Message(conversationId, replyText));
+                    var replyText = ExtractPlainText(update.Text ?? string.Empty);
+                    if (!string.IsNullOrWhiteSpace(replyText))
+                    {
+                        Emit(AgentEventFactory.Message(conversationId, replyText));
+                    }
                 }
 
                 Emit(AgentEventFactory.Completed(conversationId));
@@ -183,30 +175,6 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         }
 
         return raw;
-    }
-
-    private string ExtractResultSafe(ChatClientAgentRunResponse<string>? response)
-    {
-        if (response is null)
-        {
-            return string.Empty;
-        }
-
-        var text = response.Text;
-        if (!string.IsNullOrWhiteSpace(text))
-        {
-            return text;
-        }
-
-        try
-        {
-            return response.Result ?? string.Empty;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "Result を読み取れなかったため空文字を返します。");
-            return string.Empty;
-        }
     }
 
 }

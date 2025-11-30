@@ -139,6 +139,7 @@
     private UserContext? _user;
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
+    private int? _streamingAssistantIndex;
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
@@ -237,6 +238,7 @@
         Messages.Add(userMessage);
         StartNewTurn(TurnActivities.Count);
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
         ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
@@ -247,8 +249,14 @@
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        _latestAssistant = ev.Message;
-                        RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(ev.Message.Content)}", ev.Message.Content);
+                        if (ev.Message.Role == ChatRole.Assistant)
+                        {
+                            AppendAssistantChunk(ev.Message.Content);
+                        }
+                        else
+                        {
+                            Messages.Add(ev.Message);
+                        }
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
@@ -265,8 +273,9 @@
                         MarkActiveTurnCompleted();
                         if (_latestAssistant is not null)
                         {
-                            Messages.Add(_latestAssistant);
+                            RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
                         }
+                        _streamingAssistantIndex = null;
                         break;
                     case ChatStreamEventType.Error:
                         Status = ev.Error;
@@ -286,6 +295,7 @@
         {
             MarkActiveTurnCompleted();
             IsSending = false;
+            _streamingAssistantIndex = null;
             await InvokeAsync(StateHasChanged);
         }
     }
@@ -354,6 +364,7 @@
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
         SeedInitialMessage();
     }
 
@@ -369,6 +380,7 @@
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
 
         var user = _user ?? await ResolveUserAsync();
         var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
@@ -648,6 +660,24 @@
         _plcOptionsSubscription?.Dispose();
         _cts?.Dispose();
         AgentState.Changed -= OnAgentStateChanged;
+    }
+
+    private void AppendAssistantChunk(string content)
+    {
+        if (_streamingAssistantIndex is null)
+        {
+            var message = new ChatMessage(ChatRole.Assistant, content);
+            Messages.Add(message);
+            _streamingAssistantIndex = Messages.Count - 1;
+        }
+        else
+        {
+            var index = _streamingAssistantIndex.Value;
+            var current = Messages[index];
+            Messages[index] = current with { Content = current.Content + content };
+        }
+
+        _latestAssistant = _streamingAssistantIndex is int idx ? Messages[idx] : _latestAssistant;
     }
 
 }
