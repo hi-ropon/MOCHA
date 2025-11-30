@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Application;
 using MOCHA.Models.Chat;
@@ -148,7 +149,8 @@ public class FakeChatFlowTests
             new FakePlcGatewayClient(),
             repo,
             history,
-            new DummyManualStore());
+            new DummyManualStore(),
+            new NoopChatTitleService());
 
         var user = new UserContext("persist-user", "Persist User");
         var conversationId = "conv-agent-tool";
@@ -185,7 +187,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeAgentChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        return new ChatOrchestrator(new FakeAgentChatClient(script), plc ?? new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
     }
 
     /// <summary>
@@ -196,7 +198,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -230,7 +232,8 @@ public class FakeChatFlowTests
             new FakePlcGatewayClient(),
             repo,
             history,
-            new DummyManualStore());
+            new DummyManualStore(),
+            new NoopChatTitleService());
 
         var user = new UserContext("stream-user", "Stream User");
         var conversationId = "conv-stream";
@@ -254,7 +257,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -280,7 +283,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), new FakePlcGatewayClient(), repo, history, new DummyManualStore(), new NoopChatTitleService());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
@@ -303,6 +306,14 @@ public class FakeChatFlowTests
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy manual", "dummy.txt", 1.0) };
             return Task.FromResult(hits);
+        }
+    }
+
+    private sealed class NoopChatTitleService : IChatTitleService
+    {
+        public Task RequestAsync(UserContext user, string conversationId, string userMessage, string? agentNumber, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
         }
     }
 

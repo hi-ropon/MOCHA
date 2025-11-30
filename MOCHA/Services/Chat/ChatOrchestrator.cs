@@ -19,6 +19,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
     private readonly IManualStore _manualStore;
+    private readonly IChatTitleService _chatTitleService;
     private static readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -32,18 +33,21 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="chatRepository">チャットリポジトリ。</param>
     /// <param name="history">会話履歴状態。</param>
     /// <param name="manualStore">マニュアルストア。</param>
+    /// <param name="chatTitleService">チャットタイトル生成サービス</param>
     public ChatOrchestrator(
         IAgentChatClient agentChatClient,
         IPlcGatewayClient plcGateway,
         IChatRepository chatRepository,
         ConversationHistoryState history,
-        IManualStore manualStore)
+        IManualStore manualStore,
+        IChatTitleService chatTitleService)
     {
         _agentChatClient = agentChatClient;
         _plcGateway = plcGateway;
         _chatRepository = chatRepository;
         _history = history;
         _manualStore = manualStore;
+        _chatTitleService = chatTitleService;
     }
 
     /// <summary>
@@ -66,8 +70,9 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             ? Guid.NewGuid().ToString("N")
             : conversationId;
 
-        await _history.UpsertAsync(user.UserId, convId, text, agentNumber, cancellationToken);
+        await _history.UpsertAsync(user.UserId, convId, text, agentNumber, cancellationToken, preserveExistingTitle: true);
         await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text), agentNumber, cancellationToken);
+        _ = _chatTitleService.RequestAsync(user, convId, text, agentNumber, cancellationToken);
 
         var turn = new ChatTurn(convId, new List<ChatMessage>
         {
@@ -419,7 +424,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private async Task<ChatMessage> SaveMessageAsync(UserContext user, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken)
     {
         await _chatRepository.AddMessageAsync(user.UserId, conversationId, message, agentNumber, cancellationToken);
-        await _history.UpsertAsync(user.UserId, conversationId, message.Content, agentNumber, cancellationToken);
+        await _history.UpsertAsync(user.UserId, conversationId, message.Content, agentNumber, cancellationToken, preserveExistingTitle: true);
         return message;
     }
 }

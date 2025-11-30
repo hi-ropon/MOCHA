@@ -260,7 +260,7 @@
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
                         ConversationId ??= ev.ActionRequest.ConversationId;
-                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber);
+                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber, preserveExistingTitle: true);
                         RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
                         break;
                     case ChatStreamEventType.ToolResult when ev.ActionResult is not null:

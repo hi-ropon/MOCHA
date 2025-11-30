@@ -68,9 +68,27 @@ internal sealed class ConversationHistoryState
     /// <param name="title">タイトル。</param>
     /// <param name="agentNumber">エージェント番号。</param>
     /// <param name="cancellationToken">キャンセル通知。</param>
-    public async Task UpsertAsync(string userId, string id, string title, string? agentNumber, CancellationToken cancellationToken = default)
+    /// <param name="preserveExistingTitle">既存のタイトルを優先するかどうか。</param>
+    public async Task UpsertAsync(string userId, string id, string title, string? agentNumber, CancellationToken cancellationToken = default, bool preserveExistingTitle = false)
     {
-        await _repository.UpsertConversationAsync(userId, id, title, agentNumber, cancellationToken);
+        var trimmed = title.Length > 30 ? title[..30] + "…" : title;
+        string resolvedTitle;
+        bool stateMismatch;
+
+        lock (_lock)
+        {
+            stateMismatch = _currentUserId != userId || _currentAgentNumber != agentNumber;
+            var existingTitle = stateMismatch
+                ? null
+                : _summaries.FirstOrDefault(x => x.Id == id && x.AgentNumber == agentNumber)?.Title;
+
+            resolvedTitle = preserveExistingTitle && !string.IsNullOrWhiteSpace(existingTitle)
+                ? existingTitle!
+                : trimmed;
+        }
+
+        await _repository.UpsertConversationAsync(userId, id, resolvedTitle, agentNumber, cancellationToken);
+
         lock (_lock)
         {
             if (_currentUserId != userId || _currentAgentNumber != agentNumber)
@@ -80,18 +98,22 @@ internal sealed class ConversationHistoryState
                 _summaries.Clear();
             }
 
-            var existing = _summaries.FirstOrDefault(x => x.Id == id && x.AgentNumber == agentNumber);
-            var trimmed = title.Length > 30 ? title[..30] + "…" : title;
-            if (existing is null)
+            var summary = _summaries.FirstOrDefault(x => x.Id == id && x.AgentNumber == agentNumber);
+            if (summary is null)
             {
-                _summaries.Add(new ConversationSummary(id, trimmed, DateTimeOffset.UtcNow, agentNumber, userId));
+                _summaries.Add(new ConversationSummary(id, resolvedTitle, DateTimeOffset.UtcNow, agentNumber, userId));
             }
             else
             {
-                existing.Title = trimmed;
-                existing.UpdatedAt = DateTimeOffset.UtcNow;
+                summary.Title = preserveExistingTitle && !string.IsNullOrWhiteSpace(summary.Title)
+                    ? summary.Title
+                    : resolvedTitle;
+                summary.UpdatedAt = DateTimeOffset.UtcNow;
+                summary.AgentNumber ??= agentNumber;
+                summary.UserId ??= userId;
             }
         }
+
         Changed?.Invoke();
     }
 

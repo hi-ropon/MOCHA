@@ -98,20 +98,25 @@ internal sealed class ChatRepository : IChatRepository
         var conversation = await _dbContext.Conversations
             .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
 
+        var preview = message.Content.Length > 30 ? message.Content[..30] + "…" : message.Content;
+
         if (conversation is null)
         {
             _dbContext.Conversations.Add(new ChatConversationEntity
             {
                 Id = conversationId,
                 UserObjectId = userObjectId,
-                Title = message.Content.Length > 30 ? message.Content[..30] + "…" : message.Content,
+                Title = preview,
                 AgentNumber = agentNumber,
                 UpdatedAt = DateTimeOffset.UtcNow
             });
         }
         else
         {
-            conversation.Title = message.Content.Length > 30 ? message.Content[..30] + "…" : message.Content;
+            if (string.IsNullOrWhiteSpace(conversation.Title))
+            {
+                conversation.Title = preview;
+            }
             conversation.AgentNumber ??= agentNumber;
             conversation.UpdatedAt = DateTimeOffset.UtcNow;
         }

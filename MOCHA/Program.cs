@@ -109,6 +109,8 @@ builder.Services.AddScoped<IPlcGatewayClient>(sp =>
     return new FakePlcGatewayClient();
 });
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IChatTitleGenerator, ClientChatTitleGenerator>();
+builder.Services.AddScoped<IChatTitleService, ChatTitleService>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();

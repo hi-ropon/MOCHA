@@ -82,7 +82,7 @@
             {
                 <div class="session-item" @onclick="() => OpenConversation(item.Id)">
                     <div class="session-content">
-                        <div class="history-title">@item.Title</div>
+                        <div class="history-title">@(!string.IsNullOrWhiteSpace(item.Title) ? item.Title : "タイトル生成中…")</div>
                         <div class="history-time">@item.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
                     </div>
                     <button type="button"
