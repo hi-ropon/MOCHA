@@ -51,12 +51,15 @@
                     <option value="@agent.Number">@agent.Name - @agent.Number</option>
                 }
             </select>
-            <button type="button" class="agent-gear-btn" title="エージェント設定" @onclick="ToggleSettings">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.5" fill="none" />
-                    <path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l1.9-1.5a.7.7 0 0 0 .2-.8l-1.8-3.1a.7.7 0 0 0-.8-.3l-2.2.9a8.4 8.4 0 0 0-2.6-1.5l-.3-2.3a.7.7 0 0 0-.7-.6h-3.6a.7.7 0 0 0-.7.6L8.8 3.9a8.4 8.4 0 0 0-2.6 1.5l-2.2-.9a.7.7 0 0 0-.8.3L1.4 8a.7.7 0 0 0 .2.8l1.9 1.5a7.9 7.9 0 0 0 0 3l-1.9 1.5a.7.7 0 0 0-.2.8l1.8 3.1c.2.3.5.4.8.3l2.2-.9a8.4 8.4 0 0 0 2.6 1.5l.3 2.3c0 .3.3.6.7.6h3.6c.4 0 .7-.3.7-.6l.3-2.3a8.4 8.4 0 0 0 2.6-1.5l2.2.9c.3.1.6 0 .8-.3l1.8-3.1a.7.7 0 0 0-.2-.8l-1.9-1.5Z" stroke="currentColor" stroke-width="1.5" fill="none" />
-                </svg>
-            </button>
+            @if (CanManageAgents)
+            {
+                <button type="button" class="agent-gear-btn" title="エージェント設定" @onclick="ToggleSettings">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.5" fill="none" />
+                        <path d="M19.4 13.5a7.9 7.9 0 0 0 0-3l1.9-1.5a.7.7 0 0 0 .2-.8l-1.8-3.1a.7.7 0 0 0-.8-.3l-2.2.9a8.4 8.4 0 0 0-2.6-1.5l-.3-2.3a.7.7 0 0 0-.7-.6h-3.6a.7.7 0 0 0-.7.6L8.8 3.9a8.4 8.4 0 0 0-2.6 1.5l-2.2-.9a.7.7 0 0 0-.8.3L1.4 8a.7.7 0 0 0 .2.8l1.9 1.5a7.9 7.9 0 0 0 0 3l-1.9 1.5a.7.7 0 0 0-.2.8l1.8 3.1c.2.3.5.4.8.3l2.2-.9a8.4 8.4 0 0 0 2.6 1.5l.3 2.3c0 .3.3.6.7.6h3.6c.4 0 .7-.3.7-.6l.3-2.3a8.4 8.4 0 0 0 2.6-1.5l2.2.9c.3.1.6 0 .8-.3l1.8-3.1a.7.7 0 0 0-.2-.8l-1.9-1.5Z" stroke="currentColor" stroke-width="1.5" fill="none" />
+                    </svg>
+                </button>
+            }
         </div>
         <div class="agent-note">
             @if (!string.IsNullOrWhiteSpace(selectedAgentName))
@@ -599,6 +602,7 @@
     private bool _userSettingsOpen;
     private UserAction _selectedAction = UserAction.Theme;
     private bool isAdmin;
+    private bool isDeveloper;
     private string selectedAgentNumber = string.Empty;
     private string selectedAgentName = string.Empty;
     private string agentNumberInput = string.Empty;
@@ -682,6 +686,7 @@
             ? "U"
             : userName[..1].ToUpperInvariant();
         isAdmin = await RoleProvider.IsInRoleAsync(_userId, UserRoleId.Predefined.Administrator.Value);
+        isDeveloper = await RoleProvider.IsInRoleAsync(_userId, UserRoleId.Predefined.Developer.Value);
 
         await AgentState.LoadAsync(_userId);
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
@@ -740,6 +745,11 @@
 
     private void ToggleSettings()
     {
+        if (!CanManageAgents)
+        {
+            return;
+        }
+
         _settingsOpen = !_settingsOpen;
         if (!_settingsOpen)
         {
@@ -768,6 +778,8 @@
     {
         NavigationManager.NavigateTo("/logout?confirm=true", forceLoad: true);
     }
+
+    private bool CanManageAgents => isAdmin || isDeveloper;
 
     private async Task SaveUserSettingsAsync()
     {
