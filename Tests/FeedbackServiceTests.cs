@@ -17,7 +17,7 @@ namespace MOCHA.Tests;
 public class FeedbackServiceTests
 {
     [TestMethod]
-    public async Task アシスタントメッセージにBadを1回だけ付与できる()
+    public async Task アシスタントメッセージ_評価をBadからGoodへ変更できる()
     {
         var factory = CreateFactory("feedback-1");
         var chatRepo = new ChatRepository(factory);
@@ -34,13 +34,20 @@ public class FeedbackServiceTests
         Assert.AreEqual(FeedbackRating.Bad, entry.Rating);
         Assert.AreEqual(1, entry.MessageIndex);
 
-        var summary = await service.GetSummaryAsync(userId, conversationId);
-        Assert.AreEqual(0, summary.GoodCount);
-        Assert.AreEqual(1, summary.BadCount);
-        Assert.AreEqual(1, summary.BadRate);
+        var badSummary = await service.GetSummaryAsync(userId, conversationId);
+        Assert.AreEqual(0, badSummary.GoodCount);
+        Assert.AreEqual(1, badSummary.BadCount);
+        Assert.AreEqual(1, badSummary.BadRate);
 
-        await Assert.ThrowsExceptionAsync<InvalidOperationException>(() =>
-            service.SubmitAsync(userId, conversationId, 1, FeedbackRating.Good, null, default));
+        var updated = await service.SubmitAsync(userId, conversationId, 1, FeedbackRating.Good, null, default);
+
+        Assert.AreEqual(FeedbackRating.Good, updated.Rating);
+        Assert.AreEqual(1, updated.MessageIndex);
+
+        var goodSummary = await service.GetSummaryAsync(userId, conversationId);
+        Assert.AreEqual(1, goodSummary.GoodCount);
+        Assert.AreEqual(0, goodSummary.BadCount);
+        Assert.AreEqual(0, goodSummary.BadRate);
     }
 
     [TestMethod]
