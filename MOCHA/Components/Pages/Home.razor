@@ -13,8 +13,8 @@
 @using MOCHA.Models.Chat
 @using MOCHA.Models.Feedback
 @using MOCHA.Services.Chat
-@using System.Text
 @using Microsoft.Extensions.Logging
+@using System.Text
 @using static MOCHA.Services.Chat.ActivityPanelService
 @using static MOCHA.Services.Chat.ActivityBuilder
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
@@ -148,6 +148,7 @@
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
     private int? _streamingAssistantIndex;
+    private readonly Dictionary<string, StringBuilder> _assistantStreamBuffers = new();
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
@@ -232,6 +233,7 @@
 
         ConversationId ??= Guid.NewGuid().ToString("N");
         var sendingConversationId = ConversationId;
+        _assistantStreamBuffers[sendingConversationId] = new StringBuilder();
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
@@ -243,8 +245,6 @@
         ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
-        var assistantDisplayBuffer = new StringBuilder();
-
         try
         {
             await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
@@ -254,13 +254,13 @@
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        if (ev.Message.Role == ChatRole.Assistant)
+                        if (!isStale)
                         {
-                            assistantDisplayBuffer.Append(ev.Message.Content);
+                            HandleAssistantMessageChunk(ev.Message, sendingConversationId);
                         }
-                        else if (!isStale)
+                        else if (ev.Message.Role == ChatRole.Assistant)
                         {
-                            Messages.Add(ev.Message);
+                            AppendToStreamBuffer(ev.Message.Content, sendingConversationId);
                         }
                         break;
                     case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
@@ -282,21 +282,15 @@
                     case ChatStreamEventType.Completed:
                         if (!isStale)
                         {
-                            if (assistantDisplayBuffer.Length > 0)
-                            {
-                                var finalAssistant = new ChatMessage(ChatRole.Assistant, assistantDisplayBuffer.ToString());
-                                Messages.Add(finalAssistant);
-                                _latestAssistant = finalAssistant;
-                                _streamingAssistantIndex = null;
-                            }
-
                             Status = null;
                             MarkActiveTurnCompleted();
                             if (_latestAssistant is not null)
                             {
                                 RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
                             }
+                            _streamingAssistantIndex = null;
                         }
+                        _assistantStreamBuffers.Remove(sendingConversationId);
                         break;
                     case ChatStreamEventType.Error:
                         if (!isStale)
@@ -325,6 +319,8 @@
             {
                 MarkActiveTurnCompleted();
                 IsSending = false;
+                _streamingAssistantIndex = null;
+                _assistantStreamBuffers.Remove(sendingConversationId);
                 await InvokeAsync(StateHasChanged);
             }
         }
@@ -375,6 +371,9 @@
         {
             _cts.Cancel();
         }
+
+        _assistantStreamBuffers.Clear();
+        _streamingAssistantIndex = null;
     }
 
     private void SeedInitialMessage()
@@ -817,9 +816,38 @@
 
     private void AppendAssistantChunk(string content)
     {
+        AppendAssistantChunk(content, ConversationId);
+    }
+
+    private void HandleAssistantMessageChunk(ChatMessage message, string streamConversationId)
+    {
+        if (message.Role != ChatRole.Assistant)
+        {
+            Messages.Add(message);
+            return;
+        }
+
+        var buffer = AppendToStreamBuffer(message.Content, streamConversationId);
+        AppendAssistantChunk(buffer, streamConversationId);
+    }
+
+    private string AppendToStreamBuffer(string content, string streamConversationId)
+    {
+        if (!_assistantStreamBuffers.TryGetValue(streamConversationId, out var buffer))
+        {
+            buffer = new StringBuilder();
+            _assistantStreamBuffers[streamConversationId] = buffer;
+        }
+
+        buffer.Append(content);
+        return buffer.ToString();
+    }
+
+    private void AppendAssistantChunk(string bufferedContent, string? streamConversationId)
+    {
         if (_streamingAssistantIndex is null)
         {
-            var message = new ChatMessage(ChatRole.Assistant, content);
+            var message = new ChatMessage(ChatRole.Assistant, bufferedContent);
             Messages.Add(message);
             _streamingAssistantIndex = Messages.Count - 1;
         }
@@ -827,10 +855,14 @@
         {
             var index = _streamingAssistantIndex.Value;
             var current = Messages[index];
-            Messages[index] = current with { Content = current.Content + content };
+            Messages[index] = current with { Content = bufferedContent };
         }
 
         _latestAssistant = _streamingAssistantIndex is int idx ? Messages[idx] : _latestAssistant;
+        if (!string.IsNullOrWhiteSpace(streamConversationId))
+        {
+            _assistantStreamBuffers[streamConversationId] = new StringBuilder(bufferedContent);
+        }
     }
 
     private Dictionary<int, int> BuildAssistantIndexMap(IReadOnlyList<ChatMessage> persistedMessages)
