@@ -62,7 +62,7 @@
                             </div>
                         </div>
                     }
-                    @if (ShouldShowFeedback(message, messageIndex))
+                    @if (ShouldShowFeedback(message, messageIndex, _streamingAssistantIndex))
                     {
                         <div class="feedback-actions">
                             @if (!IsRatedAs(messageIndex, FeedbackRating.Bad))
@@ -715,9 +715,14 @@
         return FeedbackRatings.TryGetValue(messageIndex, out var existing) && existing == rating;
     }
 
-    private static bool ShouldShowFeedback(ChatMessage message, int messageIndex)
+    internal static bool ShouldShowFeedback(ChatMessage message, int messageIndex, int? streamingAssistantIndex)
     {
         if (message.Role != ChatRole.Assistant)
+        {
+            return false;
+        }
+
+        if (streamingAssistantIndex.HasValue && streamingAssistantIndex.Value == messageIndex)
         {
             return false;
         }
@@ -874,7 +879,7 @@
         for (var i = 0; i < Messages.Count; i++)
         {
             var msg = Messages[i];
-            if (!ShouldShowFeedback(msg, i))
+            if (!ShouldShowFeedback(msg, i, _streamingAssistantIndex))
             {
                 continue;
             }
