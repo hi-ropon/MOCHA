@@ -9,6 +9,21 @@ namespace MOCHA.Models.Architecture;
 /// </summary>
 public sealed class PlcUnit
 {
+    /// <summary>
+    /// ユニット初期化
+    /// </summary>
+    /// <param name="id">ユニットID</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="name">ユニット名</param>
+    /// <param name="model">機種</param>
+    /// <param name="role">役割</param>
+    /// <param name="ipAddress">IPアドレス</param>
+    /// <param name="commentFile">コメントファイル</param>
+    /// <param name="programFile">プログラムファイル</param>
+    /// <param name="modules">モジュール一覧</param>
+    /// <param name="createdAt">作成日時</param>
+    /// <param name="updatedAt">更新日時</param>
     private PlcUnit(
         Guid id,
         string userId,
@@ -37,19 +52,39 @@ public sealed class PlcUnit
         UpdatedAt = updatedAt;
     }
 
+    /// <summary>ユニットID</summary>
     public Guid Id { get; }
+    /// <summary>ユーザーID</summary>
     public string UserId { get; }
+    /// <summary>エージェント番号</summary>
     public string AgentNumber { get; }
+    /// <summary>ユニット名</summary>
     public string Name { get; }
+    /// <summary>機種</summary>
     public string? Model { get; }
+    /// <summary>役割</summary>
     public string? Role { get; }
+    /// <summary>IPアドレス</summary>
     public string? IpAddress { get; }
+    /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; }
+    /// <summary>プログラムファイル</summary>
     public PlcFileUpload? ProgramFile { get; }
+    /// <summary>モジュール一覧</summary>
     public IReadOnlyCollection<PlcUnitModule> Modules { get; }
+    /// <summary>作成日時</summary>
     public DateTimeOffset CreatedAt { get; }
+    /// <summary>更新日時</summary>
     public DateTimeOffset UpdatedAt { get; }
 
+    /// <summary>
+    /// ドラフトからユニット生成
+    /// </summary>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="draft">ユニットドラフト</param>
+    /// <param name="createdAt">作成日時</param>
+    /// <returns>生成したユニット</returns>
     public static PlcUnit Create(string userId, string agentNumber, PlcUnitDraft draft, DateTimeOffset? createdAt = null)
     {
         var timestamp = createdAt ?? DateTimeOffset.UtcNow;
@@ -68,6 +103,11 @@ public sealed class PlcUnit
             timestamp);
     }
 
+    /// <summary>
+    /// ドラフトでユニットを更新
+    /// </summary>
+    /// <param name="draft">更新内容</param>
+    /// <returns>更新後ユニット</returns>
     public PlcUnit Update(PlcUnitDraft draft)
     {
         return new PlcUnit(
@@ -85,6 +125,11 @@ public sealed class PlcUnit
             DateTimeOffset.UtcNow);
     }
 
+    /// <summary>
+    /// 文字列の正規化（空白なら null）
+    /// </summary>
+    /// <param name="value">入力値</param>
+    /// <returns>正規化された文字列</returns>
     private static string? NormalizeNullable(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();

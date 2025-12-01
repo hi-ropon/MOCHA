@@ -16,7 +16,7 @@ public sealed class FeedbackController : ControllerBase
     private readonly IFeedbackService _feedbackService;
 
     /// <summary>
-    /// フィードバックサービスを注入して初期化する
+    /// フィードバックサービス注入による初期化
     /// </summary>
     /// <param name="feedbackService">フィードバックサービス</param>
     public FeedbackController(IFeedbackService feedbackService)
@@ -25,7 +25,7 @@ public sealed class FeedbackController : ControllerBase
     }
 
     /// <summary>
-    /// フィードバックを登録する
+    /// フィードバック登録
     /// </summary>
     /// <param name="request">登録リクエスト</param>
     /// <param name="cancellationToken">キャンセル通知</param>
@@ -57,7 +57,7 @@ public sealed class FeedbackController : ControllerBase
     }
 
     /// <summary>
-    /// 会話単位のフィードバック集計を返す
+    /// 会話単位のフィードバック集計取得
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="cancellationToken">キャンセル通知</param>
@@ -76,7 +76,7 @@ public sealed class FeedbackController : ControllerBase
     }
 
     /// <summary>
-    /// 直近の Bad を返す
+    /// 直近の Bad 一覧取得
     /// </summary>
     /// <param name="take">取得件数</param>
     /// <param name="cancellationToken">キャンセル通知</param>
@@ -96,7 +96,7 @@ public sealed class FeedbackController : ControllerBase
     }
 
     /// <summary>
-    /// 会話内で既に付与された評価を返す
+    /// 会話内で既に付与された評価取得
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="cancellationToken">キャンセル通知</param>

@@ -17,9 +17,15 @@ using MOCHA.Agents.Infrastructure.Tools;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// AgentFrameworkOrchestrator と関連ファクトリーの動作を検証するテスト
+/// </summary>
 [TestClass]
 public class AgentFrameworkOrchestratorTests
 {
+    /// <summary>
+    /// 最小応答が返ることを確認する
+    /// </summary>
     [TestMethod]
     public async Task オーケストレーター_最小応答を返す()
     {
@@ -61,6 +67,9 @@ public class AgentFrameworkOrchestratorTests
         Assert.IsTrue(list.Any(e => e.Type == AgentEventType.Completed && e.ConversationId == "conv-1"));
     }
 
+    /// <summary>
+    /// ストリーミングで複数チャンクが返ることを確認する
+    /// </summary>
     [TestMethod]
     public async Task オーケストレーター_ストリーミングで複数チャンクを返す()
     {
@@ -103,6 +112,9 @@ public class AgentFrameworkOrchestratorTests
         CollectionAssert.AreEqual(new[] { "part-1 ", "part-2" }, chunks);
     }
 
+    /// <summary>
+    /// ファクトリーがプロバイダーごとにクライアントを生成することを確認する
+    /// </summary>
     [TestMethod]
     public void ファクトリ_プロバイダーごとに生成される()
     {
@@ -127,10 +139,17 @@ public class AgentFrameworkOrchestratorTests
         Assert.IsNotNull(azureFactory.Create());
     }
 
+    /// <summary>
+    /// 固定チャットクライアントを返すスタブファクトリー
+    /// </summary>
     private sealed class FakeLlmChatClientFactory : ILlmChatClientFactory
     {
         private readonly IChatClient _client;
 
+        /// <summary>
+        /// クライアント注入による初期化
+        /// </summary>
+        /// <param name="client">チャットクライアント</param>
         public FakeLlmChatClientFactory(IChatClient client)
         {
             _client = client;
@@ -139,11 +158,18 @@ public class AgentFrameworkOrchestratorTests
         IChatClient ILlmChatClientFactory.Create() => _client;
     }
 
+    /// <summary>
+    /// 固定応答・チャンクを返すフェイクチャットクライアント
+    /// </summary>
     private sealed class FakeChatClient : IChatClient
     {
         private const string _conversationId = "conv-1";
         private readonly IReadOnlyList<string>? _streamingChunks;
 
+        /// <summary>
+        /// チャンク指定による初期化
+        /// </summary>
+        /// <param name="streamingChunks">ストリーミングチャンク</param>
         public FakeChatClient(IEnumerable<string>? streamingChunks = null)
         {
             _streamingChunks = streamingChunks?.ToList();
@@ -206,13 +232,22 @@ public class AgentFrameworkOrchestratorTests
         }
     }
 
+    /// <summary>
+    /// メモリ内マニュアルストアの簡易実装
+    /// </summary>
     private sealed class InMemoryManualStore : IManualStore
     {
+        /// <summary>
+        /// マニュアル読取
+        /// </summary>
         public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy", 5));
         }
 
+        /// <summary>
+        /// マニュアル検索
+        /// </summary>
         public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit>

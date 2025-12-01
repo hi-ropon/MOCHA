@@ -7,10 +7,18 @@ namespace MOCHA.Models.Architecture;
 /// </summary>
 public sealed class PlcFileUpload
 {
+    /// <summary>ファイル名</summary>
     public string FileName { get; init; } = string.Empty;
+    /// <summary>コンテンツタイプ</summary>
     public string ContentType { get; init; } = "application/octet-stream";
+    /// <summary>ファイルサイズ</summary>
     public long FileSize { get; init; }
 
+    /// <summary>
+    /// 入力値のバリデーション
+    /// </summary>
+    /// <param name="maxSizeBytes">許容最大サイズ</param>
+    /// <returns>検証結果</returns>
     public (bool IsValid, string? Error) Validate(long maxSizeBytes)
     {
         if (string.IsNullOrWhiteSpace(FileName))

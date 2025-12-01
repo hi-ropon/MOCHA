@@ -15,6 +15,12 @@ namespace MOCHA.Agents;
 /// </summary>
 public static class DependencyInjection
 {
+    /// <summary>
+    /// MOCHA エージェント依存性登録拡張
+    /// </summary>
+    /// <param name="services">サービスコレクション</param>
+    /// <param name="configuration">構成設定</param>
+    /// <returns>登録済みサービスコレクション</returns>
     public static IServiceCollection AddMochaAgents(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<LlmOptions>(configuration.GetSection("Llm"));

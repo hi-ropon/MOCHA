@@ -16,6 +16,9 @@ namespace MOCHA.Tests;
 [TestClass]
 public class FeedbackServiceTests
 {
+    /// <summary>
+    /// アシスタントメッセージ評価を Bad から Good に更新できる確認
+    /// </summary>
     [TestMethod]
     public async Task アシスタントメッセージ_評価をBadからGoodへ変更できる()
     {
@@ -50,6 +53,9 @@ public class FeedbackServiceTests
         Assert.AreEqual(0, goodSummary.BadRate);
     }
 
+    /// <summary>
+    /// ユーザーメッセージへの評価を拒否する確認
+    /// </summary>
     [TestMethod]
     public async Task ユーザーメッセージには評価できない()
     {
@@ -66,6 +72,9 @@ public class FeedbackServiceTests
             service.SubmitAsync(userId, conversationId, 0, FeedbackRating.Good, null, default));
     }
 
+    /// <summary>
+    /// 同じ評価再送時に評価が削除される確認
+    /// </summary>
     [TestMethod]
     public async Task 同じ評価を再送すると削除される()
     {
@@ -86,6 +95,11 @@ public class FeedbackServiceTests
         Assert.IsFalse(ratings.ContainsKey(1));
     }
 
+    /// <summary>
+    /// インメモリ DB コンテキストファクトリー生成
+    /// </summary>
+    /// <param name="name">DB 名</param>
+    /// <returns>コンテキストファクトリー</returns>
     private static IDbContextFactory<ChatDbContext> CreateFactory(string name)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
@@ -95,15 +109,26 @@ public class FeedbackServiceTests
         return new InMemoryChatDbContextFactory(options);
     }
 
+    /// <summary>
+    /// インメモリ用のコンテキストファクトリー
+    /// </summary>
     private sealed class InMemoryChatDbContextFactory : IDbContextFactory<ChatDbContext>
     {
         private readonly DbContextOptions<ChatDbContext> _options;
 
+        /// <summary>
+        /// オプション指定による初期化
+        /// </summary>
+        /// <param name="options">DbContext オプション</param>
         public InMemoryChatDbContextFactory(DbContextOptions<ChatDbContext> options)
         {
             _options = options;
         }
 
+        /// <summary>
+        /// DbContext 生成
+        /// </summary>
+        /// <returns>生成したコンテキスト</returns>
         public ChatDbContext CreateDbContext()
         {
             return new ChatDbContext(_options);

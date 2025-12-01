@@ -15,12 +15,23 @@ internal sealed class ClientChatTitleGenerator : IChatTitleGenerator
     private readonly ILlmChatClientFactory _chatClientFactory;
     private readonly ILogger<ClientChatTitleGenerator> _logger;
 
+    /// <summary>
+    /// チャットクライアントファクトリーとロガー注入による初期化
+    /// </summary>
+    /// <param name="chatClientFactory">チャットクライアントファクトリー</param>
+    /// <param name="logger">ロガー</param>
     public ClientChatTitleGenerator(ILlmChatClientFactory chatClientFactory, ILogger<ClientChatTitleGenerator> logger)
     {
         _chatClientFactory = chatClientFactory;
         _logger = logger;
     }
 
+    /// <summary>
+    /// タイトル生成
+    /// </summary>
+    /// <param name="request">タイトル生成リクエスト</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>生成タイトル</returns>
     public async Task<string> GenerateAsync(ChatTitleRequest request, CancellationToken cancellationToken = default)
     {
         var chatClient = _chatClientFactory.Create();
@@ -42,6 +53,11 @@ internal sealed class ClientChatTitleGenerator : IChatTitleGenerator
         return normalized;
     }
 
+    /// <summary>
+    /// 応答からテキスト抽出
+    /// </summary>
+    /// <param name="response">チャット応答</param>
+    /// <returns>抽出テキスト</returns>
     private static string ExtractText(ChatResponse response)
     {
         if (response is null)
@@ -73,6 +89,10 @@ internal sealed class ClientChatTitleGenerator : IChatTitleGenerator
         return response.ToString() ?? string.Empty;
     }
 
+    /// <summary>
+    /// システムプロンプト生成
+    /// </summary>
+    /// <returns>プロンプト文字列</returns>
     private static string BuildSystemPrompt()
     {
         var sb = new StringBuilder();
@@ -84,6 +104,11 @@ internal sealed class ClientChatTitleGenerator : IChatTitleGenerator
         return sb.ToString();
     }
 
+    /// <summary>
+    /// タイトル文字列の正規化
+    /// </summary>
+    /// <param name="raw">生成結果の生テキスト</param>
+    /// <returns>整形タイトル</returns>
     private static string Normalize(string raw)
     {
         if (string.IsNullOrWhiteSpace(raw))

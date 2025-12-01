@@ -8,7 +8,7 @@ namespace MOCHA.Services.Feedback;
 internal interface IFeedbackRepository
 {
     /// <summary>
-    /// 既存のフィードバックを取得する
+    /// 既存のフィードバック取得
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="messageIndex">メッセージインデックス</param>
@@ -17,14 +17,14 @@ internal interface IFeedbackRepository
     Task<FeedbackEntry?> GetAsync(string conversationId, int messageIndex, string userObjectId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// フィードバックを追加する
+    /// フィードバック追加
     /// </summary>
     /// <param name="entry">保存するレコード</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     Task AddAsync(FeedbackEntry entry, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 会話単位の集計を取得する
+    /// 会話単位の集計取得
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="userObjectId">ユーザーID</param>
@@ -32,7 +32,7 @@ internal interface IFeedbackRepository
     Task<FeedbackSummary> GetSummaryAsync(string conversationId, string userObjectId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 直近の Bad を取得する
+    /// 直近の Bad 取得
     /// </summary>
     /// <param name="userObjectId">ユーザーID</param>
     /// <param name="take">取得件数</param>
@@ -40,7 +40,7 @@ internal interface IFeedbackRepository
     Task<IReadOnlyList<FeedbackEntry>> GetRecentBadAsync(string userObjectId, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 会話内のメッセージごとの評価を取得する
+    /// 会話内のメッセージごとの評価取得
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="userObjectId">ユーザーID</param>
@@ -48,7 +48,7 @@ internal interface IFeedbackRepository
     Task<IReadOnlyDictionary<int, FeedbackRating>> GetRatingsAsync(string conversationId, string userObjectId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// フィードバックを削除する
+    /// フィードバック削除
     /// </summary>
     /// <param name="conversationId">会話ID</param>
     /// <param name="messageIndex">メッセージインデックス</param>

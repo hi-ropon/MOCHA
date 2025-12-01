@@ -13,6 +13,11 @@ namespace MOCHA.Tests;
 [TestClass]
 public class DevUserServiceTests
 {
+    /// <summary>
+    /// インメモリ DbContext 生成
+    /// </summary>
+    /// <param name="dbName">DB 名</param>
+    /// <returns>生成したコンテキスト</returns>
     private static ChatDbContext CreateContext(string dbName)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()

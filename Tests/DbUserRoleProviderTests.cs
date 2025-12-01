@@ -8,13 +8,13 @@ using MOCHA.Services.Auth;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// DbUserRoleProvider のロール操作を検証するテスト。
+/// DbUserRoleProvider のロール操作検証テスト
 /// </summary>
 [TestClass]
 public class DbUserRoleProviderTests
 {
     /// <summary>
-    /// インメモリ DB を使ったコンテキストを生成するヘルパー。
+    /// インメモリ DB を使ったコンテキスト生成ヘルパー
     /// </summary>
     private static ChatDbContext CreateContext(string dbName)
     {
@@ -25,7 +25,7 @@ public class DbUserRoleProviderTests
     }
 
     /// <summary>
-    /// 同じロールを複数回付与しても重複保存されないことを確認する。
+    /// 同じロールを複数回付与しても重複保存されない確認
     /// </summary>
     [TestMethod]
     public async Task 重複せず保存される()
@@ -43,7 +43,7 @@ public class DbUserRoleProviderTests
     }
 
     /// <summary>
-    /// 削除操作でロールが取り除かれることを確認する。
+    /// 削除操作でロールが取り除かれる確認
     /// </summary>
     [TestMethod]
     public async Task 削除操作でロールが取り除かれる()
@@ -60,7 +60,7 @@ public class DbUserRoleProviderTests
     }
 
     /// <summary>
-    /// ロール判定が大文字小文字を無視して行われることを確認する。
+    /// ロール判定が大文字小文字を無視して行われる確認
     /// </summary>
     [TestMethod]
     public async Task 大小文字を無視する()

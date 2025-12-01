@@ -7,13 +7,13 @@ using MOCHA.Services.Settings;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// ユーザー設定状態（テーマ切替）のふるまいを検証するテスト。
+/// ユーザー設定状態（テーマ切替）のふるまい検証テスト
 /// </summary>
 [TestClass]
 public class UserPreferencesStateTests
 {
     /// <summary>
-    /// ストアに保存がなければ OS のテーマ設定を初期値として採用する。
+    /// 未保存時の OS テーマ初期値採用確認
     /// </summary>
     [TestMethod]
     public async Task 初回ロードでローカル未設定ならOSテーマを反映する()
@@ -30,7 +30,7 @@ public class UserPreferencesStateTests
     }
 
     /// <summary>
-    /// 保存済みテーマがあればそれを優先的に読み込む。
+    /// 保存済みテーマ優先読み込み確認
     /// </summary>
     [TestMethod]
     public async Task 保存済みテーマをロードで再現する()
@@ -47,7 +47,7 @@ public class UserPreferencesStateTests
     }
 
     /// <summary>
-    /// テーマ更新時にストアへ保存され、Changed イベントが発火する。
+    /// テーマ更新時の保存と通知確認
     /// </summary>
     [TestMethod]
     public async Task テーマ更新で保存と通知が行われる()
@@ -72,6 +72,10 @@ public class UserPreferencesStateTests
     {
         private UserPreferences? _preferences;
 
+        /// <summary>
+        /// テスト用ユーザープリファレンスストアフェイク
+        /// </summary>
+        /// <param name="preferences">事前設定済みプリファレンス</param>
         public FakeStore(UserPreferences? preferences = null)
         {
             _preferences = preferences;
@@ -79,11 +83,21 @@ public class UserPreferencesStateTests
 
         public Theme? SavedTheme { get; private set; }
 
+        /// <summary>
+        /// 保存済みプリファレンス取得
+        /// </summary>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>保存済みプリファレンス</returns>
         public Task<UserPreferences?> GetAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_preferences);
         }
 
+        /// <summary>
+        /// プリファレンス保存
+        /// </summary>
+        /// <param name="prefs">保存対象プリファレンス</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
         public Task SaveAsync(UserPreferences prefs, CancellationToken cancellationToken = default)
         {
             _preferences = prefs;
@@ -96,11 +110,20 @@ public class UserPreferencesStateTests
     {
         private readonly Theme _preferred;
 
+        /// <summary>
+        /// テスト用カラースキームプロバイダフェイク
+        /// </summary>
+        /// <param name="preferred">既定テーマ</param>
         public FakeSchemeProvider(Theme preferred)
         {
             _preferred = preferred;
         }
 
+        /// <summary>
+        /// 優先テーマ取得
+        /// </summary>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>優先テーマ</returns>
         public Task<Theme> GetPreferredThemeAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(_preferred);
@@ -111,6 +134,11 @@ public class UserPreferencesStateTests
     {
         public Theme? LastAppliedTheme { get; private set; }
 
+        /// <summary>
+        /// テーマ適用
+        /// </summary>
+        /// <param name="theme">適用対象テーマ</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
         public Task ApplyAsync(Theme theme, CancellationToken cancellationToken = default)
         {
             LastAppliedTheme = theme;

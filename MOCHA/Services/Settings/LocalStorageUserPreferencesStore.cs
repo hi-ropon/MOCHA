@@ -8,18 +8,27 @@ using MOCHA.Models.Settings;
 namespace MOCHA.Services.Settings;
 
 /// <summary>
-/// ブラウザの localStorage を使ってユーザー設定を保持する。
+/// ブラウザの localStorage を使ったユーザー設定保持ストア
 /// </summary>
 public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
 {
     private readonly IJSRuntime _jsRuntime;
     private const string _storageKey = "mocha.preferences";
 
+    /// <summary>
+    /// JS ランタイム注入による初期化
+    /// </summary>
+    /// <param name="jsRuntime">JS ランタイム</param>
     public LocalStorageUserPreferencesStore(IJSRuntime jsRuntime)
     {
         this._jsRuntime = jsRuntime;
     }
 
+    /// <summary>
+    /// 保存済みプリファレンス読み込み
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>保存済みプリファレンス</returns>
     public async Task<UserPreferences?> GetAsync(CancellationToken cancellationToken = default)
     {
         string? json;
@@ -61,6 +70,11 @@ public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
         return null;
     }
 
+    /// <summary>
+    /// プリファレンス保存
+    /// </summary>
+    /// <param name="preferences">保存するプリファレンス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task SaveAsync(UserPreferences preferences, CancellationToken cancellationToken = default)
     {
         var payload = new PreferencePayload { Theme = preferences.Theme.ToString().ToLowerInvariant() };
@@ -82,6 +96,7 @@ public sealed class LocalStorageUserPreferencesStore : IUserPreferencesStore
 
     private sealed class PreferencePayload
     {
+        /// <summary>テーマ名</summary>
         public string Theme { get; set; } = "light";
     }
 }

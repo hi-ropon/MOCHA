@@ -1,10 +1,13 @@
 namespace MOCHA.Agents.Infrastructure.Agents;
 
 /// <summary>
-/// Oriental Motor 解析向けの簡易エージェント。
+/// Oriental Motor 解析向けの簡易エージェント
 /// </summary>
 public sealed class OrientalTaskAgent : BaseTaskAgent
 {
+    /// <summary>
+    /// Oriental Motor エージェント設定による初期化
+    /// </summary>
     public OrientalTaskAgent()
         : base(
             "orientalAgent",

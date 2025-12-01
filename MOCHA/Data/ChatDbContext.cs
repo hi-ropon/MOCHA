@@ -7,14 +7,14 @@ using MOCHA.Services.Feedback;
 namespace MOCHA.Data;
 
 /// <summary>
-/// チャット機能に必要なエンティティを管理する DbContext。
+/// チャット機能に必要なエンティティを管理する DbContext
 /// </summary>
 internal sealed class ChatDbContext : DbContext, IChatDbContext
 {
     /// <summary>
-    /// DbContext のオプションを受け取って初期化する。
+    /// DbContext オプション受け取りによる初期化
     /// </summary>
-    /// <param name="options">DbContext オプション。</param>
+    /// <param name="options">DbContext オプション</param>
     public ChatDbContext(DbContextOptions<ChatDbContext> options) : base(options)
     {
     }
@@ -28,9 +28,9 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<FeedbackEntity> Feedbacks => Set<FeedbackEntity>();
 
     /// <summary>
-    /// エンティティの制約やインデックスを構成する。
+    /// エンティティの制約やインデックス構成
     /// </summary>
-    /// <param name="modelBuilder">モデルビルダー。</param>
+    /// <param name="modelBuilder">モデルビルダー</param>
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

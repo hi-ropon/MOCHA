@@ -5,28 +5,28 @@ using MOCHA.Models.Chat;
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// EF Core を利用した会話永続化リポジトリ。
+/// EF Core を利用した会話永続化リポジトリ
 /// </summary>
 internal sealed class ChatRepository : IChatRepository
 {
     private readonly IDbContextFactory<ChatDbContext> _dbContextFactory;
 
     /// <summary>
-    /// DbContext を注入してリポジトリを初期化する。
+    /// DbContext ファクトリー注入によるリポジトリ初期化
     /// </summary>
-    /// <param name="dbContext">チャット用 DbContext。</param>
+    /// <param name="dbContextFactory">チャット用 DbContext ファクトリー</param>
     public ChatRepository(IDbContextFactory<ChatDbContext> dbContextFactory)
     {
         _dbContextFactory = dbContextFactory;
     }
 
     /// <summary>
-    /// ユーザー・エージェントに応じた会話要約一覧を取得する。
+    /// ユーザー・エージェントに応じた会話要約一覧取得
     /// </summary>
-    /// <param name="userObjectId">ユーザーID。</param>
-    /// <param name="agentNumber">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>会話要約リスト。</returns>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>会話要約リスト</returns>
     public async Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -53,13 +53,13 @@ internal sealed class ChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// 会話タイトルを挿入または更新し、更新日時を記録する。
+    /// 会話タイトルの挿入または更新と更新日時記録
     /// </summary>
-    /// <param name="userObjectId">ユーザーID。</param>
-    /// <param name="conversationId">会話ID。</param>
-    /// <param name="title">タイトル。</param>
-    /// <param name="agentNumber">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="title">タイトル</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -90,13 +90,13 @@ internal sealed class ChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// メッセージを保存し、会話のタイトルと更新日時も合わせて更新する。
+    /// メッセージ保存とタイトル・更新日時更新
     /// </summary>
-    /// <param name="userObjectId">ユーザーID。</param>
-    /// <param name="conversationId">会話ID。</param>
-    /// <param name="message">保存するメッセージ。</param>
-    /// <param name="agentNumber">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="message">保存するメッセージ</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -140,13 +140,13 @@ internal sealed class ChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// 会話に紐づくメッセージを時系列で取得する。
+    /// 会話に紐づくメッセージの時系列取得
     /// </summary>
-    /// <param name="userObjectId">ユーザーID。</param>
-    /// <param name="conversationId">会話ID。</param>
-    /// <param name="agentNumber">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>メッセージ一覧。</returns>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>メッセージ一覧</returns>
     public async Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -179,12 +179,12 @@ internal sealed class ChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// 会話を削除する。エージェント番号も一致しない場合は削除しない。
+    /// 会話削除（エージェント番号一致時のみ）
     /// </summary>
-    /// <param name="userObjectId">ユーザーID。</param>
-    /// <param name="conversationId">会話ID。</param>
-    /// <param name="agentNumber">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
     {
         await using var db = await _dbContextFactory.CreateDbContextAsync(cancellationToken);
@@ -207,10 +207,10 @@ internal sealed class ChatRepository : IChatRepository
     }
 
     /// <summary>
-    /// 文字列のロール名を列挙型に変換する。失敗時は Assistant とする。
+    /// 文字列ロール名の列挙型変換（失敗時は Assistant）
     /// </summary>
-    /// <param name="role">ロール名文字列。</param>
-    /// <returns>変換結果。</returns>
+    /// <param name="role">ロール名文字列</param>
+    /// <returns>変換結果</returns>
     private static ChatRole ParseRole(string role)
     {
         return Enum.TryParse<ChatRole>(role, ignoreCase: true, out var parsed)

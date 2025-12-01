@@ -6,13 +6,13 @@ using MOCHA.Services.Agents;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// DeviceAgentState の状態管理を検証するテスト。
+/// DeviceAgentState の状態管理検証テスト
 /// </summary>
 [TestClass]
 public class DeviceAgentStateTests
 {
     /// <summary>
-    /// 登録したエージェントが選択状態に反映されることを確認する。
+    /// 登録したエージェントの選択状態反映確認
     /// </summary>
     [TestMethod]
     public async Task エージェント登録すると選択状態が更新される()
@@ -32,7 +32,7 @@ public class DeviceAgentStateTests
     }
 
     /// <summary>
-    /// 異なるエージェントを選択した際に Changed イベントが発火することを確認する。
+    /// 異なるエージェント選択時の Changed イベント発火確認
     /// </summary>
     [TestMethod]
     public async Task 別エージェントを選ぶとChangedが発火する()
@@ -54,7 +54,7 @@ public class DeviceAgentStateTests
     }
 
     /// <summary>
-    /// エージェント削除時に一覧から除外され、選択状態が次のエージェントへ移ることを確認する。
+    /// エージェント削除時に一覧除外と選択状態更新が行われる確認
     /// </summary>
     [TestMethod]
     public async Task エージェント削除で一覧と選択が更新される()
@@ -75,7 +75,7 @@ public class DeviceAgentStateTests
     }
 
     /// <summary>
-    /// 存在しない番号を削除しても例外にならず状態も変化しないことを確認する。
+    /// 存在しない番号削除時の例外非発生と状態不変確認
     /// </summary>
     [TestMethod]
     public async Task 存在しないエージェント削除は無視される()
@@ -94,7 +94,7 @@ public class DeviceAgentStateTests
     }
 
     /// <summary>
-    /// 最後のエージェントを削除した場合は選択状態が空になることを確認する。
+    /// 最後のエージェント削除時に選択状態が空になる確認
     /// </summary>
     [TestMethod]
     public async Task 最後のエージェントを削除すると選択が解除される()
@@ -113,7 +113,7 @@ public class DeviceAgentStateTests
     }
 
     /// <summary>
-    /// メモリ上で装置エージェントを保持するテスト用リポジトリ。
+    /// メモリ上で装置エージェントを保持するテスト用リポジトリ
     /// </summary>
     private sealed class InMemoryDeviceAgentRepository : IDeviceAgentRepository
     {
@@ -121,7 +121,7 @@ public class DeviceAgentStateTests
         private readonly object _lock = new();
 
         /// <summary>
-        /// 指定ユーザーのエージェント一覧を返す。
+        /// 指定ユーザーのエージェント一覧を返す処理
         /// </summary>
         public Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default)
         {
@@ -162,7 +162,7 @@ public class DeviceAgentStateTests
         }
 
         /// <summary>
-        /// エージェントを追加または更新する。
+        /// エージェントの追加または更新
         /// </summary>
         public Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
         {
@@ -182,7 +182,7 @@ public class DeviceAgentStateTests
         }
 
         /// <summary>
-        /// エージェントを削除する。見つからない場合は何もしない。
+        /// エージェント削除（見つからない場合は何もしない）
         /// </summary>
         public Task DeleteAsync(string userId, string number, CancellationToken cancellationToken = default)
         {
@@ -194,12 +194,12 @@ public class DeviceAgentStateTests
         }
 
         /// <summary>
-        /// ユーザーとエージェントをまとめて保持する内部クラス。
+        /// ユーザーとエージェントをまとめて保持する内部クラス
         /// </summary>
         private sealed class Entry
         {
             /// <summary>
-            /// ユーザーIDとエージェントを指定して初期化する。
+            /// ユーザーIDとエージェントを指定した初期化
             /// </summary>
             public Entry(string userId, DeviceAgentProfile agent)
             {

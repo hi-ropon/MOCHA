@@ -16,6 +16,13 @@ internal sealed class ChatTitleService : IChatTitleService
     private readonly ConcurrentDictionary<string, Task> _running = new();
     private readonly ConcurrentDictionary<string, bool> _completed = new();
 
+    /// <summary>
+    /// 依存サービス注入による初期化
+    /// </summary>
+    /// <param name="generator">タイトル生成器</param>
+    /// <param name="repository">チャットリポジトリ</param>
+    /// <param name="history">会話履歴状態</param>
+    /// <param name="logger">ロガー</param>
     public ChatTitleService(
         IChatTitleGenerator generator,
         IChatRepository repository,
@@ -28,6 +35,15 @@ internal sealed class ChatTitleService : IChatTitleService
         _logger = logger;
     }
 
+    /// <summary>
+    /// タイトル生成要求を非同期で受け付ける
+    /// </summary>
+    /// <param name="user">ユーザー情報</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="userMessage">ユーザー発話</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>生成タスク</returns>
     public Task RequestAsync(UserContext user, string conversationId, string userMessage, string? agentNumber, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(conversationId) || string.IsNullOrWhiteSpace(userMessage))
@@ -50,6 +66,14 @@ internal sealed class ChatTitleService : IChatTitleService
         return task;
     }
 
+    /// <summary>
+    /// タイトル生成と保存処理
+    /// </summary>
+    /// <param name="user">ユーザー情報</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="userMessage">ユーザー発話</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     private async Task RunAsync(UserContext user, string conversationId, string userMessage, string? agentNumber, CancellationToken cancellationToken)
     {
         try

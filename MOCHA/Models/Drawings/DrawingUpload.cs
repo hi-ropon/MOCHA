@@ -7,11 +7,20 @@ namespace MOCHA.Models.Drawings;
 /// </summary>
 public sealed class DrawingUpload
 {
+    /// <summary>ファイル名</summary>
     public string FileName { get; init; } = string.Empty;
+    /// <summary>コンテンツタイプ</summary>
     public string ContentType { get; init; } = "application/octet-stream";
+    /// <summary>ファイルサイズ</summary>
     public long FileSize { get; init; }
+    /// <summary>説明</summary>
     public string? Description { get; init; }
 
+    /// <summary>
+    /// 入力値のバリデーション
+    /// </summary>
+    /// <param name="maxFileSizeBytes">許容最大サイズ</param>
+    /// <returns>結果とエラーメッセージ</returns>
     public (bool IsValid, string? Error) Validate(long maxFileSizeBytes)
     {
         if (string.IsNullOrWhiteSpace(FileName))

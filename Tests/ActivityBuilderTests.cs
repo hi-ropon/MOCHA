@@ -7,9 +7,15 @@ using System.Linq;
 
 namespace MOCHA.Tests
 {
+    /// <summary>
+    /// ActivityBuilder のアクティビティ生成ロジック検証テスト
+    /// </summary>
     [TestClass]
     public class ActivityBuilderTests
     {
+        /// <summary>
+        /// ツールのみの履歴ではアクティビティが生成されない確認
+        /// </summary>
         [TestMethod]
         public void ツールのみならアクティビティを作らない()
         {
@@ -24,6 +30,9 @@ namespace MOCHA.Tests
             Assert.IsTrue(activities.All(a => a.IsCompleted));
         }
 
+        /// <summary>
+        /// ユーザーのみの履歴で空ターンが生成される確認
+        /// </summary>
         [TestMethod]
         public void ユーザーのみなら空ターンを作る()
         {
@@ -41,6 +50,9 @@ namespace MOCHA.Tests
             Assert.IsFalse(activities[0].IsLive);
         }
 
+        /// <summary>
+        /// ユーザー以前のツールメッセージを無視する確認
+        /// </summary>
         [TestMethod]
         public void ツールがユーザーより先なら無視される()
         {
@@ -59,6 +71,9 @@ namespace MOCHA.Tests
             Assert.IsTrue(activities[0].IsCompleted);
         }
 
+        /// <summary>
+        /// ツールアクションと結果を同一ターンにまとめる確認
+        /// </summary>
         [TestMethod]
         public void ツールアクションと結果は同じターンにまとまる()
         {

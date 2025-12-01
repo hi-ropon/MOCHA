@@ -103,6 +103,9 @@ public class DevAuthTests
         homeResponse.EnsureSuccessStatusCode();
     }
 
+    /// <summary>
+    /// 重複メールアドレス登録時のエラー表示確認
+    /// </summary>
     [TestMethod]
     public async Task 重複しているメールアドレスは登録不可()
     {
@@ -130,6 +133,9 @@ public class DevAuthTests
         StringAssert.Contains(body, "同じメールアドレスのユーザーが既に存在します");
     }
 
+    /// <summary>
+    /// メールアドレス形式不正時のバリデーション確認
+    /// </summary>
     [TestMethod]
     public async Task メールアドレスにはアットマークが必要()
     {
@@ -149,6 +155,9 @@ public class DevAuthTests
         StringAssert.Contains(body, "入力を確認してください");
     }
 
+    /// <summary>
+    /// パスワード不一致時の登録不可確認
+    /// </summary>
     [TestMethod]
     public async Task パスワード不一致は登録不可()
     {
@@ -175,6 +184,9 @@ public class DevAuthTests
         StringAssert.Contains(body, "パスワードが一致しません");
     }
 
+    /// <summary>
+    /// パスワード長不足時のバリデーション確認
+    /// </summary>
     [TestMethod]
     public async Task パスワードは6文字以上()
     {
@@ -194,6 +206,14 @@ public class DevAuthTests
         StringAssert.Contains(body, "入力を確認してください");
     }
 
+    /// <summary>
+    /// サインアップフォーム送信内容生成
+    /// </summary>
+    /// <param name="email">メールアドレス</param>
+    /// <param name="password">パスワード</param>
+    /// <param name="returnUrl">遷移先 URL</param>
+    /// <param name="token">CSRF トークン</param>
+    /// <returns>フォームコンテンツ</returns>
     private static FormUrlEncodedContent CreateSignupContent(string email, string password, string returnUrl, string token) =>
         new(new Dictionary<string, string>
         {
@@ -205,8 +225,15 @@ public class DevAuthTests
         });
 }
 
+/// <summary>
+/// 開発用認証テスト向けの WebApplicationFactory
+/// </summary>
 internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
 {
+    /// <summary>
+    /// テスト用 WebHost 構成
+    /// </summary>
+    /// <param name="builder">ホストビルダー</param>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment("Development");
@@ -234,6 +261,10 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
         });
     }
 
+    /// <summary>
+    /// InMemory DbContext 差し替え
+    /// </summary>
+    /// <param name="services">サービスコレクション</param>
     private static void ReplaceDbContext(IServiceCollection services)
     {
         ServiceDescriptor? descriptor;
@@ -265,6 +296,10 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
         services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
     }
 
+    /// <summary>
+    /// DB 初期化サービス差し替え
+    /// </summary>
+    /// <param name="services">サービスコレクション</param>
     private static void ReplaceInitializer(IServiceCollection services)
     {
         var initializer = services.SingleOrDefault(d => d.ServiceType == typeof(IDatabaseInitializer));
@@ -276,16 +311,32 @@ internal sealed class AuthWebApplicationFactory : WebApplicationFactory<Program>
         services.AddSingleton<IDatabaseInitializer, NoOpInitializer>();
     }
 
+    /// <summary>
+    /// 初期化を行わないスタブ
+    /// </summary>
     private sealed class NoOpInitializer : IDatabaseInitializer
     {
+        /// <summary>
+        /// 初期化なしの空実装
+        /// </summary>
+        /// <param name="cancellationToken">キャンセル通知</param>
         public Task InitializeAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
 
+/// <summary>
+/// Antiforgery トークン取得ヘルパー
+/// </summary>
 internal static class AntiforgeryTokenFetcher
 {
     private static readonly Regex _tokenRegex = new("name=\"__RequestVerificationToken\"[^>]*value=\"([^\"]+)\"", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
+    /// <summary>
+    /// Antiforgery トークン取得
+    /// </summary>
+    /// <param name="client">HTTP クライアント</param>
+    /// <param name="path">取得先パス</param>
+    /// <returns>取得したトークン</returns>
     public static async Task<string> FetchAsync(HttpClient client, string path)
     {
         var response = await client.GetAsync(path);

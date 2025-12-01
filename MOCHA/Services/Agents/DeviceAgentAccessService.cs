@@ -10,31 +10,31 @@ namespace MOCHA.Services.Agents;
 internal interface IDeviceAgentAccessService
 {
     /// <summary>
-    /// ユーザーが利用可能な装置エージェント一覧を取得する
+    /// ユーザーが利用可能な装置エージェント一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     Task<IReadOnlyList<DeviceAgentProfile>> GetAvailableAgentsAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 割り付け済みの装置エージェント番号を取得する
+    /// 割り付け済みの装置エージェント番号取得
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     Task<IReadOnlyList<string>> GetAssignmentsAsync(string userId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 割り付けを置き換える
+    /// 割り付け置き換え
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="agentNumbers">許可する番号一覧。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumbers">許可する番号一覧</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     Task UpdateAssignmentsAsync(string userId, IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 全装置エージェントの定義一覧を取得する
+    /// 全装置エージェントの定義一覧取得
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     Task<IReadOnlyList<DeviceAgentProfile>> ListDefinitionsAsync(CancellationToken cancellationToken = default);
 }
 
@@ -54,7 +54,7 @@ internal sealed class DeviceAgentAccessService : IDeviceAgentAccessService
     private readonly IUserRoleProvider _roleProvider;
 
     /// <summary>
-    /// 依存を注入してサービスを初期化する
+    /// 依存注入によるサービス初期化
     /// </summary>
     public DeviceAgentAccessService(
         IDeviceAgentRepository agentRepository,

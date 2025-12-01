@@ -6,11 +6,14 @@ using MOCHA.Models.Chat;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// チャット表示向けの整形ロジックを検証する。
+/// チャット表示向けの整形ロジック検証テスト
 /// </summary>
 [TestClass]
 public class ChatMessageProjectorTests
 {
+    /// <summary>
+    /// 1ターン内の複数アシスタントを最後だけ残す確認
+    /// </summary>
     [TestMethod]
     public void 複数アシスタントは最後だけ残す()
     {
@@ -28,6 +31,9 @@ public class ChatMessageProjectorTests
         Assert.AreEqual("最終回答", result[1].Content);
     }
 
+    /// <summary>
+    /// 複数ターンでもユーザーと最後の応答だけ残す確認
+    /// </summary>
     [TestMethod]
     public void 複数ターンでもユーザーと最後の応答だけ並べる()
     {

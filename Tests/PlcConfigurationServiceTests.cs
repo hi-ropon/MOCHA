@@ -8,9 +8,15 @@ using MOCHA.Services.Architecture;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// PlcConfigurationService の登録・更新・削除動作を検証するテスト
+/// </summary>
 [TestClass]
 public class PlcConfigurationServiceTests
 {
+    /// <summary>
+    /// 複数台のPLCを追加できる確認
+    /// </summary>
     [TestMethod]
     public async Task 複数台のPLCを追加できる()
     {
@@ -45,6 +51,9 @@ public class PlcConfigurationServiceTests
         Assert.AreEqual(2, list.Count);
     }
 
+    /// <summary>
+    /// コメントファイルとプログラムファイルを上書きできる確認
+    /// </summary>
     [TestMethod]
     public async Task コメントとプログラムファイルを上書きできる()
     {
@@ -77,6 +86,9 @@ public class PlcConfigurationServiceTests
         Assert.AreEqual("program_v2.zip", updated.Unit.ProgramFile!.FileName);
     }
 
+    /// <summary>
+    /// 削除で一覧から消える確認
+    /// </summary>
     [TestMethod]
     public async Task 削除すると一覧から消える()
     {
@@ -97,6 +109,10 @@ public class PlcConfigurationServiceTests
         Assert.AreEqual(0, list.Count);
     }
 
+    /// <summary>
+    /// テスト用サービス生成
+    /// </summary>
+    /// <returns>構成サービス</returns>
     private static PlcConfigurationService CreateService()
     {
         return new PlcConfigurationService(new InMemoryPlcUnitRepository(), NullLogger<PlcConfigurationService>.Instance);

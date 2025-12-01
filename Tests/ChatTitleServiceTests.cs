@@ -16,6 +16,9 @@ namespace MOCHA.Tests;
 [TestClass]
 public class ChatTitleServiceTests
 {
+    /// <summary>
+    /// 初回のみタイトル生成を実行する確認
+    /// </summary>
     [TestMethod]
     public async Task 初回だけ生成を実行する()
     {
@@ -34,6 +37,9 @@ public class ChatTitleServiceTests
         Assert.AreEqual("異音調査", repository.Summaries.Single().Title);
     }
 
+    /// <summary>
+    /// 生成失敗時は次回呼び出しで再試行する確認
+    /// </summary>
     [TestMethod]
     public async Task 生成失敗後は次回呼び出しで再試行する()
     {
@@ -54,6 +60,9 @@ public class ChatTitleServiceTests
         Assert.AreEqual("再試行成功", history.Summaries.Single().Title);
     }
 
+    /// <summary>
+    /// 生成済みの場合に再実行しない確認
+    /// </summary>
     [TestMethod]
     public async Task 生成済みなら再実行しない()
     {
@@ -70,12 +79,19 @@ public class ChatTitleServiceTests
         Assert.AreEqual("一回目のタイトル", history.Summaries.Single().Title);
     }
 
+    /// <summary>
+    /// キュー駆動のタイトル生成スタブ
+    /// </summary>
     private sealed class StubGenerator : IChatTitleGenerator
     {
         private readonly Queue<Func<Task<string>>> _steps;
 
         public int CallCount { get; private set; }
 
+        /// <summary>
+        /// 返却値シナリオを受け取るコンストラクター
+        /// </summary>
+        /// <param name="returns">返却値または例外列</param>
         public StubGenerator(params object[] returns)
         {
             _steps = new Queue<Func<Task<string>>>();
@@ -90,6 +106,12 @@ public class ChatTitleServiceTests
             }
         }
 
+        /// <summary>
+        /// タイトル生成処理
+        /// </summary>
+        /// <param name="request">生成リクエスト</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>生成タイトル</returns>
         public Task<string> GenerateAsync(ChatTitleRequest request, CancellationToken cancellationToken = default)
         {
             CallCount++;
@@ -102,11 +124,17 @@ public class ChatTitleServiceTests
         }
     }
 
+    /// <summary>
+    /// メモリ保持のチャットリポジトリ
+    /// </summary>
     private sealed class RecordingChatRepository : IChatRepository
     {
         private readonly List<ConversationSummary> _summaries = new();
         private readonly object _lock = new();
 
+        /// <summary>
+        /// 保存済みサマリ一覧
+        /// </summary>
         public IReadOnlyList<ConversationSummary> Summaries
         {
             get
@@ -118,11 +146,17 @@ public class ChatTitleServiceTests
             }
         }
 
+        /// <summary>
+        /// メッセージ追加（テストでは保存のみ）
+        /// </summary>
         public Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 会話削除
+        /// </summary>
         public Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -132,11 +166,17 @@ public class ChatTitleServiceTests
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// メッセージ一覧取得（テストでは空）
+        /// </summary>
         public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<ChatMessage>>(new List<ChatMessage>());
         }
 
+        /// <summary>
+        /// 会話要約一覧取得
+        /// </summary>
         public Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)
@@ -146,6 +186,9 @@ public class ChatTitleServiceTests
             }
         }
 
+        /// <summary>
+        /// 会話タイトル保存または更新
+        /// </summary>
         public Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
         {
             lock (_lock)

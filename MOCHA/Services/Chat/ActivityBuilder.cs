@@ -5,8 +5,16 @@ using MOCHA.Models.Chat;
 
 namespace MOCHA.Services.Chat
 {
+    /// <summary>
+    /// チャット履歴からアクティビティログを構築するヘルパー
+    /// </summary>
     public static class ActivityBuilder
     {
+        /// <summary>
+        /// メッセージ履歴からターンアクティビティ一覧を生成
+        /// </summary>
+        /// <param name="historyMessages">履歴メッセージ</param>
+        /// <returns>ターンアクティビティ一覧</returns>
         public static IReadOnlyList<TurnActivity> BuildActivities(IReadOnlyList<ChatMessage> historyMessages)
         {
             var activities = new List<TurnActivity>();
@@ -40,6 +48,12 @@ namespace MOCHA.Services.Chat
             return activities;
         }
 
+        /// <summary>
+        /// プレビュー用にテキストをトリム
+        /// </summary>
+        /// <param name="text">元テキスト</param>
+        /// <param name="maxLength">最大長</param>
+        /// <returns>トリム後テキスト</returns>
         public static string TrimForPreview(string text, int maxLength = 80)
         {
             if (string.IsNullOrWhiteSpace(text))
@@ -52,6 +66,11 @@ namespace MOCHA.Services.Chat
                 : text[..maxLength] + "…";
         }
 
+        /// <summary>
+        /// ツール系メッセージのログ化
+        /// </summary>
+        /// <param name="message">チャットメッセージ</param>
+        /// <returns>アクティビティログ</returns>
         private static ActivityLogItem BuildToolLog(ChatMessage message)
         {
             if (message.Content.StartsWith("[action]", StringComparison.OrdinalIgnoreCase))

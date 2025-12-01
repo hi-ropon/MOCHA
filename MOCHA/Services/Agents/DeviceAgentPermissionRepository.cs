@@ -12,19 +12,19 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
     private readonly IChatDbContext _dbContext;
 
     /// <summary>
-    /// DbContext を注入してリポジトリを初期化する
+    /// DbContext 注入によるリポジトリ初期化
     /// </summary>
-    /// <param name="dbContext">チャット用 DbContext。</param>
+    /// <param name="dbContext">チャット用 DbContext</param>
     public DeviceAgentPermissionRepository(IChatDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
     /// <summary>
-    /// 指定ユーザーの利用許可を取得する テーブルが無い場合は作成後リトライする
+    /// 指定ユーザーの利用許可取得（テーブルが無い場合は作成後リトライ）
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task<IReadOnlyList<string>> GetAllowedAgentNumbersAsync(string userId, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(userId))
@@ -49,11 +49,11 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
     }
 
     /// <summary>
-    /// 指定ユーザーの利用許可を置き換える テーブルが無い場合は作成後リトライする
+    /// 指定ユーザーの利用許可置き換え（テーブルが無い場合は作成後リトライ）
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="agentNumbers">許可する番号一覧。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumbers">許可する番号一覧</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task ReplaceAsync(string userId, IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(userId))
@@ -105,9 +105,9 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
     }
 
     /// <summary>
-    /// DeviceAgentPermissions テーブルとユニークインデックスを作成する
+    /// DeviceAgentPermissions テーブルとユニークインデックス作成
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     private async Task EnsureTableAsync(CancellationToken cancellationToken)
     {
         const string createSql = """

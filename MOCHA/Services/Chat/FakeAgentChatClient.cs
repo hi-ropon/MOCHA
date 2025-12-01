@@ -4,28 +4,28 @@ using MOCHA.Models.Chat;
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// 実接続なしでも振る舞いを再現できるフェイク実装。
-/// テストやローカル開発で注入する。
+/// 実接続なしでも振る舞いを再現できるフェイク実装
+/// テストやローカル開発で注入する
 /// </summary>
 internal sealed class FakeAgentChatClient : IAgentChatClient
 {
     private readonly Func<ChatTurn, IEnumerable<ChatStreamEvent>> _script;
 
     /// <summary>
-    /// 任意のスクリプトを注入して初期化する。未指定の場合は既定スクリプトを使用。
+    /// 任意スクリプト注入による初期化（未指定時は既定スクリプトを使用）
     /// </summary>
-    /// <param name="script">チャットターンを受け取りイベント列を返すスクリプト。</param>
+    /// <param name="script">チャットターンを受け取りイベント列を返すスクリプト</param>
     public FakeAgentChatClient(Func<ChatTurn, IEnumerable<ChatStreamEvent>>? script = null)
     {
         _script = script ?? DefaultScript;
     }
 
     /// <summary>
-    /// フェイクのスクリプトを実行し、イベントストリームを返す。
+    /// フェイクスクリプト実行によるイベントストリーム生成
     /// </summary>
-    /// <param name="turn">受信したターン。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>生成されたイベントストリーム。</returns>
+    /// <param name="turn">受信したターン</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>生成されたイベントストリーム</returns>
     public Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurn turn, CancellationToken cancellationToken = default)
     {
         async IAsyncEnumerable<ChatStreamEvent> Enumerate([EnumeratorCancellation] CancellationToken ct = default)
@@ -41,22 +41,22 @@ internal sealed class FakeAgentChatClient : IAgentChatClient
     }
 
     /// <summary>
-    /// アクション結果の送信をシミュレートする（何も行わない）。
+    /// アクション結果送信のシミュレーション（何も行わない）
     /// </summary>
-    /// <param name="result">送信する結果。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>完了済みタスク。</returns>
+    /// <param name="result">送信する結果</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>完了済みタスク</returns>
     public Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default)
     {
-        // フェイクなので何もしない。必要に応じてロギングする。
+        // フェイクなので何もしない。必要に応じてロギングする
         return Task.CompletedTask;
     }
 
     /// <summary>
-    /// 受信メッセージに応じて簡易的なイベントを返す既定スクリプト。
+    /// 受信メッセージに応じて簡易的なイベントを返す既定スクリプト
     /// </summary>
-    /// <param name="turn">受信したターン。</param>
-    /// <returns>生成されたイベント列。</returns>
+    /// <param name="turn">受信したターン</param>
+    /// <returns>生成されたイベント列</returns>
     private static IEnumerable<ChatStreamEvent> DefaultScript(ChatTurn turn)
     {
         // 最初のユーザー発話を確認し、簡易ルールでアクション要求を返す。

@@ -8,7 +8,7 @@ namespace MOCHA.Services.Auth;
 public interface IDevUserService
 {
     /// <summary>
-    /// ユーザーを登録する
+    /// ユーザー登録
     /// </summary>
     /// <param name="input">サインアップ入力</param>
     /// <param name="cancellationToken">キャンセル</param>
@@ -16,11 +16,11 @@ public interface IDevUserService
     Task<DevUserEntity> SignUpAsync(DevSignUpInput input, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// メールアドレスとパスワードで検証する
+    /// メールアドレスとパスワードによる検証
     /// </summary>
     /// <param name="email">メールアドレス</param>
     /// <param name="password">パスワード</param>
     /// <param name="cancellationToken">キャンセル</param>
-    /// <returns>一致したユーザー。見つからない場合は null</returns>
+    /// <returns>一致したユーザー（見つからない場合は null）</returns>
     Task<DevUserEntity?> ValidateAsync(string email, string password, CancellationToken cancellationToken = default);
 }

@@ -14,6 +14,9 @@ namespace MOCHA.Tests;
 [TestClass]
 public class ChatRepositoryTitleTests
 {
+    /// <summary>
+    /// タイトル生成済みの会話にメッセージ追加してもタイトルを上書きしない確認
+    /// </summary>
     [TestMethod]
     public async Task 生成済みタイトルをメッセージ追加で上書きしない()
     {
@@ -31,6 +34,11 @@ public class ChatRepositoryTitleTests
         Assert.AreEqual("生成済みタイトル", summary.Title);
     }
 
+    /// <summary>
+    /// インメモリ DB コンテキストファクトリー生成
+    /// </summary>
+    /// <param name="name">DB 名</param>
+    /// <returns>コンテキストファクトリー</returns>
     private static IDbContextFactory<ChatDbContext> CreateFactory(string name)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
@@ -40,19 +48,29 @@ public class ChatRepositoryTitleTests
         return new InMemoryChatDbContextFactory(options);
     }
 
+    /// <summary>
+    /// インメモリ用のコンテキストファクトリー
+    /// </summary>
     private sealed class InMemoryChatDbContextFactory : IDbContextFactory<ChatDbContext>
     {
         private readonly DbContextOptions<ChatDbContext> _options;
 
+        /// <summary>
+        /// オプション指定による初期化
+        /// </summary>
+        /// <param name="options">DbContext オプション</param>
         public InMemoryChatDbContextFactory(DbContextOptions<ChatDbContext> options)
         {
             _options = options;
         }
 
+        /// <summary>
+        /// DbContext 生成
+        /// </summary>
+        /// <returns>生成したコンテキスト</returns>
         public ChatDbContext CreateDbContext()
         {
             return new ChatDbContext(_options);
         }
     }
 }
-

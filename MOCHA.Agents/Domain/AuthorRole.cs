@@ -1,7 +1,7 @@
 namespace MOCHA.Agents.Domain;
 
 /// <summary>
-/// チャット発話の役割。
+/// チャット発話の役割
 /// </summary>
 public enum AuthorRole
 {

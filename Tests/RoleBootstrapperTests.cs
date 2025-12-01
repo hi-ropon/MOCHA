@@ -7,13 +7,13 @@ using MOCHA.Services.Auth;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// RoleBootstrapper の管理者ロール付与を検証するテスト。
+/// RoleBootstrapper の管理者ロール付与検証テスト
 /// </summary>
 [TestClass]
 public class RoleBootstrapperTests
 {
     /// <summary>
-    /// 設定されたユーザーに管理者ロールが付与されることを確認する。
+    /// 設定されたユーザーへの管理者ロール付与確認
     /// </summary>
     [TestMethod]
     public async Task 管理者が付与される()
@@ -32,7 +32,7 @@ public class RoleBootstrapperTests
     }
 
     /// <summary>
-    /// 設定が空の場合は何も変更しないことを確認する。
+    /// 設定空時の無変更確認
     /// </summary>
     [TestMethod]
     public async Task 設定が空なら何もしない()

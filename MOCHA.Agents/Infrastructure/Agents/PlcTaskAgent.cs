@@ -1,10 +1,13 @@
 namespace MOCHA.Agents.Infrastructure.Agents;
 
 /// <summary>
-/// PLC 診断向けの簡易エージェント。
+/// PLC 診断向けの簡易エージェント
 /// </summary>
 public sealed class PlcTaskAgent : BaseTaskAgent
 {
+    /// <summary>
+    /// PLC エージェント設定による初期化
+    /// </summary>
     public PlcTaskAgent()
         : base(
             "plcAgent",

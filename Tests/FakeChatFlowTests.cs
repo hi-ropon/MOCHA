@@ -10,13 +10,13 @@ using MOCHA.Services.Chat;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// フェイククライアントを用いたチャットフローの動作を検証するテスト。
+/// フェイククライアントを用いたチャットフローの動作検証テスト
 /// </summary>
 [TestClass]
 public class FakeChatFlowTests
 {
     /// <summary>
-    /// プレーンテキスト送信でアシスタント応答と完了イベントが返ることを確認する。
+    /// プレーンテキスト送信時のアシスタント応答と完了イベント返却確認
     /// </summary>
     [TestMethod]
     public async Task プレーンテキストならアシスタント応答が返る()
@@ -29,7 +29,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// 読み取りキーワードを含む発話でツール経由の結果が返ることを確認する。
+    /// 読み取りキーワード含み発話時のツール経由結果返却確認
     /// </summary>
     [TestMethod]
     public async Task 読み取りキーワードならツール経由で値を返す()
@@ -54,7 +54,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// 読み取り設定が欠落していても既定値で処理されることを確認する。
+    /// 読み取り設定欠落時の既定値処理確認
     /// </summary>
     [TestMethod]
     public async Task 読み取り設定が欠落しても既定値で処理する()
@@ -96,7 +96,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// 一括読み取りアクションがフェイクで成功することを確認する。
+    /// 一括読み取りアクションのフェイク成功確認
     /// </summary>
     [TestMethod]
     public async Task 一括読み取りが成功する()
@@ -141,7 +141,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// エージェント側から届く ToolResult も保存されることを確認する。
+    /// エージェント側から届く ToolResult 保存確認
     /// </summary>
     [TestMethod]
     public async Task エージェントのToolResultも保存する()
@@ -197,7 +197,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// オーケストレーターのストリームイベントを収集するヘルパー。
+    /// オーケストレーターのストリームイベント収集ヘルパー
     /// </summary>
     private static async Task<List<ChatStreamEvent>> CollectAsync(ChatOrchestrator orchestrator, string text)
     {
@@ -211,7 +211,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーターを生成する。
+    /// フェイククライアントとインメモリリポジトリを組み合わせたオーケストレーター生成
     /// </summary>
     private static ChatOrchestrator CreateOrchestrator(Func<ChatTurnModel, IEnumerable<ChatStreamEvent>>? script = null)
     {
@@ -221,7 +221,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// チャット送信で履歴にユーザーとアシスタントのメッセージが保存されることを確認する。
+    /// チャット送信時に履歴へユーザーとアシスタントのメッセージが保存される確認
     /// </summary>
     [TestMethod]
     public async Task チャット送信すると履歴にメッセージが保存される()
@@ -245,7 +245,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// ストリーミングのチャンクは1件のアシスタント発話として永続化されることを確認する。
+    /// ストリーミングチャンクの1件発話としての永続化確認
     /// </summary>
     [TestMethod]
     public async Task ストリームはまとめて1件保存する()
@@ -278,7 +278,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// 履歴削除でサマリとメッセージが除去されることを確認する。
+    /// 履歴削除時にサマリとメッセージが除去される確認
     /// </summary>
     [TestMethod]
     public async Task 履歴削除するとサマリとメッセージが消える()
@@ -304,7 +304,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// 会話がエージェント番号付きで保存されることを確認する。
+    /// 会話がエージェント番号付きで保存される確認
     /// </summary>
     [TestMethod]
     public async Task エージェント番号付きで会話が保存される()
@@ -332,7 +332,7 @@ public class FakeChatFlowTests
     }
 
     /// <summary>
-    /// インメモリで会話とメッセージを保持するテスト用リポジトリ。
+    /// インメモリで会話とメッセージを保持するテスト用リポジトリ
     /// </summary>
     private sealed class InMemoryChatRepository : IChatRepository
     {
@@ -341,7 +341,7 @@ public class FakeChatFlowTests
         private readonly object _lock = new();
 
         /// <summary>
-        /// ユーザーとエージェントで絞り込んだ会話要約を返す。
+        /// ユーザーとエージェントで絞り込んだ会話要約を返す処理
         /// </summary>
         public Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -357,7 +357,7 @@ public class FakeChatFlowTests
         }
 
         /// <summary>
-        /// 会話を追加または更新する。
+        /// 会話の追加または更新
         /// </summary>
         public Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -382,7 +382,7 @@ public class FakeChatFlowTests
         }
 
         /// <summary>
-        /// メッセージを保存する。
+        /// メッセージ保存
         /// </summary>
         public Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -394,7 +394,7 @@ public class FakeChatFlowTests
         }
 
         /// <summary>
-        /// 指定会話のメッセージ一覧を返す。
+        /// 指定会話のメッセージ一覧を返す処理
         /// </summary>
         public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
         {
@@ -409,7 +409,7 @@ public class FakeChatFlowTests
         }
 
         /// <summary>
-        /// 会話とそのメッセージを削除する。
+        /// 会話とそのメッセージを削除する処理
         /// </summary>
         public Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -423,11 +423,11 @@ public class FakeChatFlowTests
         }
 
         /// <summary>
-        /// インメモリの会話サマリを保持するエントリ。
+        /// インメモリの会話サマリを保持するエントリ
         /// </summary>
         private sealed record ConversationEntry(string UserId, ConversationSummary Summary);
         /// <summary>
-        /// インメモリのメッセージを保持するエントリ。
+        /// インメモリのメッセージを保持するエントリ
         /// </summary>
         private sealed record MessageEntry(string UserId, string ConversationId, ChatMessage Message, string? AgentNumber);
     }

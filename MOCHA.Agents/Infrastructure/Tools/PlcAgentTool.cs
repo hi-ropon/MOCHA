@@ -8,6 +8,9 @@ using MOCHA.Agents.Domain;
 
 namespace MOCHA.Agents.Infrastructure.Tools;
 
+/// <summary>
+/// PLC 関連質問に対しゲートウェイ読み取りとマニュアル要約を実行するツール
+/// </summary>
 public sealed class PlcAgentTool
 {
     private readonly IManualStore _manuals;
@@ -17,12 +20,24 @@ public sealed class PlcAgentTool
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
     };
 
+    /// <summary>
+    /// マニュアルストアとロガー注入による初期化
+    /// </summary>
+    /// <param name="manuals">マニュアルストア</param>
+    /// <param name="logger">ロガー</param>
     public PlcAgentTool(IManualStore manuals, ILogger<PlcAgentTool> logger)
     {
         _manuals = manuals;
         _logger = logger;
     }
 
+    /// <summary>
+    /// 質問を基に読み取りとマニュアル要約を組み立てる
+    /// </summary>
+    /// <param name="question">質問文</param>
+    /// <param name="optionsJson">読み取りオプション JSON</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>結果文字列</returns>
     public async Task<string> RunAsync(string question, string? optionsJson, CancellationToken cancellationToken)
     {
         var options = ParseOptions(optionsJson);
@@ -60,6 +75,11 @@ public sealed class PlcAgentTool
         return sb.ToString();
     }
 
+    /// <summary>
+    /// JSON オプション解析
+    /// </summary>
+    /// <param name="optionsJson">オプション JSON</param>
+    /// <returns>解析結果</returns>
     private PlcAgentOptions ParseOptions(string? optionsJson)
     {
         if (string.IsNullOrWhiteSpace(optionsJson))
@@ -78,6 +98,12 @@ public sealed class PlcAgentTool
         }
     }
 
+    /// <summary>
+    /// マニュアル検索と要約生成
+    /// </summary>
+    /// <param name="question">質問文</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>要約</returns>
     private async Task<string> SummarizeManualAsync(string question, CancellationToken cancellationToken)
     {
         try
@@ -106,6 +132,12 @@ public sealed class PlcAgentTool
         }
     }
 
+    /// <summary>
+    /// PLC ゲートウェイへの読み取り実行
+    /// </summary>
+    /// <param name="options">読み取りオプション</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
     private async Task<string> ReadDevicesAsync(PlcAgentOptions options, CancellationToken cancellationToken)
     {
         try
@@ -176,6 +208,11 @@ public sealed class PlcAgentTool
         }
     }
 
+    /// <summary>
+    /// デバイス指定の解析
+    /// </summary>
+    /// <param name="spec">デバイス指定文字列</param>
+    /// <returns>デバイス・アドレス・長さ</returns>
     private static (string Device, int Address, int Length) ParseDevice(string spec)
     {
         var span = spec.AsSpan();

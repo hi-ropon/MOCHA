@@ -8,7 +8,7 @@ namespace MOCHA.Services.Feedback;
 public interface IFeedbackService
 {
     /// <summary>
-    /// フィードバックを追加する
+    /// フィードバック追加
     /// </summary>
     /// <param name="userObjectId">評価するユーザーID</param>
     /// <param name="conversationId">会話ID</param>
@@ -19,7 +19,7 @@ public interface IFeedbackService
     Task<FeedbackEntry> SubmitAsync(string userObjectId, string conversationId, int messageIndex, FeedbackRating rating, string? comment, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 会話単位の集計を取得する
+    /// 会話単位の集計取得
     /// </summary>
     /// <param name="userObjectId">ユーザーID</param>
     /// <param name="conversationId">会話ID</param>
@@ -27,7 +27,7 @@ public interface IFeedbackService
     Task<FeedbackSummary> GetSummaryAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 最新の Bad ログを取得する
+    /// 最新の Bad ログ取得
     /// </summary>
     /// <param name="userObjectId">ユーザーID</param>
     /// <param name="take">取得件数</param>
@@ -35,7 +35,7 @@ public interface IFeedbackService
     Task<IReadOnlyList<FeedbackEntry>> GetRecentBadAsync(string userObjectId, int take, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 会話内の評価済みメッセージを取得する
+    /// 会話内の評価済みメッセージ取得
     /// </summary>
     /// <param name="userObjectId">ユーザーID</param>
     /// <param name="conversationId">会話ID</param>
@@ -43,7 +43,7 @@ public interface IFeedbackService
     Task<IReadOnlyDictionary<int, FeedbackRating>> GetRatingsAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// 付与済みフィードバックを削除する
+    /// 付与済みフィードバック削除
     /// </summary>
     /// <param name="userObjectId">ユーザーID</param>
     /// <param name="conversationId">会話ID</param>

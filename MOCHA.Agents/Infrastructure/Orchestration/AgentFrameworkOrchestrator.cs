@@ -17,7 +17,7 @@ using System.Threading.Channels;
 namespace MOCHA.Agents.Infrastructure.Orchestration;
 
 /// <summary>
-/// Microsoft Agent Framework の ChatClientAgent を使ったオーケストレーター。
+/// Microsoft Agent Framework の ChatClientAgent を使ったオーケストレーター
 /// </summary>
 public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
 {
@@ -27,6 +27,13 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
     private readonly ILogger<AgentFrameworkOrchestrator> _logger;
     private readonly ConcurrentDictionary<string, AgentThread> _threads = new();
 
+    /// <summary>
+    /// 必要なサービス注入による初期化
+    /// </summary>
+    /// <param name="chatClientFactory">チャットクライアントファクトリー</param>
+    /// <param name="tools">ツールセット</param>
+    /// <param name="optionsAccessor">LLM オプション</param>
+    /// <param name="logger">ロガー</param>
     public AgentFrameworkOrchestrator(
         ILlmChatClientFactory chatClientFactory,
         OrganizerToolset tools,
@@ -46,6 +53,13 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
             tools: tools.All.ToList());
     }
 
+    /// <summary>
+    /// エージェント応答ストリーム生成
+    /// </summary>
+    /// <param name="userTurn">ユーザーターン</param>
+    /// <param name="context">チャットコンテキスト</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>ストリーミングイベント列</returns>
     public Task<IAsyncEnumerable<AgentEvent>> ReplyAsync(ChatTurn userTurn, ChatContext context, CancellationToken cancellationToken = default)
     {
         var conversationId = string.IsNullOrWhiteSpace(context.ConversationId)
@@ -55,6 +69,14 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         return Task.FromResult<IAsyncEnumerable<AgentEvent>>(ReplyStreamAsync(conversationId, userTurn, context, cancellationToken));
     }
 
+    /// <summary>
+    /// 応答ストリーム処理本体
+    /// </summary>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="userTurn">ユーザーターン</param>
+    /// <param name="context">チャットコンテキスト</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>イベント列</returns>
     private async IAsyncEnumerable<AgentEvent> ReplyStreamAsync(
         string conversationId,
         ChatTurn userTurn,
@@ -121,9 +143,19 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         await runTask;
     }
 
+    /// <summary>
+    /// チャットターンのメッセージ変換
+    /// </summary>
+    /// <param name="turn">変換元ターン</param>
+    /// <returns>チャットメッセージ</returns>
     private static ChatMessage MapMessage(ChatTurn turn) =>
         new(MapRole(turn.Role), turn.Content);
 
+    /// <summary>
+    /// ドメインロールからチャットロールへの変換
+    /// </summary>
+    /// <param name="role">ドメインロール</param>
+    /// <returns>チャットロール</returns>
     private static ChatRole MapRole(AuthorRole role) =>
         role switch
         {
@@ -134,7 +166,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         };
 
     /// <summary>
-    /// エージェント応答からプレーンテキストを抽出する（JSON オブジェクトなら data/text プロパティを優先）。
+    /// エージェント応答からプレーンテキスト抽出（JSON オブジェクトなら data/text プロパティを優先）
     /// </summary>
     private static string ExtractPlainText(string raw)
     {

@@ -5,13 +5,13 @@ using MOCHA.Services.Chat;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// ConversationHistoryState のエージェント別フィルタリングを検証するテスト。
+/// ConversationHistoryState のエージェント別フィルタリング検証テスト
 /// </summary>
 [TestClass]
 public class ConversationHistoryStateAgentFilterTests
 {
     /// <summary>
-    /// 選択したエージェントの履歴のみ読み込まれることを確認する。
+    /// 選択したエージェントの履歴のみ読み込まれる確認
     /// </summary>
     [TestMethod]
     public async Task 選択したエージェントのみ履歴を読み込む()
@@ -36,7 +36,7 @@ public class ConversationHistoryStateAgentFilterTests
     }
 
     /// <summary>
-    /// エージェント番号でフィルタリングするテスト用のインメモリリポジトリ。
+    /// エージェント番号でフィルタリングするテスト用のインメモリリポジトリ
     /// </summary>
     private sealed class InMemoryChatRepositoryWithAgent : IChatRepository
     {
@@ -44,7 +44,7 @@ public class ConversationHistoryStateAgentFilterTests
         private readonly object _lock = new();
 
         /// <summary>
-        /// ユーザーとエージェントで絞り込んだ会話一覧を返す。
+        /// ユーザーとエージェントで絞り込んだ会話一覧を返す処理
         /// </summary>
         public Task<IReadOnlyList<ConversationSummary>> GetSummariesAsync(string userObjectId, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -60,7 +60,7 @@ public class ConversationHistoryStateAgentFilterTests
         }
 
         /// <summary>
-        /// 会話を追加または更新する。
+        /// 会話を追加または更新する処理
         /// </summary>
         public Task UpsertConversationAsync(string userObjectId, string conversationId, string title, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -83,7 +83,7 @@ public class ConversationHistoryStateAgentFilterTests
         }
 
         /// <summary>
-        /// メッセージ追加を会話の更新として扱う。
+        /// メッセージ追加を会話の更新として扱う処理
         /// </summary>
         public Task AddMessageAsync(string userObjectId, string conversationId, ChatMessage message, string? agentNumber, CancellationToken cancellationToken = default)
         {
@@ -91,7 +91,7 @@ public class ConversationHistoryStateAgentFilterTests
         }
 
         /// <summary>
-        /// テスト用のため空のメッセージ一覧を返す。
+        /// テスト用のため空のメッセージ一覧を返す処理
         /// </summary>
         public Task<IReadOnlyList<ChatMessage>> GetMessagesAsync(string userObjectId, string conversationId, string? agentNumber = null, CancellationToken cancellationToken = default)
         {
@@ -99,7 +99,7 @@ public class ConversationHistoryStateAgentFilterTests
         }
 
         /// <summary>
-        /// 指定された会話を削除する。
+        /// 指定された会話を削除する処理
         /// </summary>
         public Task DeleteConversationAsync(string userObjectId, string conversationId, string? agentNumber, CancellationToken cancellationToken = default)
         {

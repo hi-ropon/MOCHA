@@ -113,20 +113,38 @@ public class DeviceAgentAccessServiceTests
         CollectionAssert.AreEquivalent(new[] { "A-03" }, (System.Collections.ICollection)result);
     }
 
+    /// <summary>
+    /// メモリ上のエージェントリポジトリ
+    /// </summary>
     private sealed class InMemoryAgentRepository : IDeviceAgentRepository
     {
         private readonly List<DeviceAgentProfile> _agents;
 
+        /// <summary>
+        /// 初期エージェント集合を受け取るコンストラクター
+        /// </summary>
+        /// <param name="agents">初期エージェント一覧</param>
         public InMemoryAgentRepository(IEnumerable<DeviceAgentProfile> agents)
         {
             _agents = agents.ToList();
         }
 
+        /// <summary>
+        /// 全エージェント取得
+        /// </summary>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>エージェント一覧</returns>
         public Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(_agents.ToList());
         }
 
+        /// <summary>
+        /// 番号指定でエージェント取得
+        /// </summary>
+        /// <param name="agentNumbers">対象番号</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>該当エージェント一覧</returns>
         public Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
         {
             var numbers = new HashSet<string>(agentNumbers ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
@@ -134,11 +152,25 @@ public class DeviceAgentAccessServiceTests
             return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(matched);
         }
 
+        /// <summary>
+        /// ユーザー別エージェント取得（テスト用に全件返す）
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>エージェント一覧</returns>
         public Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<DeviceAgentProfile>>(_agents.ToList());
         }
 
+        /// <summary>
+        /// エージェント追加または更新
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="number">エージェント番号</param>
+        /// <param name="name">エージェント名</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>保存後プロファイル</returns>
         public Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
         {
             var existing = _agents.FirstOrDefault(a => a.Number == number);
@@ -153,6 +185,12 @@ public class DeviceAgentAccessServiceTests
             return Task.FromResult(existing);
         }
 
+        /// <summary>
+        /// エージェント削除
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="number">エージェント番号</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
         public Task DeleteAsync(string userId, string number, CancellationToken cancellationToken = default)
         {
             _agents.RemoveAll(a => a.Number == number);
@@ -160,10 +198,19 @@ public class DeviceAgentAccessServiceTests
         }
     }
 
+    /// <summary>
+    /// メモリ上の権限リポジトリ
+    /// </summary>
     private sealed class InMemoryPermissionRepository : IDeviceAgentPermissionRepository
     {
         private readonly Dictionary<string, HashSet<string>> _map = new(StringComparer.OrdinalIgnoreCase);
 
+        /// <summary>
+        /// 割り付け済みエージェント番号取得
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>許可番号一覧</returns>
         public Task<IReadOnlyList<string>> GetAllowedAgentNumbersAsync(string userId, CancellationToken cancellationToken = default)
         {
             if (_map.TryGetValue(userId, out var numbers))
@@ -174,27 +221,51 @@ public class DeviceAgentAccessServiceTests
             return Task.FromResult<IReadOnlyList<string>>(Array.Empty<string>());
         }
 
+        /// <summary>
+        /// 割り付け置き換え
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="agentNumbers">許可番号一覧</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
         public Task ReplaceAsync(string userId, IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
         {
             Replace(userId, agentNumbers);
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 割り付け置き換え実行
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="agentNumbers">許可番号一覧</param>
         public void Replace(string userId, IEnumerable<string> agentNumbers)
         {
             _map[userId] = new HashSet<string>(agentNumbers ?? Enumerable.Empty<string>(), StringComparer.OrdinalIgnoreCase);
         }
     }
 
+    /// <summary>
+    /// メモリ上のロールプロバイダー
+    /// </summary>
     private sealed class InMemoryRoleProvider : IUserRoleProvider
     {
         private readonly Dictionary<string, IReadOnlyCollection<UserRoleId>> _roles;
 
+        /// <summary>
+        /// ロール割り当てを受け取るコンストラクター
+        /// </summary>
+        /// <param name="roles">ユーザーごとのロール一覧</param>
         public InMemoryRoleProvider(Dictionary<string, IReadOnlyCollection<UserRoleId>> roles)
         {
             _roles = roles;
         }
 
+        /// <summary>
+        /// ロール取得
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>ロール一覧</returns>
         public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default)
         {
             if (_roles.TryGetValue(userId, out var roles))
@@ -205,16 +276,29 @@ public class DeviceAgentAccessServiceTests
             return Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
         }
 
+        /// <summary>
+        /// ロール付与は未実装
+        /// </summary>
         public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// ロール削除は未実装
+        /// </summary>
         public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// ロール保持判定
+        /// </summary>
+        /// <param name="userId">ユーザーID</param>
+        /// <param name="role">ロール名</param>
+        /// <param name="cancellationToken">キャンセル通知</param>
+        /// <returns>保持していれば true</returns>
         public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
         {
             var hasRole = _roles.TryGetValue(userId, out var roles) && roles.Any(r => r.Value == UserRoleId.From(role).Value);

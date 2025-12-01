@@ -13,28 +13,49 @@ using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 namespace MOCHA.Services.Chat;
 
 /// <summary>
-/// IAgentOrchestrator を IAgentChatClient としてラップするアダプタ。
+/// IAgentOrchestrator を IAgentChatClient としてラップするアダプタ
 /// </summary>
 public sealed class AgentOrchestratorChatClient : IAgentChatClient
 {
     private readonly IAgentOrchestrator _orchestrator;
 
+    /// <summary>
+    /// オーケストレーター注入による初期化
+    /// </summary>
+    /// <param name="orchestrator">エージェントオーケストレーター</param>
     public AgentOrchestratorChatClient(IAgentOrchestrator orchestrator)
     {
         this._orchestrator = orchestrator;
     }
 
+    /// <summary>
+    /// チャットターン送信
+    /// </summary>
+    /// <param name="turn">送信するターン</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>イベントストリーム</returns>
     public Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurnModel turn, CancellationToken cancellationToken = default)
     {
         return Task.FromResult(SendCoreAsync(turn, cancellationToken));
     }
 
+    /// <summary>
+    /// ツール結果送信は未対応のため no-op
+    /// </summary>
+    /// <param name="result">送信する結果</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default)
     {
         // いまのところツール結果の往復は行わないため no-op
         return Task.CompletedTask;
     }
 
+    /// <summary>
+    /// オーケストレーター呼び出しとイベント変換
+    /// </summary>
+    /// <param name="turn">送信するターン</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>イベントストリーム</returns>
     private async IAsyncEnumerable<ChatStreamEvent> SendCoreAsync(
         ChatTurnModel turn,
         [EnumeratorCancellation] CancellationToken cancellationToken)
@@ -90,6 +111,11 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
         }
     }
 
+    /// <summary>
+    /// モデルロールからドメインロールへの変換
+    /// </summary>
+    /// <param name="role">チャットロール</param>
+    /// <returns>ドメインロール</returns>
     private static DomainAuthorRole MapRole(ChatRole role) =>
         role switch
         {
@@ -99,6 +125,11 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
             _ => DomainAuthorRole.User
         };
 
+    /// <summary>
+    /// JSON ペイロードの辞書化
+    /// </summary>
+    /// <param name="json">入力 JSON</param>
+    /// <returns>辞書化したペイロード</returns>
     private static IReadOnlyDictionary<string, object?> ParsePayload(string? json)
     {
         if (string.IsNullOrWhiteSpace(json))

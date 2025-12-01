@@ -10,9 +10,15 @@ using MOCHA.Services.Drawings;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// DrawingRegistrationService の権限制御と登録・更新の検証テスト
+/// </summary>
 [TestClass]
 public class DrawingRegistrationServiceTests
 {
+    /// <summary>
+    /// 非管理者が図面登録に失敗する確認
+    /// </summary>
     [TestMethod]
     public async Task 非管理者は図面登録に失敗する()
     {
@@ -32,6 +38,9 @@ public class DrawingRegistrationServiceTests
         Assert.AreEqual("管理者のみ図面を登録できます", result.Error);
     }
 
+    /// <summary>
+    /// 管理者が図面を登録できる確認
+    /// </summary>
     [TestMethod]
     public async Task 管理者は図面を登録できる()
     {
@@ -58,6 +67,9 @@ public class DrawingRegistrationServiceTests
         Assert.AreEqual("panel.dwg", stored[0].FileName);
     }
 
+    /// <summary>
+    /// 非管理者が説明更新に失敗する確認
+    /// </summary>
     [TestMethod]
     public async Task 非管理者は説明更新に失敗する()
     {
@@ -78,6 +90,9 @@ public class DrawingRegistrationServiceTests
         Assert.AreEqual("管理者のみ図面を編集できます", result.Error);
     }
 
+    /// <summary>
+    /// 管理者が説明を更新できる確認
+    /// </summary>
     [TestMethod]
     public async Task 管理者は説明を更新できる()
     {
@@ -105,6 +120,12 @@ public class DrawingRegistrationServiceTests
         Assert.IsTrue(updated.Document.UpdatedAt > original.UpdatedAt);
     }
 
+    /// <summary>
+    /// テスト用サービス生成
+    /// </summary>
+    /// <param name="isAdmin">管理者判定</param>
+    /// <param name="repository">図面リポジトリ</param>
+    /// <returns>サービス</returns>
     private static DrawingRegistrationService CreateService(bool isAdmin, IDrawingRepository? repository = null)
     {
         var roleProvider = new FakeRoleProvider(isAdmin);
@@ -114,10 +135,17 @@ public class DrawingRegistrationServiceTests
             NullLogger<DrawingRegistrationService>.Instance);
     }
 
+    /// <summary>
+    /// 管理者判定を返すフェイクロールプロバイダー
+    /// </summary>
     private sealed class FakeRoleProvider : IUserRoleProvider
     {
         private readonly bool _isAdmin;
 
+        /// <summary>
+        /// 管理者フラグ指定の初期化
+        /// </summary>
+        /// <param name="isAdmin">管理者フラグ</param>
         public FakeRoleProvider(bool isAdmin)
         {
             _isAdmin = isAdmin;
@@ -128,11 +156,17 @@ public class DrawingRegistrationServiceTests
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// ロール一覧取得
+        /// </summary>
         public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
         }
 
+        /// <summary>
+        /// ロール保持判定
+        /// </summary>
         public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
         {
             if (string.Equals(role, UserRoleId.Predefined.Administrator.Value, StringComparison.OrdinalIgnoreCase))
@@ -143,6 +177,9 @@ public class DrawingRegistrationServiceTests
             return Task.FromResult(false);
         }
 
+        /// <summary>
+        /// ロール削除（何もしない）
+        /// </summary>
         public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;

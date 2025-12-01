@@ -3,7 +3,7 @@ using System.Collections.Generic;
 namespace MOCHA.Models.Chat;
 
 /// <summary>
-/// チャットで扱う発話の役割。
+/// チャットで扱う発話の役割
 /// </summary>
 public enum ChatRole
 {
@@ -14,21 +14,21 @@ public enum ChatRole
 }
 
 /// <summary>
-/// 役割と本文を持つ単一メッセージ。
+/// 役割と本文を持つ単一メッセージ
 /// </summary>
 public record ChatMessage(ChatRole Role, string Content);
 
 /// <summary>
-/// 会話IDと複数のメッセージをまとめたターン。
+/// 会話IDと複数のメッセージをまとめたターン
 /// </summary>
 public record ChatTurn(string? ConversationId, IReadOnlyList<ChatMessage> Messages);
 
 /// <summary>
-/// Agent からのアクション要求。
+/// Agent からのアクション要求
 /// </summary>
-/// <param name="ActionName">アクション名。</param>
-/// <param name="ConversationId">対象の会話ID。</param>
-/// <param name="Payload">アクションに付随するペイロード。</param>
+/// <param name="ActionName">アクション名</param>
+/// <param name="ConversationId">対象の会話ID</param>
+/// <param name="Payload">アクションに付随するペイロード</param>
 public record AgentActionRequest(
     string ActionName,
     string ConversationId,
@@ -36,13 +36,13 @@ public record AgentActionRequest(
 );
 
 /// <summary>
-/// Agent へのアクション実行結果。
+/// Agent へのアクション実行結果
 /// </summary>
-/// <param name="ActionName">アクション名。</param>
-/// <param name="ConversationId">対象の会話ID。</param>
-/// <param name="Success">成功フラグ。</param>
-/// <param name="Payload">返却するペイロード。</param>
-/// <param name="Error">エラー内容（失敗時）。</param>
+/// <param name="ActionName">アクション名</param>
+/// <param name="ConversationId">対象の会話ID</param>
+/// <param name="Success">成功フラグ</param>
+/// <param name="Payload">返却するペイロード</param>
+/// <param name="Error">エラー内容（失敗時）</param>
 public record AgentActionResult(
     string ActionName,
     string ConversationId,
@@ -52,7 +52,7 @@ public record AgentActionResult(
 );
 
 /// <summary>
-/// ストリームで流れるイベント種別。
+/// ストリームで流れるイベント種別
 /// </summary>
 public enum ChatStreamEventType
 {
@@ -64,13 +64,13 @@ public enum ChatStreamEventType
 }
 
 /// <summary>
-/// Agent とのやり取りで使用するストリームイベント。
+/// Agent とのやり取りで使用するストリームイベント
 /// </summary>
-/// <param name="Type">イベント種別。</param>
-/// <param name="Message">チャットメッセージ。</param>
-/// <param name="ActionRequest">ツール実行要求。</param>
-/// <param name="ActionResult">ツール実行結果。</param>
-/// <param name="Error">エラー内容。</param>
+/// <param name="Type">イベント種別</param>
+/// <param name="Message">チャットメッセージ</param>
+/// <param name="ActionRequest">ツール実行要求</param>
+/// <param name="ActionResult">ツール実行結果</param>
+/// <param name="Error">エラー内容</param>
 public record ChatStreamEvent(
     ChatStreamEventType Type,
     ChatMessage? Message = null,
@@ -80,31 +80,31 @@ public record ChatStreamEvent(
 )
 {
     /// <summary>
-    /// メッセージイベントを生成する。
+    /// メッセージイベント生成
     /// </summary>
-    /// <param name="message">発話内容。</param>
-    /// <returns>メッセージイベント。</returns>
+    /// <param name="message">発話内容</param>
+    /// <returns>メッセージイベント</returns>
     public static ChatStreamEvent FromMessage(ChatMessage message) =>
         new(ChatStreamEventType.Message, Message: message);
 
     /// <summary>
-    /// 完了イベントを生成する。
+    /// 完了イベント生成
     /// </summary>
-    /// <param name="conversationId">対象会話ID。</param>
-    /// <returns>完了イベント。</returns>
+    /// <param name="conversationId">対象会話ID</param>
+    /// <returns>完了イベント</returns>
     public static ChatStreamEvent Completed(string? conversationId = null) =>
         new(ChatStreamEventType.Completed);
 
     /// <summary>
-    /// エラーイベントを生成する。
+    /// エラーイベント生成
     /// </summary>
-    /// <param name="error">エラーメッセージ。</param>
-    /// <returns>エラーイベント。</returns>
+    /// <param name="error">エラーメッセージ</param>
+    /// <returns>エラーイベント</returns>
     public static ChatStreamEvent Fail(string error) =>
         new(ChatStreamEventType.Error, Error: error);
 }
 
 /// <summary>
-/// ユーザーのIDと表示名をまとめた情報。
+/// ユーザーのIDと表示名をまとめた情報
 /// </summary>
 public record UserContext(string UserId, string DisplayName);

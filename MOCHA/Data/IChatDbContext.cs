@@ -8,28 +8,28 @@ using MOCHA.Services.Feedback;
 namespace MOCHA.Data;
 
 /// <summary>
-/// チャット用の DbContext を抽象化し、テストで差し替えられるようにする。
+/// チャット用 DbContext の抽象化とテスト差し替え
 /// </summary>
 internal interface IChatDbContext
 {
-    /// <summary>会話エンティティのセット。</summary>
+    /// <summary>会話エンティティのセット</summary>
     DbSet<ChatConversationEntity> Conversations { get; }
-    /// <summary>メッセージエンティティのセット。</summary>
+    /// <summary>メッセージエンティティのセット</summary>
     DbSet<ChatMessageEntity> Messages { get; }
-    /// <summary>ユーザーロールエンティティのセット。</summary>
+    /// <summary>ユーザーロールエンティティのセット</summary>
     DbSet<UserRoleEntity> UserRoles { get; }
-    /// <summary>装置エージェントエンティティのセット。</summary>
+    /// <summary>装置エージェントエンティティのセット</summary>
     DbSet<DeviceAgentEntity> DeviceAgents { get; }
     /// <summary>装置エージェント利用許可エンティティのセット</summary>
     DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions { get; }
     /// <summary>フィードバックエンティティのセット</summary>
     DbSet<FeedbackEntity> Feedbacks { get; }
-    /// <summary>データベース操作用のファサード。</summary>
+    /// <summary>データベース操作用ファサード</summary>
     Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
     /// <summary>
-    /// 変更を保存する。
+    /// 変更保存
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>保存されたエントリ数。</returns>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>保存されたエントリ数</returns>
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

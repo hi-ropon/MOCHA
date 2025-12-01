@@ -11,7 +11,7 @@ using MOCHA.Agents.Domain;
 namespace MOCHA.Agents.Infrastructure.Tools;
 
 /// <summary>
-/// Organizer が利用するツール群を生成する。
+/// Organizer が利用するツール群の生成セット
 /// </summary>
 public sealed class OrganizerToolset
 {
@@ -26,8 +26,15 @@ public sealed class OrganizerToolset
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
+    /// <summary>提供するツール一覧</summary>
     public IReadOnlyList<AITool> All { get; }
 
+    /// <summary>
+    /// ツールセットの依存関係注入による初期化
+    /// </summary>
+    /// <param name="manuals">マニュアルストア</param>
+    /// <param name="logger">ロガー</param>
+    /// <param name="loggerFactory">ロガーファクトリー</param>
     public OrganizerToolset(IManualStore manuals, ILogger<OrganizerToolset> logger, ILoggerFactory loggerFactory)
     {
         _manuals = manuals;
@@ -54,12 +61,25 @@ public sealed class OrganizerToolset
         };
     }
 
+    /// <summary>
+    /// ストリーミングコンテキストのスコープ設定
+    /// </summary>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="sink">イベント受け取りコールバック</param>
+    /// <returns>スコープ破棄用ハンドル</returns>
     public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
     {
         _context.Value = new ScopeContext(conversationId, sink);
         return new Scope(this);
     }
 
+    /// <summary>
+    /// マニュアル検索ツール実行
+    /// </summary>
+    /// <param name="agentName">エージェント名</param>
+    /// <param name="query">検索クエリ</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索結果 JSON</returns>
     private async Task<string> FindManualsAsync(string agentName, string query, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
@@ -83,6 +103,13 @@ public sealed class OrganizerToolset
         }
     }
 
+    /// <summary>
+    /// PLC エージェント呼び出しツール実行
+    /// </summary>
+    /// <param name="question">問い合わせ内容</param>
+    /// <param name="optionsJson">追加オプション JSON</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>実行結果 JSON</returns>
     private Task<string> InvokePlcAgentAsync(string question, string? optionsJson, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
@@ -93,6 +120,14 @@ public sealed class OrganizerToolset
         return RunPlcAsync(call, question, optionsJson, cancellationToken);
     }
 
+    /// <summary>
+    /// PLC エージェント処理実行
+    /// </summary>
+    /// <param name="call">ツール呼び出し</param>
+    /// <param name="question">問い合わせ内容</param>
+    /// <param name="optionsJson">追加オプション JSON</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>実行結果 JSON</returns>
     private async Task<string> RunPlcAsync(ToolCall call, string question, string? optionsJson, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
@@ -110,6 +145,13 @@ public sealed class OrganizerToolset
         }
     }
 
+    /// <summary>
+    /// マニュアル読み取りツール実行
+    /// </summary>
+    /// <param name="agentName">エージェント名</param>
+    /// <param name="relativePath">マニュアル相対パス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果 JSON</returns>
     private async Task<string> ReadManualAsync(string agentName, string relativePath, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
@@ -142,17 +184,29 @@ public sealed class OrganizerToolset
     {
         private readonly OrganizerToolset _owner;
 
+        /// <summary>
+        /// スコープ生成
+        /// </summary>
+        /// <param name="owner">元のツールセット</param>
         public Scope(OrganizerToolset owner)
         {
             _owner = owner;
         }
 
+        /// <summary>
+        /// スコープ破棄とコンテキスト解除
+        /// </summary>
         public void Dispose()
         {
             _owner._context.Value = null;
         }
     }
 
+    /// <summary>
+    /// エージェント名正規化
+    /// </summary>
+    /// <param name="agentName">入力エージェント名</param>
+    /// <returns>正規化済みエージェント名</returns>
     private static string NormalizeAgentName(string agentName)
     {
         if (string.IsNullOrWhiteSpace(agentName))

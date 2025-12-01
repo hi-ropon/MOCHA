@@ -6,27 +6,27 @@ using Microsoft.Data.Sqlite;
 namespace MOCHA.Services.Agents;
 
 /// <summary>
-/// 装置エージェントの永続化を行うリポジトリ。
+/// 装置エージェントの永続化を行うリポジトリ
 /// </summary>
 internal sealed class DeviceAgentRepository : IDeviceAgentRepository
 {
     private readonly IChatDbContext _dbContext;
 
     /// <summary>
-    /// DbContext を受け取り、リポジトリを初期化する。
+    /// DbContext を受け取りリポジトリを初期化する
     /// </summary>
-    /// <param name="dbContext">チャット用 DbContext。</param>
+    /// <param name="dbContext">チャット用 DbContext</param>
     public DeviceAgentRepository(IChatDbContext dbContext)
     {
         _dbContext = dbContext;
     }
 
     /// <summary>
-    /// 指定ユーザーの装置エージェント一覧を取得する。テーブルが無ければ自動作成する。
+    /// 指定ユーザーの装置エージェント一覧取得（テーブルが無ければ自動作成）
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>エージェント一覧。</returns>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>エージェント一覧</returns>
     public async Task<IReadOnlyList<DeviceAgentProfile>> GetAsync(string userId, CancellationToken cancellationToken = default)
     {
         try
@@ -54,9 +54,9 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
-    /// 全ユーザーが登録した装置エージェント一覧を取得する テーブルが無い場合は作成後リトライする
+    /// 全ユーザーが登録した装置エージェント一覧取得（テーブルが無い場合は作成後リトライ）
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task<IReadOnlyList<DeviceAgentProfile>> GetAllAsync(CancellationToken cancellationToken = default)
     {
         try
@@ -78,10 +78,10 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
-    /// 指定番号の装置エージェントを取得する テーブルが無い場合は作成後リトライする
+    /// 指定番号の装置エージェント取得（テーブルが無い場合は作成後リトライ）
     /// </summary>
-    /// <param name="agentNumbers">対象番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="agentNumbers">対象番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task<IReadOnlyList<DeviceAgentProfile>> GetByNumbersAsync(IEnumerable<string> agentNumbers, CancellationToken cancellationToken = default)
     {
         var normalized = new HashSet<string>(
@@ -115,13 +115,13 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
-    /// 装置エージェントを追加または更新する。テーブルが無い場合は作成後にリトライする。
+    /// 装置エージェントの追加または更新（テーブルが無い場合は作成後にリトライ）
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="number">エージェント番号。</param>
-    /// <param name="name">エージェント名。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>保存されたプロファイル。</returns>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="number">エージェント番号</param>
+    /// <param name="name">エージェント名</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>保存されたプロファイル</returns>
     public async Task<DeviceAgentProfile> UpsertAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
     {
         try
@@ -156,11 +156,11 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
-    /// 指定されたエージェントを削除する。存在しない場合は何もしない。
+    /// 指定されたエージェント削除（存在しない場合は何もしない）
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="number">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="number">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task DeleteAsync(string userId, string number, CancellationToken cancellationToken = default)
     {
         try
@@ -183,9 +183,9 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     }
 
     /// <summary>
-    /// データベースに DeviceAgents テーブルとユニークインデックスを作成する。
+    /// データベースに DeviceAgents テーブルとユニークインデックスを作成する
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     private async Task EnsureTableAsync(CancellationToken cancellationToken)
     {
         const string createSql = """

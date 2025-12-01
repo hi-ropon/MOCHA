@@ -5,7 +5,7 @@ using MOCHA.Services.Chat;
 namespace MOCHA.Services.Feedback;
 
 /// <summary>
-/// フィードバックを集約し検証するサービス
+/// フィードバック集約と検証を行うサービス
 /// </summary>
 internal sealed class FeedbackService : IFeedbackService
 {
@@ -13,7 +13,7 @@ internal sealed class FeedbackService : IFeedbackService
     private readonly IChatRepository _chatRepository;
 
     /// <summary>
-    /// 依存するリポジトリを注入して初期化する
+    /// 依存リポジトリ注入による初期化
     /// </summary>
     /// <param name="repository">フィードバックリポジトリ</param>
     /// <param name="chatRepository">チャットリポジトリ</param>
@@ -25,6 +25,16 @@ internal sealed class FeedbackService : IFeedbackService
         _chatRepository = chatRepository;
     }
 
+    /// <summary>
+    /// フィードバック登録（同一評価再送時は削除）
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="messageIndex">対象メッセージインデックス</param>
+    /// <param name="rating">評価</param>
+    /// <param name="comment">任意コメント</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>登録されたエントリ</returns>
     public async Task<FeedbackEntry> SubmitAsync(
         string userObjectId,
         string conversationId,
@@ -84,21 +94,49 @@ internal sealed class FeedbackService : IFeedbackService
         return entry;
     }
 
+    /// <summary>
+    /// 会話単位のフィードバック集計取得
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>集計</returns>
     public Task<FeedbackSummary> GetSummaryAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
     {
         return _repository.GetSummaryAsync(conversationId, userObjectId, cancellationToken);
     }
 
+    /// <summary>
+    /// 直近の Bad フィードバック取得
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="take">取得件数</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>Bad フィードバック一覧</returns>
     public Task<IReadOnlyList<FeedbackEntry>> GetRecentBadAsync(string userObjectId, int take, CancellationToken cancellationToken = default)
     {
         return _repository.GetRecentBadAsync(userObjectId, take, cancellationToken);
     }
 
+    /// <summary>
+    /// 会話内の評価済みメッセージ一覧取得
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>メッセージインデックスと評価のマップ</returns>
     public Task<IReadOnlyDictionary<int, FeedbackRating>> GetRatingsAsync(string userObjectId, string conversationId, CancellationToken cancellationToken = default)
     {
         return _repository.GetRatingsAsync(conversationId, userObjectId, cancellationToken);
     }
 
+    /// <summary>
+    /// 指定フィードバック削除
+    /// </summary>
+    /// <param name="userObjectId">ユーザーID</param>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="messageIndex">メッセージインデックス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public Task RemoveAsync(string userObjectId, string conversationId, int messageIndex, CancellationToken cancellationToken = default)
     {
         return _repository.DeleteAsync(conversationId, messageIndex, userObjectId, cancellationToken);

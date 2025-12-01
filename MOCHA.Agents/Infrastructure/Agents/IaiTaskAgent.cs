@@ -1,10 +1,13 @@
 namespace MOCHA.Agents.Infrastructure.Agents;
 
 /// <summary>
-/// IAI 機器解析向けの簡易エージェント。
+/// IAI 機器解析向けの簡易エージェント
 /// </summary>
 public sealed class IaiTaskAgent : BaseTaskAgent
 {
+    /// <summary>
+    /// IAI エージェント設定による初期化
+    /// </summary>
     public IaiTaskAgent()
         : base(
             "iaiAgent",
