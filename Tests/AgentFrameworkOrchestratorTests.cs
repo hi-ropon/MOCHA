@@ -38,7 +38,10 @@ public class AgentFrameworkOrchestratorTests
             new OrientalTaskAgent()
         });
         var manualStore = new InMemoryManualStore();
-        var tools = new OrganizerToolset(manualStore, NullLogger<OrganizerToolset>.Instance, NullLoggerFactory.Instance);
+        var manualTools = new ManualToolset(manualStore, NullLogger<ManualToolset>.Instance);
+        var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
+        var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -82,7 +85,10 @@ public class AgentFrameworkOrchestratorTests
             new OrientalTaskAgent()
         });
         var manualStore = new InMemoryManualStore();
-        var tools = new OrganizerToolset(manualStore, NullLogger<OrganizerToolset>.Instance, NullLoggerFactory.Instance);
+        var manualTools = new ManualToolset(manualStore, NullLogger<ManualToolset>.Instance);
+        var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
+        var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,

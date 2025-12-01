@@ -13,5 +13,9 @@ public sealed class IaiTaskAgent : BaseTaskAgent
             "iaiAgent",
             "IAI機器マニュアル検索・情報提供エージェント",
             "[IAI Agent]",
-            question => $"結論: IAI関連のガイダンスを返します。\n- 質問: {question}\n- 参照: RCON/RSEL/SCON/XSELマニュアルを確認し、設定値・エラーログ・配線チェックを提案します。") { }
+            question => $"""
+                結論: IAI関連のガイダンスを返します。
+                - 質問: {question}
+                - 参照: RCON/RSEL/SCON/XSELマニュアルを確認し、設定値・エラーログ・配線チェックを提案します。
+                """) { }
 }

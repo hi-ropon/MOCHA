@@ -27,6 +27,9 @@ public static class DependencyInjection
         services.Configure<ManualStoreOptions>(configuration.GetSection("Manuals"));
         services.AddSingleton<ILlmChatClientFactory, LlmChatClientFactory>();
         services.AddSingleton<IManualStore, FileManualStore>();
+        services.AddSingleton<ManualToolset>();
+        services.AddSingleton<ManualAgentTool>();
+        services.AddSingleton<PlcAgentTool>();
         services.AddSingleton<OrganizerToolset>();
         services.AddSingleton<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 

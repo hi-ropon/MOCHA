@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging;
@@ -15,16 +18,17 @@ namespace MOCHA.Agents.Infrastructure.Tools;
 /// </summary>
 public sealed class OrganizerToolset
 {
-    private readonly IManualStore _manuals;
     private readonly ILogger<OrganizerToolset> _logger;
+    private readonly ManualToolset _manualTools;
+    private readonly ManualAgentTool _manualAgentTool;
     private readonly PlcAgentTool _plcAgentTool;
-    private readonly ILogger<PlcAgentTool> _plcLogger;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+    private readonly AITool _plcGatewayTool;
 
     /// <summary>提供するツール一覧</summary>
     public IReadOnlyList<AITool> All { get; }
@@ -32,27 +36,36 @@ public sealed class OrganizerToolset
     /// <summary>
     /// ツールセットの依存関係注入による初期化
     /// </summary>
-    /// <param name="manuals">マニュアルストア</param>
+    /// <param name="manualTools">マニュアルツールセット</param>
+    /// <param name="manualAgentTool">マニュアルエージェントツール</param>
+    /// <param name="plcAgentTool">PLC エージェントツール</param>
     /// <param name="logger">ロガー</param>
-    /// <param name="loggerFactory">ロガーファクトリー</param>
-    public OrganizerToolset(IManualStore manuals, ILogger<OrganizerToolset> logger, ILoggerFactory loggerFactory)
+    public OrganizerToolset(
+        ManualToolset manualTools,
+        ManualAgentTool manualAgentTool,
+        PlcAgentTool plcAgentTool,
+        ILogger<OrganizerToolset> logger)
     {
-        _manuals = manuals;
         _logger = logger;
-        _plcLogger = loggerFactory.CreateLogger<PlcAgentTool>();
-        _plcAgentTool = new PlcAgentTool(_manuals, _plcLogger);
+        _manualTools = manualTools;
+        _manualAgentTool = manualAgentTool;
+        _plcAgentTool = plcAgentTool;
+        _plcGatewayTool = AIFunctionFactory.Create(
+            new Func<string?, CancellationToken, Task<string>>(RunPlcGatewayAsync),
+            name: "read_plc_gateway",
+            description: "PLC Gateway からデバイスを読み取ります。optionsJson に devices/IP/port を含めます。");
 
         All = new AITool[]
         {
             AIFunctionFactory.Create(
-                new Func<string, string, CancellationToken, Task<string>>(FindManualsAsync),
-                name: "find_manuals",
-                description: "IAI/Oriental/PLC などのマニュアルインデックスから候補を検索します。"),
+                new Func<string, CancellationToken, Task<string>>(InvokeIaiAgentAsync),
+                name: "invoke_iai_agent",
+                description: "IAI 関連のマニュアルを検索し要約を返します。"),
 
             AIFunctionFactory.Create(
-                new Func<string, string, CancellationToken, Task<string>>(ReadManualAsync),
-                name: "read_manual",
-                description: "検索で得た相対パスのテキストを読み出します（先頭のみ）。"),
+                new Func<string, CancellationToken, Task<string>>(InvokeOrientalAgentAsync),
+                name: "invoke_oriental_agent",
+                description: "Oriental Motor 関連のマニュアルを検索し要約を返します。"),
 
             AIFunctionFactory.Create(
                 new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
@@ -70,37 +83,41 @@ public sealed class OrganizerToolset
     public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
     {
         _context.Value = new ScopeContext(conversationId, sink);
-        return new Scope(this);
+        var manualScope = _manualTools.UseContext(conversationId, sink);
+        var agentScope = _manualAgentTool.UseContext(conversationId, sink);
+        return new Scope(this, manualScope, agentScope);
     }
 
     /// <summary>
-    /// マニュアル検索ツール実行
+    /// IAI エージェント呼び出しツール実行
     /// </summary>
-    /// <param name="agentName">エージェント名</param>
-    /// <param name="query">検索クエリ</param>
+    /// <param name="question">問い合わせ内容</param>
     /// <param name="cancellationToken">キャンセル通知</param>
-    /// <returns>検索結果 JSON</returns>
-    private async Task<string> FindManualsAsync(string agentName, string query, CancellationToken cancellationToken)
+    /// <returns>実行結果</returns>
+    private Task<string> InvokeIaiAgentAsync(string question, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
-        var normalized = NormalizeAgentName(agentName);
-        var call = new ToolCall("find_manuals", JsonSerializer.Serialize(new { agentName = normalized, query }, _serializerOptions));
+        var call = new ToolCall("invoke_iai_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
 
-        try
-        {
-            var hits = await _manuals.SearchAsync(normalized, query, cancellationToken);
-            var payload = JsonSerializer.Serialize(hits, _serializerOptions);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, payload, true)));
-            return payload;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "find_manuals 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
-            return JsonSerializer.Serialize(new { error = ex.Message }, _serializerOptions);
-        }
+        return RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
+    }
+
+    /// <summary>
+    /// Oriental エージェント呼び出しツール実行
+    /// </summary>
+    /// <param name="question">問い合わせ内容</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>実行結果</returns>
+    private Task<string> InvokeOrientalAgentAsync(string question, CancellationToken cancellationToken)
+    {
+        var ctx = _context.Value;
+        var call = new ToolCall("invoke_oriental_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+
+        return RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
     }
 
     /// <summary>
@@ -133,7 +150,9 @@ public sealed class OrganizerToolset
         var ctx = _context.Value;
         try
         {
-            var result = await _plcAgentTool.RunAsync(question, optionsJson, cancellationToken);
+            var extraTools = new[] { _plcGatewayTool };
+            var contextHint = BuildPlcContextHint(optionsJson);
+            var result = await _manualAgentTool.RunAsync("plcAgent", question, extraTools, contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
@@ -146,33 +165,70 @@ public sealed class OrganizerToolset
     }
 
     /// <summary>
-    /// マニュアル読み取りツール実行
+    /// マニュアルエージェント処理実行
     /// </summary>
+    /// <param name="call">ツール呼び出し</param>
     /// <param name="agentName">エージェント名</param>
-    /// <param name="relativePath">マニュアル相対パス</param>
+    /// <param name="question">問い合わせ内容</param>
     /// <param name="cancellationToken">キャンセル通知</param>
-    /// <returns>読み取り結果 JSON</returns>
-    private async Task<string> ReadManualAsync(string agentName, string relativePath, CancellationToken cancellationToken)
+    /// <returns>実行結果</returns>
+    private async Task<string> RunManualAgentAsync(ToolCall call, string agentName, string question, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
-        var normalized = NormalizeAgentName(agentName);
-        var call = new ToolCall("read_manual", JsonSerializer.Serialize(new { agentName = normalized, relativePath }, _serializerOptions));
+        try
+        {
+            var result = await _manualAgentTool.RunAsync(agentName, question, cancellationToken: cancellationToken);
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            return result;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "{Tool} 実行に失敗しました。", call.Name);
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            return $"{call.Name} 実行エラー: {ex.Message}";
+        }
+    }
+
+    /// <summary>
+    /// PLC ゲートウェイ読み取りの実行
+    /// </summary>
+    /// <param name="optionsJson">ゲートウェイオプション</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
+    private async Task<string> RunPlcGatewayAsync(string? optionsJson, CancellationToken cancellationToken)
+    {
+        var ctx = _context.Value;
+        var call = new ToolCall("read_plc_gateway", JsonSerializer.Serialize(new { options = optionsJson }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
 
         try
         {
-            var content = await _manuals.ReadAsync(normalized, relativePath, cancellationToken: cancellationToken);
-            var payload = JsonSerializer.Serialize(content, _serializerOptions);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, payload, content is not null)));
-            return payload;
+            var result = await _plcAgentTool.RunGatewayAsync(optionsJson, cancellationToken);
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            return result;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "read_manual 実行に失敗しました。");
+            _logger.LogError(ex, "read_plc_gateway 実行に失敗しました。");
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
-            return JsonSerializer.Serialize(new { error = ex.Message }, _serializerOptions);
+            return $"PLC Gateway 実行エラー: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// PLC エージェントへのコンテキストヒント生成
+    /// </summary>
+    /// <param name="optionsJson">ゲートウェイオプション</param>
+    /// <returns>システムメッセージ</returns>
+    private static string? BuildPlcContextHint(string? optionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(optionsJson))
+        {
+            return "ゲートウェイ読み取りが必要なら read_plc_gateway を呼び出して devices/IP/port を指定してください。";
+        }
+
+        return $"ゲートウェイ読み取りに使う optionsJson: {optionsJson}";
     }
 
     private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
@@ -183,14 +239,20 @@ public sealed class OrganizerToolset
     private sealed class Scope : IDisposable
     {
         private readonly OrganizerToolset _owner;
+        private readonly IDisposable _manualScope;
+        private readonly IDisposable _agentScope;
 
         /// <summary>
         /// スコープ生成
         /// </summary>
         /// <param name="owner">元のツールセット</param>
-        public Scope(OrganizerToolset owner)
+        /// <param name="manualScope">マニュアルツールスコープ</param>
+        /// <param name="agentScope">サブエージェントツールスコープ</param>
+        public Scope(OrganizerToolset owner, IDisposable manualScope, IDisposable agentScope)
         {
             _owner = owner;
+            _manualScope = manualScope;
+            _agentScope = agentScope;
         }
 
         /// <summary>
@@ -199,34 +261,9 @@ public sealed class OrganizerToolset
         public void Dispose()
         {
             _owner._context.Value = null;
+            _manualScope.Dispose();
+            _agentScope.Dispose();
         }
     }
 
-    /// <summary>
-    /// エージェント名正規化
-    /// </summary>
-    /// <param name="agentName">入力エージェント名</param>
-    /// <returns>正規化済みエージェント名</returns>
-    private static string NormalizeAgentName(string agentName)
-    {
-        if (string.IsNullOrWhiteSpace(agentName))
-        {
-            return "iaiAgent";
-        }
-
-        var first = agentName.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).FirstOrDefault();
-        var token = (first ?? agentName).Trim();
-        if (token.EndsWith("Agent", StringComparison.OrdinalIgnoreCase))
-        {
-            return token;
-        }
-
-        return token.ToLowerInvariant() switch
-        {
-            "iai" => "iaiAgent",
-            "oriental" => "orientalAgent",
-            "plc" => "plcAgent",
-            _ => token
-        };
-    }
 }

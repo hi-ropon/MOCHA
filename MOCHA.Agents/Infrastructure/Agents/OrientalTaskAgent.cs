@@ -13,5 +13,9 @@ public sealed class OrientalTaskAgent : BaseTaskAgent
             "orientalAgent",
             "Oriental Motor機器解析・診断エージェント",
             "[Oriental Agent]",
-            question => $"結論: Oriental Motor視点での対処をまとめます。\n- 質問: {question}\n- 確認: AZシリーズ/MEXE02設定、アラームコード、押し当て運転や脱調検出の設定を点検します。") { }
+            question => $"""
+                結論: Oriental Motor視点での対処をまとめます。
+                - 質問: {question}
+                - 確認: AZシリーズ/MEXE02設定、アラームコード、押し当て運転や脱調検出の設定を点検します。
+                """) { }
 }

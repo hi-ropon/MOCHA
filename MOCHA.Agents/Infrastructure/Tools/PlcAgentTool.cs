@@ -1,19 +1,21 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http.Json;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
-using MOCHA.Agents.Application;
-using MOCHA.Agents.Domain;
 
 namespace MOCHA.Agents.Infrastructure.Tools;
 
 /// <summary>
-/// PLC 関連質問に対しゲートウェイ読み取りとマニュアル要約を実行するツール
+/// PLC 関連質問に対しゲートウェイ読み取りを実行するツール
 /// </summary>
 public sealed class PlcAgentTool
 {
-    private readonly IManualStore _manuals;
     private readonly ILogger<PlcAgentTool> _logger;
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -21,18 +23,16 @@ public sealed class PlcAgentTool
     };
 
     /// <summary>
-    /// マニュアルストアとロガー注入による初期化
+    /// ロガー注入による初期化
     /// </summary>
-    /// <param name="manuals">マニュアルストア</param>
     /// <param name="logger">ロガー</param>
-    public PlcAgentTool(IManualStore manuals, ILogger<PlcAgentTool> logger)
+    public PlcAgentTool(ILogger<PlcAgentTool> logger)
     {
-        _manuals = manuals;
         _logger = logger;
     }
 
     /// <summary>
-    /// 質問を基に読み取りとマニュアル要約を組み立てる
+    /// 質問を基にゲートウェイ読み取り結果を組み立てる
     /// </summary>
     /// <param name="question">質問文</param>
     /// <param name="optionsJson">読み取りオプション JSON</param>
@@ -45,8 +45,6 @@ public sealed class PlcAgentTool
         var readResult = options.Devices.Any()
             ? await ReadDevicesAsync(options, cancellationToken)
             : null;
-
-        var manualSummary = await SummarizeManualAsync(question, cancellationToken);
 
         var sb = new StringBuilder();
         sb.AppendLine("## PLC解析結果");
@@ -65,14 +63,18 @@ public sealed class PlcAgentTool
             sb.AppendLine("デバイス指定が無いためスキップしました。`optionsJson` に `devices` 配列を指定してください（例: [\"D100\", \"M10:2\"]）。");
         }
 
-        if (!string.IsNullOrWhiteSpace(manualSummary))
-        {
-            sb.AppendLine();
-            sb.AppendLine("### マニュアル候補");
-            sb.AppendLine(manualSummary);
-        }
-
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// ゲートウェイ読み取りのみ実行
+    /// </summary>
+    /// <param name="optionsJson">読み取りオプション JSON</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
+    public Task<string> RunGatewayAsync(string? optionsJson, CancellationToken cancellationToken)
+    {
+        return RunAsync("PLC Gateway 読み取り", optionsJson, cancellationToken);
     }
 
     /// <summary>
@@ -95,40 +97,6 @@ public sealed class PlcAgentTool
         {
             _logger.LogWarning(ex, "plc_agent options の JSON 解析に失敗しました。既定値で継続します。");
             return new PlcAgentOptions();
-        }
-    }
-
-    /// <summary>
-    /// マニュアル検索と要約生成
-    /// </summary>
-    /// <param name="question">質問文</param>
-    /// <param name="cancellationToken">キャンセル通知</param>
-    /// <returns>要約</returns>
-    private async Task<string> SummarizeManualAsync(string question, CancellationToken cancellationToken)
-    {
-        try
-        {
-            // MXia でのエージェント名に合わせて "plcAgent" を指定
-            var hits = await _manuals.SearchAsync("plcAgent", question, cancellationToken);
-            if (hits is null || hits.Count == 0)
-            {
-                return "関連するマニュアル候補は見つかりませんでした。";
-            }
-
-            var top = hits.Take(3).ToList();
-            var lines = new List<string>();
-            foreach (var hit in top)
-            {
-                var preview = await _manuals.ReadAsync("plcAgent", hit.RelativePath, maxBytes: 400, cancellationToken: cancellationToken);
-                lines.Add($"- {hit.Title} (score: {hit.Score:0.00})\n  - path: {hit.RelativePath}\n  - preview: {(preview?.Content ?? string.Empty).ReplaceLineEndings(" ").Trim()}");
-            }
-
-            return string.Join("\n", lines);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "マニュアル検索に失敗しました。");
-            return $"マニュアル検索でエラーが発生しました: {ex.Message}";
         }
     }
 
