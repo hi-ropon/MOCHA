@@ -93,6 +93,18 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 CreatedAt TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DevUsers_Email ON DevUsers(Email);
+
+            CREATE TABLE IF NOT EXISTS Feedbacks(
+                Id INTEGER NOT NULL CONSTRAINT PK_Feedbacks PRIMARY KEY AUTOINCREMENT,
+                ConversationId TEXT NOT NULL,
+                MessageIndex INTEGER NOT NULL,
+                UserObjectId TEXT NOT NULL,
+                Rating TEXT NOT NULL,
+                Comment TEXT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_Feedbacks_ConversationId_MessageIndex_UserObjectId ON Feedbacks(ConversationId, MessageIndex, UserObjectId);
+            CREATE INDEX IF NOT EXISTS IX_Feedbacks_UserObjectId_CreatedAt ON Feedbacks(UserObjectId, CreatedAt);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);

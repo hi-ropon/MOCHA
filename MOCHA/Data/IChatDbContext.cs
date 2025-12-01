@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Agents;
+using MOCHA.Services.Feedback;
 
 namespace MOCHA.Data;
 
@@ -21,6 +22,8 @@ internal interface IChatDbContext
     DbSet<DeviceAgentEntity> DeviceAgents { get; }
     /// <summary>装置エージェント利用許可エンティティのセット</summary>
     DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions { get; }
+    /// <summary>フィードバックエンティティのセット</summary>
+    DbSet<FeedbackEntity> Feedbacks { get; }
     /// <summary>データベース操作用のファサード。</summary>
     Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
     /// <summary>

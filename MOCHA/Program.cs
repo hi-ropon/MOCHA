@@ -16,6 +16,7 @@ using MOCHA.Factories;
 using MOCHA.Services.Settings;
 using MOCHA.Services.Drawings;
 using MOCHA.Services.Architecture;
+using MOCHA.Services.Feedback;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,6 +71,7 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpClient();
 
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
@@ -92,6 +94,8 @@ builder.Services.AddScoped<IChatTitleGenerator, ClientChatTitleGenerator>();
 builder.Services.AddScoped<IChatTitleService, ChatTitleService>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();
 builder.Services.AddScoped<IDeviceAgentPermissionRepository, DeviceAgentPermissionRepository>();
 builder.Services.AddScoped<IDeviceAgentAccessService, DeviceAgentAccessService>();

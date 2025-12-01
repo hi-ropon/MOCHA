@@ -154,15 +154,7 @@ internal sealed class ChatRepository : IChatRepository
         var messagesQuery = db.Messages
             .Where(x => x.UserObjectId == userObjectId && x.ConversationId == conversationId);
 
-        if (agentNumber is null)
-        {
-            messagesQuery = messagesQuery.Where(x =>
-                db.Conversations.Any(c =>
-                    c.Id == x.ConversationId &&
-                    c.UserObjectId == userObjectId &&
-                    c.AgentNumber == null));
-        }
-        else
+        if (agentNumber is not null)
         {
             messagesQuery = messagesQuery.Where(x =>
                 db.Conversations.Any(c =>

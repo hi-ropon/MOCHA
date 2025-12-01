@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Agents;
+using MOCHA.Services.Feedback;
 
 namespace MOCHA.Data;
 
@@ -24,6 +25,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<DeviceAgentEntity> DeviceAgents => Set<DeviceAgentEntity>();
     public DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions => Set<DeviceAgentPermissionEntity>();
     public DbSet<DevUserEntity> DevUsers => Set<DevUserEntity>();
+    public DbSet<FeedbackEntity> Feedbacks => Set<FeedbackEntity>();
 
     /// <summary>
     /// エンティティの制約やインデックスを構成する。
@@ -54,6 +56,17 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Content).HasMaxLength(4000);
             builder.Property(x => x.UserObjectId).HasMaxLength(200);
             builder.HasIndex(x => x.ConversationId);
+            builder.HasIndex(x => new { x.UserObjectId, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<FeedbackEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.ConversationId).HasMaxLength(200);
+            builder.Property(x => x.UserObjectId).HasMaxLength(200);
+            builder.Property(x => x.Rating).HasMaxLength(20);
+            builder.Property(x => x.Comment).HasMaxLength(1000);
+            builder.HasIndex(x => new { x.ConversationId, x.MessageIndex, x.UserObjectId }).IsUnique();
             builder.HasIndex(x => new { x.UserObjectId, x.CreatedAt });
         });
 
