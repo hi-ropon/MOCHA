@@ -735,6 +735,48 @@ h1:focus {
     border-color: #7bb0f0;
 }
 
+.markdown-body {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    white-space: normal;
+}
+
+.markdown-body p,
+.markdown-body ul,
+.markdown-body ol,
+.markdown-body pre,
+.markdown-body table {
+    margin: 0 0 0.4rem 0;
+}
+
+.markdown-body ul,
+.markdown-body ol {
+    padding-left: 1.2rem;
+}
+
+.markdown-body code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Ubuntu Mono", monospace;
+}
+
+.markdown-body pre {
+    white-space: pre;
+    background: var(--panel-bg);
+    padding: 0.55rem 0.8rem;
+    border-radius: 10px;
+    overflow-x: auto;
+    border: 1px solid var(--bubble-border);
+    margin: 0.25rem 0;
+    line-height: 1.4;
+}
+
+.markdown-body pre code {
+    white-space: pre;
+    display: block;
+    padding: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Ubuntu Mono", monospace;
+    tab-size: 4;
+}
+
 .thinking-chip {
     width: auto;
     max-width: 320px;

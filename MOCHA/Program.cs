@@ -17,6 +17,7 @@ using MOCHA.Services.Settings;
 using MOCHA.Services.Drawings;
 using MOCHA.Services.Architecture;
 using MOCHA.Services.Feedback;
+using MOCHA.Services.Markdown;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -118,6 +119,7 @@ builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
 builder.Services.AddScoped<IDevLoginService, DevLoginService>();
 builder.Services.AddScoped<IDevUserService, DevUserService>();
 builder.Services.AddScoped<IPasswordHasher<DevUserEntity>, PasswordHasher<DevUserEntity>>();
+builder.Services.AddScoped<IMarkdownRenderer, MarkdownRenderer>();
 
 var app = builder.Build();
 

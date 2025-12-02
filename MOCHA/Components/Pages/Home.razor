@@ -23,6 +23,7 @@
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject IOptionsMonitor<LlmOptions> LlmOptions
 @inject MOCHA.Services.Feedback.IFeedbackService FeedbackService
+@inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
 @inject ILogger<Home> Logger
 @implements IDisposable
 
@@ -51,7 +52,16 @@
                     var turnIndexForChip = userTurnCounter;
                     var messageIndex = i;
                     <div class="@GetBubbleClass(message.Role)">
-                        <div class="content">@message.Content</div>
+                        <div class="content">
+                            @if (message.Role == ChatRole.Assistant || message.Role == ChatRole.Tool)
+                            {
+                                <div class="markdown-body">@((MarkupString)MarkdownRenderer.Render(message.Content))</div>
+                            }
+                            else
+                            {
+                                @message.Content
+                            }
+                        </div>
                     </div>
                     @if (showInlineChip)
                     {
