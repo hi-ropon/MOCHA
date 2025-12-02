@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -48,6 +49,25 @@ public class ManualAgentToolTests
         var result = await tool.RunAsync(string.Empty, "RCON 設定");
 
         StringAssert.Contains(result, "IAI-response");
+    }
+
+    /// <summary>
+    /// ストリーミング途中のサブエージェント出力がユーザーに漏れないことを確認
+    /// </summary>
+    [TestMethod]
+    public async Task サブエージェントストリーム_メッセージイベントを出さない()
+    {
+        var factory = new FakeFactory(new FakeChatClient(new[] { "chunk-1", "chunk-2" }));
+        var manualTools = new ManualToolset(new FakeManualStore(), NullLogger<ManualToolset>.Instance);
+        var tool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
+        var events = new List<AgentEvent>();
+
+        using var _ = tool.UseContext("conv-stream", ev => events.Add(ev));
+        var result = await tool.RunAsync("iaiAgent", "テスト質問");
+
+        Assert.IsFalse(events.Any(e => e.Type == AgentEventType.Message), "サブエージェントのストリーム応答が漏洩しています。");
+        StringAssert.Contains(result, "chunk-1");
+        StringAssert.Contains(result, "chunk-2");
     }
 
     private sealed class FakeFactory : ILlmChatClientFactory

@@ -92,7 +92,6 @@ public sealed class ManualAgentTool
             await foreach (var update in agent.RunStreamingAsync(messages, thread, new AgentRunOptions(), cancellationToken))
             {
                 AppendChunk(sb, update.Text);
-                EmitIfNeeded(update.Text);
             }
 
             return sb.ToString().Trim();
@@ -110,17 +109,6 @@ public sealed class ManualAgentTool
         {
             sb.Append(text);
         }
-    }
-
-    private void EmitIfNeeded(string? text)
-    {
-        if (string.IsNullOrWhiteSpace(text))
-        {
-            return;
-        }
-
-        var ctx = _context.Value;
-        ctx?.Emit(AgentEventFactory.Message(ctx.ConversationId, text));
     }
 
     private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
