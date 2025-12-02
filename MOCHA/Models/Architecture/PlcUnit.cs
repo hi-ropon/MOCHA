@@ -19,6 +19,7 @@ public sealed class PlcUnit
     /// <param name="model">機種</param>
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
+    /// <param name="port">ポート番号</param>
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFile">プログラムファイル</param>
     /// <param name="modules">モジュール一覧</param>
@@ -32,6 +33,7 @@ public sealed class PlcUnit
         string? model,
         string? role,
         string? ipAddress,
+        int? port,
         PlcFileUpload? commentFile,
         PlcFileUpload? programFile,
         IReadOnlyCollection<PlcUnitModule> modules,
@@ -45,6 +47,7 @@ public sealed class PlcUnit
         Model = model;
         Role = role;
         IpAddress = ipAddress;
+        Port = port;
         CommentFile = commentFile;
         ProgramFile = programFile;
         Modules = modules;
@@ -66,6 +69,8 @@ public sealed class PlcUnit
     public string? Role { get; }
     /// <summary>IPアドレス</summary>
     public string? IpAddress { get; }
+    /// <summary>ポート番号</summary>
+    public int? Port { get; }
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; }
     /// <summary>プログラムファイル</summary>
@@ -96,6 +101,7 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
+            draft.Port,
             draft.CommentFile,
             draft.ProgramFile,
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
@@ -118,6 +124,7 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
+            draft.Port,
             draft.CommentFile ?? CommentFile,
             draft.ProgramFile ?? ProgramFile,
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),

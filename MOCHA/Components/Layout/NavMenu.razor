@@ -185,7 +185,6 @@
                     <div class="drawing-header">
                         <div>
                             <div class="agent-settings-section-title">アーキテクチャ設定</div>
-                            <div class="drawing-subtitle">PLCユニットを複数台登録し、モジュールとファイルを管理</div>
                         </div>
                         <button type="button"
                                 class="new-chat-btn save-agent-btn drawing-open-btn"
@@ -194,7 +193,6 @@
                             PLCユニットを追加
                         </button>
                     </div>
-                    <div class="drawing-permission">装置エージェントごとにPLCを紐づけます</div>
 
                     @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
                     {
@@ -228,18 +226,24 @@
                                         <span class="plc-label">役割:</span>
                                         <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
                                     </div>
-                                    <div class="plc-row">
-                                        <span class="plc-label">IPアドレス:</span>
-                                        <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</span>
+                                    <div class="plc-row endpoint-row">
+                                        <div class="endpoint-cell">
+                                            <div class="plc-label">IPアドレス</div>
+                                            <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</div>
+                                        </div>
+                                        <div class="endpoint-cell">
+                                            <div class="plc-label">ポート</div>
+                                            <div class="plc-value">@FormatPort(plc.Port)</div>
+                                        </div>
                                     </div>
                                     <div class="plc-row files-row">
                                         <div>
                                             <div class="plc-label">コメントファイル</div>
-                                            <div class="plc-value">@((plc.CommentFile is not null) ? plc.CommentFile.FileName : "未設定")</div>
+                                            <div class="plc-value">@DisplayFileName(plc.CommentFile?.FileName)</div>
                                         </div>
                                         <div>
                                             <div class="plc-label">プログラムファイル</div>
-                                            <div class="plc-value">@((plc.ProgramFile is not null) ? plc.ProgramFile.FileName : "未設定")</div>
+                                            <div class="plc-value">@DisplayFileName(plc.ProgramFile?.FileName)</div>
                                         </div>
                                     </div>
                                     <div class="plc-row modules-row">
@@ -272,7 +276,6 @@
                     <div class="drawing-header">
                         <div>
                             <div class="agent-settings-section-title">図面管理</div>
-                            <div class="drawing-subtitle">MXia のアーキテクチャ設定を参考にした図面登録</div>
                         </div>
                         <button type="button"
                                 class="new-chat-btn save-agent-btn drawing-open-btn"
@@ -281,7 +284,6 @@
                             図面を登録
                         </button>
                     </div>
-                    <div class="drawing-permission">管理者のみ作成と編集が可能です</div>
 
                     @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
                     {
@@ -417,45 +419,78 @@
                 <div class="field double">
                     <div>
                         <label>モデル</label>
-                        <input class="agent-input" @bind="_plcModel" placeholder="例: Q03UDV" />
+                        <input class="agent-input" @bind="_plcModel" placeholder="例: R08CPU" />
                     </div>
                     <div>
                         <label>役割</label>
-                        <input class="agent-input" @bind="_plcRole" placeholder="例: メイン制御" />
+                        <input class="agent-input" @bind="_plcRole" placeholder="例: 搬送制御" />
                     </div>
                 </div>
-                <div class="field">
-                    <label>IPアドレス</label>
-                    <input class="agent-input" @bind="_plcIp" placeholder="例: 192.168.0.10" />
+                <div class="field double endpoint-fields">
+                    <div>
+                        <label>IPアドレス</label>
+                        <input class="agent-input" @bind="_plcIp" placeholder="例: 192.168.0.10" />
+                    </div>
+                    <div>
+                        <label>ポート</label>
+                        <input class="agent-input"
+                               type="number"
+                               min="1"
+                               max="65535"
+                               @bind="_plcPort"
+                               placeholder="例: 5000" />
+                    </div>
+                </div>
+
+                <div class="plc-file-group">
+                    <div class="plc-file-title">プログラムファイル</div>
+                    <label class="plc-file-box" for="programFileInput">
+                        <div class="plc-file-trigger">
+                            <span class="plc-file-icon">⬆</span>
+                            <div>
+                                <div class="plc-file-trigger-main">CSVを選択</div>
+                                <div class="plc-file-trigger-sub">プログラム用のCSVファイルをアップロード</div>
+                            </div>
+                        </div>
+                        <div class="plc-file-info">
+                            @(string.IsNullOrWhiteSpace(_programFileName) ? "未選択" : _programFileName)
+                            @if (_programFileSize > 0)
+                            {
+                                <span class="plc-file-size">(@FormatFileSize(_programFileSize))</span>
+                            }
+                        </div>
+                    </label>
+                    <InputFile id="programFileInput"
+                               OnChange="OnProgramFileSelected"
+                               accept=".csv,text/csv"
+                               class="plc-file-input"
+                               hidden />
                 </div>
 
                 <div class="plc-file-group">
                     <div class="plc-file-title">コメントファイル</div>
-                    <div class="plc-file-box">
-                        <InputFile OnChange="OnCommentFileSelected" />
+                    <label class="plc-file-box" for="commentFileInput">
+                        <div class="plc-file-trigger">
+                            <span class="plc-file-icon">⬆</span>
+                            <div>
+                                <div class="plc-file-trigger-main">CSVを選択</div>
+                                <div class="plc-file-trigger-sub">コメント用のCSVファイルをアップロード</div>
+                            </div>
+                        </div>
                         <div class="plc-file-info">
-                            @_commentFileName ?? "コメントファイルがありません"
+                            @(string.IsNullOrWhiteSpace(_commentFileName) ? "未選択" : _commentFileName)
                             @if (_commentFileSize > 0)
                             {
                                 <span class="plc-file-size">(@FormatFileSize(_commentFileSize))</span>
                             }
                         </div>
-                    </div>
+                    </label>
+                    <InputFile id="commentFileInput"
+                               OnChange="OnCommentFileSelected"
+                               accept=".csv,text/csv"
+                               class="plc-file-input"
+                               hidden />
                 </div>
-
-                    <div class="plc-file-group">
-                        <div class="plc-file-title">プログラムファイル</div>
-                        <div class="plc-file-box">
-                            <InputFile OnChange="OnProgramFileSelected" />
-                            <div class="plc-file-info">
-                                @_programFileName ?? "プログラムファイルがありません"
-                                @if (_programFileSize > 0)
-                                {
-                                    <span class="plc-file-size">(@FormatFileSize(_programFileSize))</span>
-                                }
-                            </div>
-                        </div>
-                    </div>
 
                 <div class="plc-modules-group">
                     <div class="plc-module-header">
@@ -463,7 +498,7 @@
                             <div class="plc-file-title">モジュール</div>
                             <div class="drawing-subtitle">使用しているモジュールを追加</div>
                         </div>
-                        <button type="button" class="agent-delete-btn drawing-edit-btn" @onclick="AddOrUpdateModule" disabled="@string.IsNullOrWhiteSpace(_moduleNameInput)">
+                        <button type="button" class="plc-module-add-btn" @onclick="AddOrUpdateModule" disabled="@string.IsNullOrWhiteSpace(_moduleNameInput)">
                             @(_editingModuleIndex.HasValue ? "更新" : "追加")
                         </button>
                     </div>
@@ -490,8 +525,8 @@
                                 <div class="plc-module-row">
                                     <div class="plc-module-name">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</div>
                                     <div class="plc-actions">
-                                        <button type="button" class="agent-delete-btn drawing-edit-btn" @onclick="() => EditModule(i)">編集</button>
-                                        <button type="button" class="agent-delete-btn danger-btn" @onclick="() => RemoveModule(i)">削除</button>
+                                        <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => EditModule(i)">編集</button>
+                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveModule(i)">削除</button>
                                     </div>
                                 </div>
                             }
@@ -625,6 +660,7 @@
     private string _plcModel = string.Empty;
     private string _plcRole = string.Empty;
     private string _plcIp = string.Empty;
+    private int? _plcPort;
     private IBrowserFile? _programFile;
     private IBrowserFile? _commentFile;
     private string? _programFileName;
@@ -1006,6 +1042,7 @@
         _plcModel = string.Empty;
         _plcRole = string.Empty;
         _plcIp = string.Empty;
+        _plcPort = null;
         _programFile = null;
         _commentFile = null;
         _programFileName = null;
@@ -1031,6 +1068,7 @@
         _plcModel = unit.Model ?? string.Empty;
         _plcRole = unit.Role ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
+        _plcPort = unit.Port;
         _programFile = null;
         _commentFile = null;
         _programFileName = unit.ProgramFile?.FileName;
@@ -1137,6 +1175,7 @@
                 Model = _plcModel,
                 Role = _plcRole,
                 IpAddress = _plcIp,
+                Port = _plcPort,
                 Modules = _moduleInputs.ToList(),
                 CommentFile = _commentFile is not null
                     ? new PlcFileUpload
@@ -1213,7 +1252,21 @@
 
     private bool CanSavePlc => !_plcSaving
                                && !string.IsNullOrWhiteSpace(selectedAgentNumber)
-                               && !string.IsNullOrWhiteSpace(_plcName);
+                               && !string.IsNullOrWhiteSpace(_plcName)
+                               && !string.IsNullOrWhiteSpace(_plcIp)
+                               && _plcPort.HasValue
+                               && _plcPort > 0
+                               && _plcPort <= 65535;
+
+    private static string DisplayFileName(string? fileName)
+    {
+        return string.IsNullOrWhiteSpace(fileName) ? "未設定" : fileName;
+    }
+
+    private static string FormatPort(int? port)
+    {
+        return port.HasValue && port.Value > 0 ? port.Value.ToString() : "未設定";
+    }
 
     private static string FormatFileSize(long size)
     {

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
 namespace MOCHA.Models.Architecture;
@@ -16,6 +17,8 @@ public sealed class PlcUnitDraft
     public string? Role { get; init; }
     /// <summary>IP アドレス</summary>
     public string? IpAddress { get; init; }
+    /// <summary>ポート番号</summary>
+    public int? Port { get; init; }
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; init; }
     /// <summary>プログラムファイル</summary>
@@ -35,6 +38,11 @@ public sealed class PlcUnitDraft
             return (false, "PLC名は必須です");
         }
 
+        if (Port is not null && (Port <= 0 || Port > 65535))
+        {
+            return (false, "ポート番号は1-65535で入力してください");
+        }
+
         if (Modules.Any(m => string.IsNullOrWhiteSpace(m.Name)))
         {
             return (false, "モジュール名は必須です");
@@ -47,6 +55,11 @@ public sealed class PlcUnitDraft
             {
                 return validation;
             }
+
+            if (!IsCsvFile(CommentFile.FileName))
+            {
+                return (false, "コメントファイルはCSVファイルを選択してください");
+            }
         }
 
         if (ProgramFile is not null)
@@ -56,8 +69,18 @@ public sealed class PlcUnitDraft
             {
                 return validation;
             }
+
+            if (!IsCsvFile(ProgramFile.FileName))
+            {
+                return (false, "プログラムファイルはCSVファイルを選択してください");
+            }
         }
 
         return (true, null);
+    }
+
+    private static bool IsCsvFile(string fileName)
+    {
+        return string.Equals(Path.GetExtension(fileName), ".csv", System.StringComparison.OrdinalIgnoreCase);
     }
 }

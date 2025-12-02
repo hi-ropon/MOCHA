@@ -183,8 +183,12 @@
 }
 
 .drawing-open-btn {
-    width: auto;
-    min-width: 140px;
+    width: 180px !important;
+    max-width: 100%;
+    min-width: 0;
+    padding: 10px 14px;
+    flex: 0 0 auto;
+    justify-content: center;
 }
 
 .drawing-open-btn:disabled {
@@ -336,11 +340,6 @@
     border: 1px solid var(--border-color);
     font-size: 12px;
     color: var(--text-primary);
-}
-
-.plc-actions {
-    display: flex;
-    gap: 6px;
 }
 
 .danger-btn {
@@ -781,31 +780,97 @@
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.endpoint-fields {
+    align-items: end;
+}
+
+.endpoint-fields input {
+    min-width: 0;
+}
+
+.endpoint-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.endpoint-cell {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 10px;
+    background: var(--panel-bg);
+}
+
 .plc-file-group {
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 10px;
+    padding: 12px;
     background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
     color: var(--text-primary);
 }
 
 .plc-file-title {
     font-weight: 600;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
 
 .plc-file-box {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px dashed var(--border-color);
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.05));
+    overflow: hidden;
+}
+
+.plc-file-trigger {
     display: flex;
     align-items: center;
     gap: 10px;
-    padding: 10px;
-    border: 1px dashed var(--border-color);
+    pointer-events: none;
+}
+
+.plc-file-icon {
+    width: 36px;
+    height: 36px;
     border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent), #4f46e5);
+    color: var(--accent-contrast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
+}
+
+.plc-file-trigger-main {
+    font-weight: 700;
+}
+
+.plc-file-trigger-sub {
+    color: var(--text-muted);
+    font-size: 12px;
+    margin-top: 2px;
+}
+
+input[type="file"].plc-file-input {
+    display: none !important;
+    visibility: hidden;
+    width: 0;
+    height: 0;
 }
 
 .plc-file-info {
     color: var(--text-primary);
     font-size: 13px;
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 8px 10px;
 }
 
 .plc-file-size {
@@ -831,12 +896,32 @@
     flex-wrap: wrap;
 }
 
-.plc-module-header .drawing-edit-btn {
+.plc-module-add-btn {
     width: auto;
-    min-width: 88px;
-    height: 36px;
-    padding: 8px 14px;
-    font-size: 13px;
+    min-width: 120px;
+    height: 40px;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 10px;
+    border: 1px solid var(--accent);
+    background: linear-gradient(135deg, var(--accent), #4f46e5);
+    color: var(--accent-contrast);
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.plc-module-add-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 36px rgba(79, 70, 229, 0.32);
+}
+
+.plc-module-add-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
 }
 
 .plc-module-list {
@@ -851,10 +936,32 @@
     border: 1px solid var(--border-color);
     border-radius: 8px;
     padding: 8px 10px;
+    flex-wrap: wrap;
+    gap: 10px;
 }
 
 .plc-module-name {
     font-size: 13px;
+    flex: 1;
+    min-width: 200px;
+}
+
+.plc-module-action-btn {
+    min-width: 96px;
+    height: 38px;
+    padding: 8px 14px;
+    border-radius: 9px;
+    border: 1px solid var(--border-color);
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.plc-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .drawing-error {

@@ -64,8 +64,8 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
-                CommentFile = new PlcFileUpload { FileName = "comment_v1.txt", FileSize = 1024 },
-                ProgramFile = new PlcFileUpload { FileName = "program_v1.zip", FileSize = 2048 }
+                CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024 },
+                ProgramFile = new PlcFileUpload { FileName = "program_v1.csv", FileSize = 2048 }
             });
         Assert.IsTrue(initial.Succeeded);
         var unitId = initial.Unit!.Id;
@@ -77,13 +77,13 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
-                CommentFile = new PlcFileUpload { FileName = "comment_v2.txt", FileSize = 3072 },
-                ProgramFile = new PlcFileUpload { FileName = "program_v2.zip", FileSize = 4096 }
+                CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072 },
+                ProgramFile = new PlcFileUpload { FileName = "program_v2.csv", FileSize = 4096 }
             });
 
         Assert.IsTrue(updated.Succeeded);
-        Assert.AreEqual("comment_v2.txt", updated.Unit!.CommentFile!.FileName);
-        Assert.AreEqual("program_v2.zip", updated.Unit.ProgramFile!.FileName);
+        Assert.AreEqual("comment_v2.csv", updated.Unit!.CommentFile!.FileName);
+        Assert.AreEqual("program_v2.csv", updated.Unit.ProgramFile!.FileName);
     }
 
     /// <summary>
@@ -107,6 +107,49 @@ public class PlcConfigurationServiceTests
 
         var list = await service.ListAsync("user-3", "C-03");
         Assert.AreEqual(0, list.Count);
+    }
+
+    /// <summary>
+    /// ポート番号を保存できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task ポート番号を保存できる()
+    {
+        var service = CreateService();
+        var result = await service.AddAsync(
+            "user-4",
+            "D-04",
+            new PlcUnitDraft
+            {
+                Name = "PLC-5",
+                IpAddress = "192.168.0.20",
+                Port = 5000
+            });
+
+        Assert.IsTrue(result.Succeeded);
+        Assert.AreEqual(5000, result.Unit!.Port);
+        Assert.AreEqual("192.168.0.20", result.Unit.IpAddress);
+    }
+
+    /// <summary>
+    /// CSV以外のファイルは拒否する確認
+    /// </summary>
+    [TestMethod]
+    public async Task Csv以外のファイルは拒否する()
+    {
+        var service = CreateService();
+        var result = await service.AddAsync(
+            "user-5",
+            "E-05",
+            new PlcUnitDraft
+            {
+                Name = "PLC-6",
+                CommentFile = new PlcFileUpload { FileName = "memo.txt", FileSize = 512 },
+                ProgramFile = new PlcFileUpload { FileName = "logic.bin", FileSize = 1024 }
+            });
+
+        Assert.IsFalse(result.Succeeded);
+        StringAssert.Contains(result.Error!, "CSV");
     }
 
     /// <summary>
