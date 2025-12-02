@@ -265,14 +265,14 @@
                                         </div>
                                     </div>
                                     <div class="plc-row modules-row">
-                                        <div class="plc-label">モジュール</div>
+                                        <div class="plc-label">ユニット</div>
                                         <div class="plc-modules">
                                             @if (plc.Modules.Any())
                                             {
-                                                @foreach (var module in plc.Modules)
-                                                {
-                                                    <span class="plc-chip">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</span>
-                                                }
+                                            @foreach (var unitItem in plc.Modules)
+                                            {
+                                                <span class="plc-chip">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</span>
+                                            }
                                             }
                                             else
                                             {
@@ -561,39 +561,39 @@
                 <div class="plc-modules-group">
                     <div class="plc-module-header">
                         <div>
-                            <div class="plc-file-title">モジュール</div>
-                            <div class="drawing-subtitle">使用しているモジュールを追加</div>
+                            <div class="plc-file-title">ユニット</div>
+                            <div class="drawing-subtitle">使用しているユニットを追加</div>
                         </div>
-                        <button type="button" class="plc-module-add-btn" @onclick="AddOrUpdateModule" disabled="@string.IsNullOrWhiteSpace(_moduleNameInput)">
-                            @(_editingModuleIndex.HasValue ? "更新" : "追加")
+                        <button type="button" class="plc-module-add-btn" @onclick="AddOrUpdateUnit" disabled="@string.IsNullOrWhiteSpace(_unitNameInput)">
+                            @(_editingUnitIndex.HasValue ? "更新" : "追加")
                         </button>
                     </div>
                     <div class="field double">
                         <div>
                             <label>種類</label>
-                            <input class="agent-input" @bind="_moduleNameInput" placeholder="例: 入力" />
+                            <input class="agent-input" @bind="_unitNameInput" placeholder="例: 入力" />
                         </div>
                         <div>
                             <label>仕様</label>
-                            <input class="agent-input" @bind="_moduleSpecInput" placeholder="例: 16点" />
+                            <input class="agent-input" @bind="_unitSpecInput" placeholder="例: 16点" />
                         </div>
                     </div>
                     <div class="plc-module-list">
-                        @if (_moduleInputs.Count == 0)
+                        @if (_unitInputs.Count == 0)
                         {
-                            <div class="drawing-empty">モジュールがありません</div>
+                            <div class="drawing-empty">ユニットがありません</div>
                         }
                         else
                         {
-                            @for (var i = 0; i < _moduleInputs.Count; i++)
+                            @for (var i = 0; i < _unitInputs.Count; i++)
                             {
                                 var index = i;
-                                var module = _moduleInputs[index];
+                                var unitItem = _unitInputs[index];
                                 <div class="plc-module-row">
-                                    <div class="plc-module-name">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</div>
+                                    <div class="plc-module-name">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</div>
                                     <div class="plc-actions">
-                                        <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => EditModule(index)">編集</button>
-                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveModule(index)">削除</button>
+                                        <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => EditUnit(index)">編集</button>
+                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveUnit(index)">削除</button>
                                     </div>
                                 </div>
                             }
@@ -734,12 +734,12 @@
     private List<ProgramFileDraft> _programFiles = new();
     private Guid? _editingProgramFileId;
     private string _programDisplayNameInput = string.Empty;
-    private List<PlcModuleDraft> _moduleInputs = new();
-    private int? _editingModuleIndex;
+    private List<PlcModuleDraft> _unitInputs = new();
+    private int? _editingUnitIndex;
     private string? _plcError;
     private bool _plcSaving;
-    private string _moduleNameInput = string.Empty;
-    private string _moduleSpecInput = string.Empty;
+    private string _unitNameInput = string.Empty;
+    private string _unitSpecInput = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1114,8 +1114,8 @@
         _commentFileName = null;
         _commentFileSize = 0;
         _programFiles.Clear();
-        _moduleInputs.Clear();
-        ResetModuleInput();
+        _unitInputs.Clear();
+        ResetUnitInput();
         _plcError = null;
         _plcModalOpen = true;
     }
@@ -1148,10 +1148,10 @@
             .ToList();
         _editingProgramFileId = null;
         _programDisplayNameInput = string.Empty;
-        _moduleInputs = unit.Modules
+        _unitInputs = unit.Modules
             .Select(m => new PlcModuleDraft { Name = m.Name, Specification = m.Specification })
             .ToList();
-        ResetModuleInput();
+        ResetUnitInput();
         _plcError = null;
         _plcModalOpen = true;
     }
@@ -1163,7 +1163,7 @@
         _editingProgramFileId = null;
         _programDisplayNameInput = string.Empty;
         _programFiles.Clear();
-        ResetModuleInput();
+        ResetUnitInput();
     }
 
     private async Task OnProgramFilesSelected(InputFileChangeEventArgs args)
@@ -1268,53 +1268,53 @@
         }
     }
 
-    private void AddOrUpdateModule()
+    private void AddOrUpdateUnit()
     {
-        if (string.IsNullOrWhiteSpace(_moduleNameInput))
+        if (string.IsNullOrWhiteSpace(_unitNameInput))
         {
             return;
         }
 
         var draft = new PlcModuleDraft
         {
-            Name = _moduleNameInput,
-            Specification = _moduleSpecInput
+            Name = _unitNameInput,
+            Specification = _unitSpecInput
         };
 
-        if (_editingModuleIndex.HasValue && _editingModuleIndex.Value >= 0 && _editingModuleIndex.Value < _moduleInputs.Count)
+        if (_editingUnitIndex.HasValue && _editingUnitIndex.Value >= 0 && _editingUnitIndex.Value < _unitInputs.Count)
         {
-            _moduleInputs[_editingModuleIndex.Value] = draft;
+            _unitInputs[_editingUnitIndex.Value] = draft;
         }
         else
         {
-            _moduleInputs.Add(draft);
+            _unitInputs.Add(draft);
         }
 
-        ResetModuleInput();
+        ResetUnitInput();
     }
 
-    private void EditModule(int index)
+    private void EditUnit(int index)
     {
-        if (index < 0 || index >= _moduleInputs.Count)
+        if (index < 0 || index >= _unitInputs.Count)
         {
             return;
         }
 
-        var module = _moduleInputs[index];
-        _moduleNameInput = module.Name;
-        _moduleSpecInput = module.Specification ?? string.Empty;
-        _editingModuleIndex = index;
+        var unitItem = _unitInputs[index];
+        _unitNameInput = unitItem.Name;
+        _unitSpecInput = unitItem.Specification ?? string.Empty;
+        _editingUnitIndex = index;
     }
 
-    private void RemoveModule(int index)
+    private void RemoveUnit(int index)
     {
-        if (index < 0 || index >= _moduleInputs.Count)
+        if (index < 0 || index >= _unitInputs.Count)
         {
             return;
         }
 
-        _moduleInputs.RemoveAt(index);
-        ResetModuleInput();
+        _unitInputs.RemoveAt(index);
+        ResetUnitInput();
     }
 
     private async Task SavePlcAsync()
@@ -1336,7 +1336,7 @@
                 Role = _plcRole,
                 IpAddress = _plcIp,
                 Port = _plcPort,
-                Modules = _moduleInputs.ToList(),
+                Modules = _unitInputs.ToList(),
                 CommentFile = _commentFile is not null
                     ? new PlcFileUpload
                     {
@@ -1403,11 +1403,11 @@
         }
     }
 
-    private void ResetModuleInput()
+    private void ResetUnitInput()
     {
-        _moduleNameInput = string.Empty;
-        _moduleSpecInput = string.Empty;
-        _editingModuleIndex = null;
+        _unitNameInput = string.Empty;
+        _unitSpecInput = string.Empty;
+        _editingUnitIndex = null;
     }
 
     private bool CanSavePlc => !_plcSaving
