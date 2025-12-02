@@ -55,7 +55,7 @@
                         <div class="content">
                             @if (message.Role == ChatRole.Assistant || message.Role == ChatRole.Tool)
                             {
-                                <div class="markdown-body">@((MarkupString)MarkdownRenderer.Render(message.Content))</div>
+                                <div class="markdown-body">@((MarkupString)RenderMarkdown(message.Content))</div>
                             }
                             else
                             {
@@ -171,6 +171,16 @@
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
+
+    private string RenderMarkdown(string markdown)
+    {
+        if (MarkdownRenderer is null)
+        {
+            return HtmlEncoder.Default.Encode(markdown ?? string.Empty);
+        }
+
+        return MarkdownRenderer.Render(markdown);
+    }
 
     protected override async Task OnInitializedAsync()
     {
