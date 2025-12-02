@@ -916,6 +916,9 @@ input[type="file"].plc-file-input {
     box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
     cursor: pointer;
     transition: transform 0.15s ease, box-shadow 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .plc-module-add-btn:hover {
