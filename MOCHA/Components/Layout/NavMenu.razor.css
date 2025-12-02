@@ -333,6 +333,12 @@
     flex-wrap: wrap;
 }
 
+.plc-program-list {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
 .plc-chip {
     padding: 4px 8px;
     border-radius: 8px;
@@ -956,12 +962,73 @@ input[type="file"].plc-file-input {
     color: var(--text-primary);
     font-size: 13px;
     cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
 }
 
 .plc-actions {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+.plc-program-group {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    display: grid;
+    gap: 10px;
+}
+
+.program-add-box {
+    margin-top: 6px;
+}
+
+.program-file-list {
+    display: grid;
+    gap: 8px;
+}
+
+.program-file-row {
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    background: var(--panel-bg);
+}
+
+.program-file-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.program-file-name {
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text-primary);
+    word-break: break-all;
+}
+
+.program-file-size {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+.program-name-input {
+    width: 100%;
+    max-width: 320px;
+}
+
+.plc-chip.muted {
+    background: var(--panel-bg);
+    color: var(--text-muted);
 }
 
 .drawing-error {

@@ -21,7 +21,7 @@ public sealed class PlcUnit
     /// <param name="ipAddress">IPアドレス</param>
     /// <param name="port">ポート番号</param>
     /// <param name="commentFile">コメントファイル</param>
-    /// <param name="programFile">プログラムファイル</param>
+    /// <param name="programFiles">プログラムファイル</param>
     /// <param name="modules">モジュール一覧</param>
     /// <param name="createdAt">作成日時</param>
     /// <param name="updatedAt">更新日時</param>
@@ -35,7 +35,7 @@ public sealed class PlcUnit
         string? ipAddress,
         int? port,
         PlcFileUpload? commentFile,
-        PlcFileUpload? programFile,
+        IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
@@ -49,7 +49,7 @@ public sealed class PlcUnit
         IpAddress = ipAddress;
         Port = port;
         CommentFile = commentFile;
-        ProgramFile = programFile;
+        ProgramFiles = programFiles;
         Modules = modules;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
@@ -74,7 +74,7 @@ public sealed class PlcUnit
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; }
     /// <summary>プログラムファイル</summary>
-    public PlcFileUpload? ProgramFile { get; }
+    public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; }
     /// <summary>モジュール一覧</summary>
     public IReadOnlyCollection<PlcUnitModule> Modules { get; }
     /// <summary>作成日時</summary>
@@ -102,8 +102,8 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
-            draft.CommentFile,
-            draft.ProgramFile,
+            NormalizeFile(draft.CommentFile),
+            NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
             timestamp,
             timestamp);
@@ -125,8 +125,8 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
-            draft.CommentFile ?? CommentFile,
-            draft.ProgramFile ?? ProgramFile,
+            NormalizeFile(draft.CommentFile) ?? CommentFile,
+            NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
             CreatedAt,
             DateTimeOffset.UtcNow);
@@ -140,5 +140,30 @@ public sealed class PlcUnit
     private static string? NormalizeNullable(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static PlcFileUpload? NormalizeFile(PlcFileUpload? file)
+    {
+        if (file is null)
+        {
+            return null;
+        }
+
+        return new PlcFileUpload
+        {
+            Id = file.Id == Guid.Empty ? Guid.NewGuid() : file.Id,
+            FileName = file.FileName.Trim(),
+            ContentType = file.ContentType,
+            FileSize = file.FileSize,
+            DisplayName = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName.Trim() : file.DisplayName.Trim()
+        };
+    }
+
+    private static IReadOnlyCollection<PlcFileUpload> NormalizeFiles(IEnumerable<PlcFileUpload> files)
+    {
+        return files.Select(NormalizeFile)
+                    .Where(f => f is not null)!
+                    .Cast<PlcFileUpload>()
+                    .ToList();
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -65,7 +66,10 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-3",
                 CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024 },
-                ProgramFile = new PlcFileUpload { FileName = "program_v1.csv", FileSize = 2048 }
+                ProgramFiles = new List<PlcFileUpload>
+                {
+                    new() { FileName = "program_v1.csv", FileSize = 2048 }
+                }
             });
         Assert.IsTrue(initial.Succeeded);
         var unitId = initial.Unit!.Id;
@@ -78,12 +82,16 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-3",
                 CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072 },
-                ProgramFile = new PlcFileUpload { FileName = "program_v2.csv", FileSize = 4096 }
+                ProgramFiles = new List<PlcFileUpload>
+                {
+                    new() { FileName = "program_v2.csv", FileSize = 4096 }
+                }
             });
 
         Assert.IsTrue(updated.Succeeded);
         Assert.AreEqual("comment_v2.csv", updated.Unit!.CommentFile!.FileName);
-        Assert.AreEqual("program_v2.csv", updated.Unit.ProgramFile!.FileName);
+        Assert.AreEqual(1, updated.Unit.ProgramFiles.Count);
+        Assert.AreEqual("program_v2.csv", updated.Unit.ProgramFiles.First().FileName);
     }
 
     /// <summary>
@@ -132,6 +140,31 @@ public class PlcConfigurationServiceTests
     }
 
     /// <summary>
+    /// プログラムファイルを複数保持できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task プログラムファイルを複数保持できる()
+    {
+        var service = CreateService();
+        var result = await service.AddAsync(
+            "user-6",
+            "F-06",
+            new PlcUnitDraft
+            {
+                Name = "PLC-7",
+                ProgramFiles = new List<PlcFileUpload>
+                {
+                    new() { FileName = "logic_a.csv", FileSize = 1024, DisplayName = "ロジックA" },
+                    new() { FileName = "logic_b.csv", FileSize = 2048 }
+                }
+            });
+
+        Assert.IsTrue(result.Succeeded);
+        Assert.AreEqual(2, result.Unit!.ProgramFiles.Count);
+        Assert.AreEqual("ロジックA", result.Unit.ProgramFiles.First().DisplayName);
+    }
+
+    /// <summary>
     /// CSV以外のファイルは拒否する確認
     /// </summary>
     [TestMethod]
@@ -145,7 +178,10 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-6",
                 CommentFile = new PlcFileUpload { FileName = "memo.txt", FileSize = 512 },
-                ProgramFile = new PlcFileUpload { FileName = "logic.bin", FileSize = 1024 }
+                ProgramFiles = new List<PlcFileUpload>
+                {
+                    new() { FileName = "logic.bin", FileSize = 1024 }
+                }
             });
 
         Assert.IsFalse(result.Succeeded);

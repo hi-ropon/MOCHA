@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -21,8 +22,8 @@ public sealed class PlcUnitDraft
     public int? Port { get; init; }
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; init; }
-    /// <summary>プログラムファイル</summary>
-    public PlcFileUpload? ProgramFile { get; init; }
+    /// <summary>プログラムファイル群</summary>
+    public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; init; } = new List<PlcFileUpload>();
     /// <summary>モジュールドラフト</summary>
     public IReadOnlyCollection<PlcModuleDraft> Modules { get; init; } = new List<PlcModuleDraft>();
 
@@ -62,15 +63,16 @@ public sealed class PlcUnitDraft
             }
         }
 
-        if (ProgramFile is not null)
+        var programFiles = ProgramFiles ?? Array.Empty<PlcFileUpload>();
+        foreach (var programFile in programFiles)
         {
-            var validation = ProgramFile.Validate(maxFileSizeBytes);
+            var validation = programFile.Validate(maxFileSizeBytes);
             if (!validation.IsValid)
             {
                 return validation;
             }
 
-            if (!IsCsvFile(ProgramFile.FileName))
+            if (!IsCsvFile(programFile.FileName))
             {
                 return (false, "プログラムファイルはCSVファイルを選択してください");
             }

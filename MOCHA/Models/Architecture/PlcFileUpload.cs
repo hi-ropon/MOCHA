@@ -7,12 +7,16 @@ namespace MOCHA.Models.Architecture;
 /// </summary>
 public sealed class PlcFileUpload
 {
+    /// <summary>ファイルID</summary>
+    public Guid Id { get; init; } = Guid.NewGuid();
     /// <summary>ファイル名</summary>
     public string FileName { get; init; } = string.Empty;
     /// <summary>コンテンツタイプ</summary>
     public string ContentType { get; init; } = "application/octet-stream";
     /// <summary>ファイルサイズ</summary>
     public long FileSize { get; init; }
+    /// <summary>表示名</summary>
+    public string? DisplayName { get; init; }
 
     /// <summary>
     /// 入力値のバリデーション

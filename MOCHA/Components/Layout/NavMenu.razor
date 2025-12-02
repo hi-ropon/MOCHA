@@ -243,7 +243,25 @@
                                         </div>
                                         <div>
                                             <div class="plc-label">プログラムファイル</div>
-                                            <div class="plc-value">@DisplayFileName(plc.ProgramFile?.FileName)</div>
+                                            <div class="plc-program-list">
+                                                @if (plc.ProgramFiles?.Any() ?? false)
+                                                {
+                                                    var programNames = plc.ProgramFiles!.ToList();
+                                                    var take = programNames.Take(2).ToList();
+                                                    foreach (var file in take)
+                                                    {
+                                                        <span class="plc-chip">@DisplayFileName(file.FileName, file.DisplayName)</span>
+                                                    }
+                                                    if (programNames.Count > 2)
+                                                    {
+                                                        <span class="plc-chip muted">+@((programNames.Count - 2)) 件</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    <span class="plc-value">未設定</span>
+                                                }
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="plc-row modules-row">
@@ -442,29 +460,77 @@
                     </div>
                 </div>
 
-                <div class="plc-file-group">
-                    <div class="plc-file-title">プログラムファイル</div>
-                    <label class="plc-file-box" for="programFileInput">
+                <div class="plc-program-group">
+                    <div class="plc-module-header">
+                        <div>
+                            <div class="plc-file-title">プログラムファイル（複数可）</div>
+                            <div class="drawing-subtitle">CSVのみ・最大10MB/件</div>
+                        </div>
+                        <label class="plc-module-add-btn program-add-btn" for="programFileInput">追加</label>
+                    </div>
+                    <label class="plc-file-box program-add-box" for="programFileInput">
                         <div class="plc-file-trigger">
                             <span class="plc-file-icon">⬆</span>
                             <div>
-                                <div class="plc-file-trigger-main">CSVを選択</div>
-                                <div class="plc-file-trigger-sub">プログラム用のCSVファイルをアップロード</div>
+                                <div class="plc-file-trigger-main">CSVを追加</div>
+                                <div class="plc-file-trigger-sub">複数選択・ドラッグ&ドロップ対応</div>
                             </div>
                         </div>
                         <div class="plc-file-info">
-                            @(string.IsNullOrWhiteSpace(_programFileName) ? "未選択" : _programFileName)
-                            @if (_programFileSize > 0)
-                            {
-                                <span class="plc-file-size">(@FormatFileSize(_programFileSize))</span>
-                            }
+                            @_programFiles.Count 件選択中
                         </div>
                     </label>
                     <InputFile id="programFileInput"
-                               OnChange="OnProgramFileSelected"
+                               Multiple="true"
+                               OnChange="OnProgramFilesSelected"
                                accept=".csv,text/csv"
                                class="plc-file-input"
                                hidden />
+                    <div class="program-file-list">
+                        @if (_programFiles.Count == 0)
+                        {
+                            <div class="drawing-empty">プログラムファイルがありません</div>
+                        }
+                        else
+                        {
+                            @foreach (var file in _programFiles)
+                            {
+                                <div class="program-file-row">
+                                    <div class="program-file-meta">
+                                        @if (_editingProgramFileId == file.Id)
+                                        {
+                                            <input class="agent-input program-name-input"
+                                                   @bind="_programDisplayNameInput"
+                                                   placeholder="表示名を入力" />
+                                        }
+                                        else
+                                        {
+                                            <div class="program-file-name">@DisplayFileName(file.FileName, file.DisplayName)</div>
+                                        }
+                                        <div class="program-file-size">@FormatFileSize(file.FileSize)</div>
+                                    </div>
+                                    <div class="plc-actions">
+                                        @if (_editingProgramFileId == file.Id)
+                                        {
+                                            <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="SaveProgramFileName">保存</button>
+                                            <button type="button" class="plc-module-action-btn cancel-btn" @onclick="CancelEditProgramFile">キャンセル</button>
+                                        }
+                                        else
+                                        {
+                                            <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => BeginEditProgramFile(file)">名称変更</button>
+                                        }
+                                        <label class="plc-module-action-btn drawing-edit-btn" for="@($"replace-{file.Id}")">置き換え</label>
+                                        <InputFile id="@($"replace-{file.Id}")"
+                                                   OnChange="args => ReplaceProgramFile(file.Id, args)"
+                                                   accept=".csv,text/csv"
+                                                   class="plc-file-input"
+                                                   hidden />
+                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveProgramFile(file.Id)">削除</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
                 </div>
 
                 <div class="plc-file-group">
@@ -521,12 +587,13 @@
                         {
                             @for (var i = 0; i < _moduleInputs.Count; i++)
                             {
-                                var module = _moduleInputs[i];
+                                var index = i;
+                                var module = _moduleInputs[index];
                                 <div class="plc-module-row">
                                     <div class="plc-module-name">@module.Name @if(!string.IsNullOrWhiteSpace(module.Specification)){<text>（@module.Specification）</text>}</div>
                                     <div class="plc-actions">
-                                        <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => EditModule(i)">編集</button>
-                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveModule(i)">削除</button>
+                                        <button type="button" class="plc-module-action-btn drawing-edit-btn" @onclick="() => EditModule(index)">編集</button>
+                                        <button type="button" class="plc-module-action-btn danger-btn" @onclick="() => RemoveModule(index)">削除</button>
                                     </div>
                                 </div>
                             }
@@ -661,12 +728,12 @@
     private string _plcRole = string.Empty;
     private string _plcIp = string.Empty;
     private int? _plcPort;
-    private IBrowserFile? _programFile;
     private IBrowserFile? _commentFile;
-    private string? _programFileName;
-    private long _programFileSize;
     private string? _commentFileName;
     private long _commentFileSize;
+    private List<ProgramFileDraft> _programFiles = new();
+    private Guid? _editingProgramFileId;
+    private string _programDisplayNameInput = string.Empty;
     private List<PlcModuleDraft> _moduleInputs = new();
     private int? _editingModuleIndex;
     private string? _plcError;
@@ -1043,12 +1110,10 @@
         _plcRole = string.Empty;
         _plcIp = string.Empty;
         _plcPort = null;
-        _programFile = null;
         _commentFile = null;
-        _programFileName = null;
         _commentFileName = null;
-        _programFileSize = 0;
         _commentFileSize = 0;
+        _programFiles.Clear();
         _moduleInputs.Clear();
         ResetModuleInput();
         _plcError = null;
@@ -1069,12 +1134,20 @@
         _plcRole = unit.Role ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
         _plcPort = unit.Port;
-        _programFile = null;
         _commentFile = null;
-        _programFileName = unit.ProgramFile?.FileName;
-        _programFileSize = unit.ProgramFile?.FileSize ?? 0;
         _commentFileName = unit.CommentFile?.FileName;
         _commentFileSize = unit.CommentFile?.FileSize ?? 0;
+        _programFiles = (unit.ProgramFiles ?? Array.Empty<PlcFileUpload>())
+            .Select(f => new ProgramFileDraft
+            {
+                Id = f.Id == Guid.Empty ? Guid.NewGuid() : f.Id,
+                FileName = f.FileName,
+                FileSize = f.FileSize,
+                DisplayName = f.DisplayName
+            })
+            .ToList();
+        _editingProgramFileId = null;
+        _programDisplayNameInput = string.Empty;
         _moduleInputs = unit.Modules
             .Select(m => new PlcModuleDraft { Name = m.Name, Specification = m.Specification })
             .ToList();
@@ -1087,15 +1160,33 @@
     {
         _plcModalOpen = false;
         _editingPlcId = null;
+        _editingProgramFileId = null;
+        _programDisplayNameInput = string.Empty;
+        _programFiles.Clear();
         ResetModuleInput();
     }
 
-    private async Task OnProgramFileSelected(InputFileChangeEventArgs args)
+    private async Task OnProgramFilesSelected(InputFileChangeEventArgs args)
     {
-        var file = args.File;
-        _programFile = file;
-        _programFileName = Path.GetFileName(file.Name);
-        _programFileSize = file.Size;
+        _plcError = null;
+        foreach (var file in args.GetMultipleFiles())
+        {
+            var fileName = Path.GetFileName(file.Name);
+            if (!IsCsvFile(fileName))
+            {
+                _plcError = "プログラムファイルはCSVのみ選択してください";
+                continue;
+            }
+
+            _programFiles.Add(new ProgramFileDraft
+            {
+                Id = Guid.NewGuid(),
+                FileName = fileName,
+                FileSize = file.Size,
+                DisplayName = fileName
+            });
+        }
+
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1106,6 +1197,75 @@
         _commentFileName = Path.GetFileName(file.Name);
         _commentFileSize = file.Size;
         await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReplaceProgramFile(Guid id, InputFileChangeEventArgs args)
+    {
+        _plcError = null;
+        var target = _programFiles.FirstOrDefault(f => f.Id == id);
+        if (target is null)
+        {
+            return;
+        }
+
+        var file = args.File;
+        var fileName = Path.GetFileName(file.Name);
+        if (!IsCsvFile(fileName))
+        {
+            _plcError = "プログラムファイルはCSVのみ選択してください";
+            return;
+        }
+
+        target.FileName = fileName;
+        target.FileSize = file.Size;
+        if (string.IsNullOrWhiteSpace(target.DisplayName))
+        {
+            target.DisplayName = fileName;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void BeginEditProgramFile(ProgramFileDraft file)
+    {
+        _editingProgramFileId = file.Id;
+        _programDisplayNameInput = file.DisplayName ?? file.FileName;
+    }
+
+    private void SaveProgramFileName()
+    {
+        if (!_editingProgramFileId.HasValue)
+        {
+            return;
+        }
+
+        var target = _programFiles.FirstOrDefault(f => f.Id == _editingProgramFileId.Value);
+        if (target is null)
+        {
+            return;
+        }
+
+        target.DisplayName = string.IsNullOrWhiteSpace(_programDisplayNameInput)
+            ? target.FileName
+            : _programDisplayNameInput.Trim();
+
+        _editingProgramFileId = null;
+        _programDisplayNameInput = string.Empty;
+    }
+
+    private void CancelEditProgramFile()
+    {
+        _editingProgramFileId = null;
+        _programDisplayNameInput = string.Empty;
+    }
+
+    private void RemoveProgramFile(Guid id)
+    {
+        _programFiles.RemoveAll(f => f.Id == id);
+        if (_editingProgramFileId == id)
+        {
+            CancelEditProgramFile();
+        }
     }
 
     private void AddOrUpdateModule()
@@ -1185,14 +1345,14 @@
                         FileSize = _commentFileSize
                     }
                     : null,
-                ProgramFile = _programFile is not null
-                    ? new PlcFileUpload
-                    {
-                        FileName = _programFileName ?? string.Empty,
-                        ContentType = _programFile.ContentType,
-                        FileSize = _programFileSize
-                    }
-                    : null
+                ProgramFiles = _programFiles.Select(f => new PlcFileUpload
+                {
+                    Id = f.Id == Guid.Empty ? Guid.NewGuid() : f.Id,
+                    FileName = f.FileName,
+                    DisplayName = f.DisplayName,
+                    ContentType = "text/csv",
+                    FileSize = f.FileSize
+                }).ToList()
             };
 
             PlcUnitResult result;
@@ -1258,14 +1418,20 @@
                                && _plcPort > 0
                                && _plcPort <= 65535;
 
-    private static string DisplayFileName(string? fileName)
+    private static string DisplayFileName(string? fileName, string? displayName = null)
     {
-        return string.IsNullOrWhiteSpace(fileName) ? "未設定" : fileName;
+        var name = string.IsNullOrWhiteSpace(displayName) ? fileName : displayName;
+        return string.IsNullOrWhiteSpace(name) ? "未設定" : name;
     }
 
     private static string FormatPort(int? port)
     {
         return port.HasValue && port.Value > 0 ? port.Value.ToString() : "未設定";
+    }
+
+    private static bool IsCsvFile(string fileName)
+    {
+        return string.Equals(Path.GetExtension(fileName), ".csv", StringComparison.OrdinalIgnoreCase);
     }
 
     private static string FormatFileSize(long size)
@@ -1330,6 +1496,14 @@
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
         PreferencesState.Changed -= OnPreferencesChanged;
+    }
+
+    private sealed class ProgramFileDraft
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string FileName { get; set; } = string.Empty;
+        public long FileSize { get; set; }
+        public string? DisplayName { get; set; }
     }
 
     private enum UserAction
