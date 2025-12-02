@@ -22,6 +22,7 @@ public sealed class OrganizerToolset
     private readonly ManualToolset _manualTools;
     private readonly ManualAgentTool _manualAgentTool;
     private readonly PlcAgentTool _plcAgentTool;
+    private readonly PlcToolset _plcToolset;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -39,17 +40,20 @@ public sealed class OrganizerToolset
     /// <param name="manualTools">マニュアルツールセット</param>
     /// <param name="manualAgentTool">マニュアルエージェントツール</param>
     /// <param name="plcAgentTool">PLC エージェントツール</param>
+    /// <param name="plcToolset">PLC 専用ツールセット</param>
     /// <param name="logger">ロガー</param>
     public OrganizerToolset(
         ManualToolset manualTools,
         ManualAgentTool manualAgentTool,
         PlcAgentTool plcAgentTool,
+        PlcToolset plcToolset,
         ILogger<OrganizerToolset> logger)
     {
         _logger = logger;
         _manualTools = manualTools;
         _manualAgentTool = manualAgentTool;
         _plcAgentTool = plcAgentTool;
+        _plcToolset = plcToolset;
         _plcGatewayTool = AIFunctionFactory.Create(
             new Func<string?, CancellationToken, Task<string>>(RunPlcGatewayAsync),
             name: "read_plc_gateway",
@@ -70,7 +74,7 @@ public sealed class OrganizerToolset
             AIFunctionFactory.Create(
                 new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
                 name: "invoke_plc_agent",
-                description: "三菱PLC/MCプロトコル関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。")
+                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。")
         };
     }
 
@@ -85,7 +89,8 @@ public sealed class OrganizerToolset
         _context.Value = new ScopeContext(conversationId, sink);
         var manualScope = _manualTools.UseContext(conversationId, sink);
         var agentScope = _manualAgentTool.UseContext(conversationId, sink);
-        return new Scope(this, manualScope, agentScope);
+        var plcScope = _plcToolset.UseContext(conversationId, sink);
+        return new Scope(this, manualScope, agentScope, plcScope);
     }
 
     /// <summary>
@@ -152,7 +157,7 @@ public sealed class OrganizerToolset
         {
             var extraTools = new[] { _plcGatewayTool };
             var contextHint = BuildPlcContextHint(optionsJson);
-            var result = await _manualAgentTool.RunAsync("plcAgent", question, extraTools, contextHint, cancellationToken);
+            var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
@@ -241,6 +246,7 @@ public sealed class OrganizerToolset
         private readonly OrganizerToolset _owner;
         private readonly IDisposable _manualScope;
         private readonly IDisposable _agentScope;
+        private readonly IDisposable _plcScope;
 
         /// <summary>
         /// スコープ生成
@@ -248,11 +254,13 @@ public sealed class OrganizerToolset
         /// <param name="owner">元のツールセット</param>
         /// <param name="manualScope">マニュアルツールスコープ</param>
         /// <param name="agentScope">サブエージェントツールスコープ</param>
-        public Scope(OrganizerToolset owner, IDisposable manualScope, IDisposable agentScope)
+        /// <param name="plcScope">PLCツールスコープ</param>
+        public Scope(OrganizerToolset owner, IDisposable manualScope, IDisposable agentScope, IDisposable plcScope)
         {
             _owner = owner;
             _manualScope = manualScope;
             _agentScope = agentScope;
+            _plcScope = plcScope;
         }
 
         /// <summary>
@@ -263,6 +271,7 @@ public sealed class OrganizerToolset
             _owner._context.Value = null;
             _manualScope.Dispose();
             _agentScope.Dispose();
+            _plcScope.Dispose();
         }
     }
 

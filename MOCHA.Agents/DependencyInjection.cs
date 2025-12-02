@@ -1,11 +1,13 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MOCHA.Agents.Application;
+using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Agents;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Manuals;
 using MOCHA.Agents.Infrastructure.Options;
 using MOCHA.Agents.Infrastructure.Orchestration;
+using MOCHA.Agents.Infrastructure.Plc;
 using MOCHA.Agents.Infrastructure.Tools;
 
 namespace MOCHA.Agents;
@@ -30,6 +32,12 @@ public static class DependencyInjection
         services.AddSingleton<ManualToolset>();
         services.AddSingleton<ManualAgentTool>();
         services.AddSingleton<PlcAgentTool>();
+        services.AddSingleton<IPlcDataStore, PlcDataStore>();
+        services.AddSingleton<PlcProgramAnalyzer>();
+        services.AddSingleton<PlcReasoner>();
+        services.AddSingleton<PlcManualService>();
+        services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>();
+        services.AddSingleton<PlcToolset>();
         services.AddSingleton<OrganizerToolset>();
         services.AddSingleton<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 

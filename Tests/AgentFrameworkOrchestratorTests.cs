@@ -9,10 +9,12 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
+using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Agents;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Options;
 using MOCHA.Agents.Infrastructure.Orchestration;
+using MOCHA.Agents.Infrastructure.Plc;
 using MOCHA.Agents.Infrastructure.Tools;
 
 namespace MOCHA.Tests;
@@ -41,7 +43,12 @@ public class AgentFrameworkOrchestratorTests
         var manualTools = new ManualToolset(manualStore, NullLogger<ManualToolset>.Instance);
         var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
         var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, NullLogger<OrganizerToolset>.Instance);
+        var plcStore = new PlcDataStore();
+        var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
+        var plcReasoner = new PlcReasoner();
+        var plcManual = new PlcManualService(manualStore);
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -88,7 +95,12 @@ public class AgentFrameworkOrchestratorTests
         var manualTools = new ManualToolset(manualStore, NullLogger<ManualToolset>.Instance);
         var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
         var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, NullLogger<OrganizerToolset>.Instance);
+        var plcStore = new PlcDataStore();
+        var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
+        var plcReasoner = new PlcReasoner();
+        var plcManual = new PlcManualService(manualStore);
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -261,6 +273,19 @@ public class AgentFrameworkOrchestratorTests
                 new("dummy", "path", 1)
             };
             return Task.FromResult(hits);
+        }
+    }
+
+    private sealed class DummyGateway : MOCHA.Agents.Domain.Plc.IPlcGatewayClient
+    {
+        public Task<MOCHA.Agents.Domain.Plc.BatchReadResult> ReadBatchAsync(MOCHA.Agents.Domain.Plc.BatchReadRequest request, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new MOCHA.Agents.Domain.Plc.BatchReadResult(Array.Empty<MOCHA.Agents.Domain.Plc.DeviceReadResult>()));
+        }
+
+        public Task<MOCHA.Agents.Domain.Plc.DeviceReadResult> ReadAsync(MOCHA.Agents.Domain.Plc.DeviceReadRequest request, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new MOCHA.Agents.Domain.Plc.DeviceReadResult(request.Spec, Array.Empty<int>(), true, null));
         }
     }
 }

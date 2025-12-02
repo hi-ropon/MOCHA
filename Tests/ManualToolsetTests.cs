@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
+using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Tools;
+using MOCHA.Agents.Infrastructure.Plc;
 
 namespace MOCHA.Tests;
 
@@ -40,7 +42,12 @@ public class ManualToolsetTests
         var manualTools = new ManualToolset(new DummyManualStore(), NullLogger<ManualToolset>.Instance);
         var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
         var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
-        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, NullLogger<OrganizerToolset>.Instance);
+        var plcStore = new PlcDataStore();
+        var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
+        var plcReasoner = new PlcReasoner();
+        var plcManual = new PlcManualService(new DummyManualStore());
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
 
         Assert.AreEqual(3, organizerToolset.All.Count);
     }
@@ -122,6 +129,19 @@ public class ManualToolsetTests
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy", "path", 1.0) };
             return Task.FromResult(hits);
+        }
+    }
+
+    private sealed class DummyGateway : IPlcGatewayClient
+    {
+        public Task<BatchReadResult> ReadBatchAsync(BatchReadRequest request, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new BatchReadResult(Array.Empty<DeviceReadResult>()));
+        }
+
+        public Task<DeviceReadResult> ReadAsync(DeviceReadRequest request, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(new DeviceReadResult(request.Spec, Array.Empty<int>(), true, null));
         }
     }
 }
