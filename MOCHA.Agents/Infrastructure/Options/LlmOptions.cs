@@ -1,7 +1,7 @@
 namespace MOCHA.Agents.Infrastructure.Options;
 
 /// <summary>
-/// LLM 接続の設定。
+/// LLM 接続設定
 /// </summary>
 public sealed class LlmOptions
 {

@@ -1,7 +1,7 @@
 namespace MOCHA.Agents.Domain;
 
 /// <summary>
-/// エージェント応答ストリームで流れるイベント種別。
+/// エージェント応答ストリームで流れるイベント種別
 /// </summary>
 public enum AgentEventType
 {

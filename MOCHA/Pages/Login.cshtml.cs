@@ -88,7 +88,7 @@ public sealed class LoginModel : PageModel
         }
 
         var principal = _loginService.CreatePrincipal(user.Email, user.Email);
-        var properties = _loginService.CreateProperties(Input.RememberMe, lifetime);
+        var properties = _loginService.CreateProperties(lifetime);
 
         await HttpContext.SignInAsync(DevAuthDefaults.scheme, principal, properties);
         return Redirect(ReturnUrl ?? "/");

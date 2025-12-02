@@ -7,34 +7,34 @@ using MOCHA.Data;
 namespace MOCHA.Factories;
 
 /// <summary>
-/// SQLite 環境で必要なテーブルやインデックスを作成する初期化クラス。
+/// SQLite 環境で必要なテーブルやインデックスを作成する初期化クラス
 /// </summary>
 internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 {
     private readonly ChatDbContext _db;
 
     /// <summary>
-    /// DbContext を受け取り初期化する。
+    /// DbContext 受け取りによる初期化
     /// </summary>
-    /// <param name="db">チャット用 DbContext。</param>
+    /// <param name="db">チャット用 DbContext</param>
     public SqliteDatabaseInitializer(ChatDbContext db)
     {
         _db = db;
     }
 
     /// <summary>
-    /// テーブルを作成し、必要な列が揃っているか確認する。
+    /// テーブル作成と列定義確認
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task InitializeAsync(CancellationToken cancellationToken = default)
     {
         await EnsureTablesAsync(cancellationToken);
     }
 
     /// <summary>
-    /// 会話・メッセージ・ロール・エージェントのテーブルを作成する。
+    /// 会話・メッセージ・ロール・エージェントのテーブル作成処理
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     private async Task EnsureTablesAsync(CancellationToken cancellationToken)
     {
         const string createSql = """
@@ -77,6 +77,14 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgents_UserObjectId_Number ON DeviceAgents(UserObjectId, Number);
 
+            CREATE TABLE IF NOT EXISTS DeviceAgentPermissions(
+                Id INTEGER NOT NULL CONSTRAINT PK_DeviceAgentPermissions PRIMARY KEY AUTOINCREMENT,
+                UserObjectId TEXT NOT NULL,
+                AgentNumber TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgentPermissions_UserObjectId_AgentNumber ON DeviceAgentPermissions(UserObjectId, AgentNumber);
+
             CREATE TABLE IF NOT EXISTS DevUsers(
                 Id INTEGER NOT NULL CONSTRAINT PK_DevUsers PRIMARY KEY AUTOINCREMENT,
                 Email TEXT NOT NULL,
@@ -85,6 +93,18 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 CreatedAt TEXT NOT NULL
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DevUsers_Email ON DevUsers(Email);
+
+            CREATE TABLE IF NOT EXISTS Feedbacks(
+                Id INTEGER NOT NULL CONSTRAINT PK_Feedbacks PRIMARY KEY AUTOINCREMENT,
+                ConversationId TEXT NOT NULL,
+                MessageIndex INTEGER NOT NULL,
+                UserObjectId TEXT NOT NULL,
+                Rating TEXT NOT NULL,
+                Comment TEXT NULL,
+                CreatedAt TEXT NOT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_Feedbacks_ConversationId_MessageIndex_UserObjectId ON Feedbacks(ConversationId, MessageIndex, UserObjectId);
+            CREATE INDEX IF NOT EXISTS IX_Feedbacks_UserObjectId_CreatedAt ON Feedbacks(UserObjectId, CreatedAt);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
@@ -92,9 +112,9 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
     }
 
     /// <summary>
-    /// Conversations テーブルに AgentNumber 列が無い場合に追加する。
+    /// Conversations テーブルへの AgentNumber 列追加確認
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     private async Task EnsureAgentColumnAsync(CancellationToken cancellationToken)
     {
         const string pragmaSql = "PRAGMA table_info(Conversations);";

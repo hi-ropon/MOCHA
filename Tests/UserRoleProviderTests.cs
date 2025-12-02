@@ -6,13 +6,13 @@ using MOCHA.Services.Auth;
 namespace MOCHA.Tests;
 
 /// <summary>
-/// InMemoryUserRoleProvider のロール操作を検証するテスト。
+/// InMemoryUserRoleProvider のロール操作検証テスト
 /// </summary>
 [TestClass]
 public class UserRoleProviderTests
 {
     /// <summary>
-    /// 複数ロール付与後に正しく取得できることを確認する。
+    /// 複数ロール付与後の取得確認
     /// </summary>
     [TestMethod]
     public async Task 複数ロールを返す()
@@ -29,7 +29,7 @@ public class UserRoleProviderTests
     }
 
     /// <summary>
-    /// 同一ロールの重複付与が一つにまとめられることを確認する。
+    /// 同一ロール重複付与の単一化確認
     /// </summary>
     [TestMethod]
     public async Task 重複付与は一つだけ()
@@ -46,7 +46,7 @@ public class UserRoleProviderTests
     }
 
     /// <summary>
-    /// 存在しないロールを削除しても例外にならないことを確認する。
+    /// 存在しないロール削除時の例外非発生確認
     /// </summary>
     [TestMethod]
     public async Task 存在しないロールでも例外にならない()
@@ -61,7 +61,7 @@ public class UserRoleProviderTests
     }
 
     /// <summary>
-    /// ロール判定が大文字小文字を無視して行われることを確認する。
+    /// ロール判定の大文字小文字非依存確認
     /// </summary>
     [TestMethod]
     public async Task 大文字小文字を無視して判定する()

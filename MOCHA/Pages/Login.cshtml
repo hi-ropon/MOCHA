@@ -75,11 +75,6 @@
             font-size: 0.9rem;
             margin-top: 0.25rem;
         }
-        .checkbox-row {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
     </style>
 </head>
 <body>
@@ -94,10 +89,6 @@
             <div>
                 <label asp-for="Input.Password"></label>
                 <input asp-for="Input.Password" type="password" />
-            </div>
-            <div class="checkbox-row">
-                <input asp-for="Input.RememberMe" />
-                <label asp-for="Input.RememberMe"></label>
             </div>
             @if (!string.IsNullOrEmpty(Model.Error))
             {

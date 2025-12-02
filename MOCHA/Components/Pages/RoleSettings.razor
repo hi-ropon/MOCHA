@@ -1,7 +1,10 @@
 @page "/settings/roles"
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IUserRoleProvider RoleProvider
+@inject IDeviceAgentAccessService AgentAccessService
 @using MOCHA.Services.Auth
+@using MOCHA.Services.Agents
+@using MOCHA.Models.Agents
 
 <div class="role-page">
     <h1 class="page-title">ロール管理</h1>
@@ -86,6 +89,45 @@
                     }
                 </div>
             </section>
+
+            <section class="card">
+                <header class="card-header">
+                    <div>
+                        <p class="eyebrow">装置エージェント</p>
+                        <h3>使用許可を割り付け</h3>
+                    </div>
+                    @if (targetHasFullAccess)
+                    {
+                        <span class="chip info">Administrator/Developer は全利用可</span>
+                    }
+                </header>
+                <p class="hint">割り付けられた装置エージェントのみ選択肢に出ます</p>
+                @if (agentCatalog.Count == 0)
+                {
+                    <div class="muted">登録済みの装置エージェントがありません</div>
+                }
+                else
+                {
+                    <div class="role-list">
+                        @foreach (var agent in agentCatalog.OrderBy(a => a.Number))
+                        {
+                            <label class="role-item">
+                                <div class="role-main">
+                                    <input type="checkbox"
+                                           disabled="@targetHasFullAccess"
+                                           checked="@selectedAgentNumbers.Contains(agent.Number)"
+                                           @onchange="args => ToggleAgent(agent.Number, args.Value)" />
+                                    <div class="role-text">
+                                        <span class="role-name">@agent.Name</span>
+                                        <span class="role-desc">@agent.Number</span>
+                                    </div>
+                                </div>
+                                <span class="chip subtle">@agent.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd")</span>
+                            </label>
+                        }
+                    </div>
+                }
+            </section>
         </div>
 
         @if (!string.IsNullOrWhiteSpace(statusMessage))
@@ -110,11 +152,14 @@
     private string? currentUserId;
     private string targetUserId = string.Empty;
     private HashSet<string> selectedRoles = new(StringComparer.OrdinalIgnoreCase);
+    private List<DeviceAgentProfile> agentCatalog = new();
+    private HashSet<string> selectedAgentNumbers = new(StringComparer.OrdinalIgnoreCase);
     private string statusMessage = string.Empty;
     private bool isAdmin;
     private bool isLoading;
     private bool isSaving;
     private string statusKind = "info";
+    private bool targetHasFullAccess => selectedRoles.Contains(UserRoleId.Predefined.Administrator.Value) || selectedRoles.Contains(UserRoleId.Predefined.Developer.Value);
 
     protected override async Task OnInitializedAsync()
     {
@@ -132,7 +177,10 @@
         if (!isAdmin)
         {
             statusMessage = "管理者ではありません。";
+            return;
         }
+
+        await LoadAgentCatalogAsync();
     }
 
     private async Task LoadRolesAsync()
@@ -140,6 +188,7 @@
         ResetStatus();
         isLoading = true;
         selectedRoles = new(StringComparer.OrdinalIgnoreCase);
+        selectedAgentNumbers = new(StringComparer.OrdinalIgnoreCase);
 
         var normalizedTarget = RoleSettingsService.NormalizeUserId(targetUserId);
         if (normalizedTarget is null)
@@ -149,14 +198,35 @@
             return;
         }
 
+        await LoadAgentCatalogAsync();
+
         var roles = await RoleProvider.GetRolesAsync(normalizedTarget);
         foreach (var role in roles)
         {
             selectedRoles.Add(role.Value);
         }
 
+        await LoadAgentAssignmentsAsync(normalizedTarget);
+
         SetStatus("ロールを読み込みました。", "info");
         isLoading = false;
+    }
+
+    private async Task LoadAgentCatalogAsync()
+    {
+        if (!isAdmin)
+        {
+            return;
+        }
+
+        var catalog = await AgentAccessService.ListDefinitionsAsync();
+        agentCatalog = catalog.OrderBy(a => a.Number).ToList();
+    }
+
+    private async Task LoadAgentAssignmentsAsync(string normalizedUserId)
+    {
+        var assignments = await AgentAccessService.GetAssignmentsAsync(normalizedUserId);
+        selectedAgentNumbers = new HashSet<string>(assignments, StringComparer.OrdinalIgnoreCase);
     }
 
     private async Task SaveRolesAsync()
@@ -186,6 +256,8 @@
             await RoleProvider.RemoveAsync(normalizedTarget, UserRoleId.From(roleId));
         }
 
+        await AgentAccessService.UpdateAssignmentsAsync(normalizedTarget, selectedAgentNumbers);
+
         SetStatus("保存しました。", "success");
         isSaving = false;
     }
@@ -194,6 +266,17 @@
     {
         var isChecked = value as bool? ?? false;
         selectedRoles = RoleSettingsService.Toggle(selectedRoles, roleId, isChecked);
+    }
+
+    private void ToggleAgent(string agentNumber, object? value)
+    {
+        if (targetHasFullAccess)
+        {
+            return;
+        }
+
+        var isChecked = value as bool? ?? false;
+        selectedAgentNumbers = RoleSettingsService.Toggle(selectedAgentNumbers, agentNumber, isChecked);
     }
 
     private void ResetStatus()

@@ -5,6 +5,9 @@ using MOCHA.Agents.Infrastructure.Agents;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// AgentCatalog のエージェント登録と検索を検証するテスト
+/// </summary>
 [TestClass]
 public class AgentCatalogTests
 {
@@ -15,6 +18,9 @@ public class AgentCatalogTests
         new OrientalTaskAgent()
     });
 
+    /// <summary>
+    /// カタログから全エージェントを取得できる確認
+    /// </summary>
     [TestMethod]
     public async Task カタログ_全エージェントが取得できる()
     {
@@ -25,6 +31,9 @@ public class AgentCatalogTests
         Assert.IsNotNull(_catalog.Find("orientalAgent"));
     }
 
+    /// <summary>
+    /// 各エージェントがテンプレート応答を返す確認
+    /// </summary>
     [TestMethod]
     public async Task エージェント_質問にテンプレート応答する()
     {

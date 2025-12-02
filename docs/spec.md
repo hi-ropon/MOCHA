@@ -1,7 +1,7 @@
 # チャットアプリ設計仕様（ドラフト）
 
 ## 目的
-- ChatGPTライクな社内チャットUIで Copilot Studio エージェントと連携し、PLC Gateway 経由で装置値を取得する。
+- ChatGPTライクな社内チャットUIで Agent Framework エージェントと連携し、PlcAgentTool 経由で装置値を取得する。
 - 認証は社内 Entra ID シングルテナント。会話データは SQLite に保存し、ユーザーの同意を得て分析用途に活用する。
 
 ## ユースケース
@@ -10,12 +10,10 @@
 
 ## シーケンス（整理版）
 1. UI→BFF: ユーザー発話送信。
-2. BFF→Copilot SDK: send message。
-3. Copilot SDK→BFF: アクション要求（例: read_device）。
-4. BFF→PLC Gateway: REST 呼び出し（別ホスト `http://<pc>:8000/api/...`）。
-5. BFF→Copilot SDK: アクション結果 submit。
-6. Copilot SDK→BFF: 生成応答をストリーム。
-7. BFF→UI: ストリーミング配信。履歴は SQLite に即時書き込み。
+2. BFF→Agent Orchestrator: send message。
+3. Agent Orchestrator→ツールセット: アクション要求（例: invoke_plc_agent）を実行し、PlcAgentTool から PLC Gateway を叩く。
+4. Agent Orchestrator→BFF: ツール結果/生成応答をストリーム。
+5. BFF→UI: ストリーミング配信。履歴は SQLite に即時書き込み。
 
 ## UIデザイン方針
 - ルック: デュオトーングラデ背景（深緑〜紺）+ 微ノイズ、ガラス質カード。主色はエメラルド1色。
@@ -35,16 +33,13 @@
 - UserConsent: UserId, ConsentedAt, Version。
 
 ## インターフェース（テスト容易化のため抽象化）
-- `ICopilotChatClient`  
+- `IAgentChatClient`  
   - `Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurn turn, CancellationToken ct)`  
-  - `Task SubmitActionResultAsync(string conversationId, CopilotActionResult result, CancellationToken ct)`  
-- `IPlcGatewayClient`  
-  - `Task<PlcReadResult> ReadAsync(PlcReadRequest req, CancellationToken ct)`  
-  - `Task<PlcBatchReadResult> BatchReadAsync(PlcBatchReadRequest req, CancellationToken ct)`
+  - `Task SubmitActionResultAsync(AgentActionResult result, CancellationToken ct)`  
 - `IChatOrchestrator`  
   - `Task<IAsyncEnumerable<ChatStreamEvent>> HandleUserMessageAsync(UserContext user, string conversationId, string text, CancellationToken ct)`  
-  - 内部で Copilot アクション要求を検知し、PlcGateway を叩いて結果を返す。
-- 上記を DI で差し替え可能にし、テストでは Fake 実装を挿入して Copilot/Gateway なしで検証できるようにする。
+  - 内部でエージェントのツールイベントを保存し、結果を UI に返す。
+- 上記を DI で差し替え可能にし、テストでは Fake 実装を挿入して Gateway なしで検証できるようにする。
 
 ## API/BFF（例）
 - `POST /api/chat/send` → 入力を送信しストリームIDを返す。
@@ -55,8 +50,8 @@
 - `POST /api/consent` → 同意記録。
 
 ## テスト戦略
-- Copilot/Gateway を実接続せず、Fake 実装を注入して ChatOrchestrator のハンドリングをユニットテスト。  
-  - シナリオ: (1) アクションなしの通常応答、(2) read_device 要求→擬似 Gateway 応答→最終応答。
+- エージェント/Gateway を実接続せず、Fake 実装を注入して ChatOrchestrator のハンドリングをユニットテスト。  
+  - シナリオ: (1) アクションなしの通常応答、(2) invoke_plc_agent 要求→擬似ツール応答→最終応答。
 - DI 登録を `IServiceCollection` 経由で切替可能にする（`UseFakeIntegrations` オプション）。
 
 ## 未決定/今後の確認

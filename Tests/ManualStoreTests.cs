@@ -8,9 +8,15 @@ using MOCHA.Agents.Infrastructure.Options;
 
 namespace MOCHA.Tests;
 
+/// <summary>
+/// FileManualStore の検索・読取を検証するテスト
+/// </summary>
 [TestClass]
 public class ManualStoreTests
 {
+    /// <summary>
+    /// IAI インデックスをキーワード検索できる確認
+    /// </summary>
     [TestMethod]
     public async Task IAIインデックスをキーワード検索できる()
     {
@@ -28,6 +34,9 @@ public class ManualStoreTests
         Assert.IsTrue(hits.Count > 0);
     }
 
+    /// <summary>
+    /// IAI マニュアルを相対パスで読み出せる確認
+    /// </summary>
     [TestMethod]
     public async Task IAIマニュアルを相対パスで読み出せる()
     {

@@ -4,9 +4,15 @@ using MOCHA.Services.Auth;
 
 namespace MOCHA.Tests
 {
+    /// <summary>
+    /// RoleSettingsService のユーティリティ動作を検証するテスト
+    /// </summary>
     [TestClass]
     public class RoleSettingsServiceTests
     {
+        /// <summary>
+        /// ユーザーID正規化で空白のみなら null になる確認
+        /// </summary>
         [TestMethod]
         public void NormalizeUserId_空白のみはnull()
         {
@@ -14,6 +20,9 @@ namespace MOCHA.Tests
             Assert.AreEqual("abc", RoleSettingsService.NormalizeUserId(" abc "));
         }
 
+        /// <summary>
+        /// 追加と削除の差分計算確認
+        /// </summary>
         [TestMethod]
         public void CalculateDiff_追加と削除を判定する()
         {
@@ -26,6 +35,9 @@ namespace MOCHA.Tests
             CollectionAssert.AreEquivalent(new[] { "admin" }, (System.Collections.ICollection)diff.ToRemove);
         }
 
+        /// <summary>
+        /// 選択状態のトグル更新確認
+        /// </summary>
         [TestMethod]
         public void Toggle_選択状態を更新する()
         {

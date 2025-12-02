@@ -11,8 +11,10 @@
 @using Microsoft.Extensions.Options
 @using MOCHA.Agents.Infrastructure.Options
 @using MOCHA.Models.Chat
+@using MOCHA.Models.Feedback
 @using MOCHA.Services.Chat
-@using MOCHA.Services.Plc
+@using Microsoft.Extensions.Logging
+@using System.Text
 @using static MOCHA.Services.Chat.ActivityPanelService
 @using static MOCHA.Services.Chat.ActivityBuilder
 @inject MOCHA.Services.Chat.IChatRepository ChatRepository
@@ -20,28 +22,14 @@
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject IOptionsMonitor<LlmOptions> LlmOptions
-@inject IOptionsMonitor<PlcGatewayOptions> PlcOptions
+@inject MOCHA.Services.Feedback.IFeedbackService FeedbackService
+@inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
+@inject ILogger<Home> Logger
 @implements IDisposable
 
 <PageTitle>M.O.C.H.A.</PageTitle>
 
 <div class="chat-shell">
-    @if (IsDebug)
-    {
-        <header class="chat-header glass-card">
-            <div>
-                <div class="env-badge">DEV</div>
-                <div class="status-line">
-                    <span class="@AgentDotClass"></span> @AgentStatusLabel
-                    <span class="@GatewayDotClass"></span> @GatewayStatusLabel
-                </div>
-            </div>
-            <div class="actions">
-                <button class="btn btn-sm btn-outline-light" @onclick="ResetConversation">Reset</button>
-            </div>
-        </header>
-    }
-
     <div class="chat-body">
         <main class="chat-main glass-card">
             <div class="messages" @ref="MessageList">
@@ -62,8 +50,18 @@
                     var hasLog = turnActivity?.Items.Any() == true;
                     var showInlineChip = message.Role == ChatRole.User && (hasLog || turnActivity?.IsLive == true);
                     var turnIndexForChip = userTurnCounter;
+                    var messageIndex = i;
                     <div class="@GetBubbleClass(message.Role)">
-                        <div class="content">@message.Content</div>
+                        <div class="content">
+                            @if (message.Role == ChatRole.Assistant || message.Role == ChatRole.Tool)
+                            {
+                                <div class="markdown-body">@((MarkupString)RenderMarkdown(message.Content))</div>
+                            }
+                            else
+                            {
+                                @message.Content
+                            }
+                        </div>
                     </div>
                     @if (showInlineChip)
                     {
@@ -72,6 +70,27 @@
                                 <span class="chip-title">思考過程</span>
                                 <span class="chip-count">@GetChipCountLabel(turnActivity, hasLog)</span>
                             </div>
+                        </div>
+                    }
+                    @if (ShouldShowFeedback(message, messageIndex, _streamingAssistantIndex))
+                    {
+                        <div class="feedback-actions">
+                            @if (!IsRatedAs(messageIndex, FeedbackRating.Bad))
+                            {
+                                <button class="@GetFeedbackButtonClass(messageIndex, FeedbackRating.Good)" @onclick="() => SubmitFeedbackAsync(messageIndex, FeedbackRating.Good)" disabled="@IsFeedbackDisabled(messageIndex)" title="Good" aria-label="Good">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M2 10h4v12H2zM8 22h9a3 3 0 0 0 2.95-2.55l1-7A3 3 0 0 0 18 9h-5.63l.86-4.13A1.5 1.5 0 0 0 11.76 3l-4.4 6.29A2 2 0 0 0 7 10v10a2 2 0 0 0 2 2Z"/>
+                                    </svg>
+                                </button>
+                            }
+                            @if (!IsRatedAs(messageIndex, FeedbackRating.Good))
+                            {
+                                <button class="@GetFeedbackButtonClass(messageIndex, FeedbackRating.Bad)" @onclick="() => SubmitFeedbackAsync(messageIndex, FeedbackRating.Bad)" disabled="@IsFeedbackDisabled(messageIndex)" title="Bad" aria-label="Bad">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                                        <path d="M2 2h4v12H2zM8 2h9a3 3 0 0 1 2.95 2.55l1 7A3 3 0 0 1 18 15h-5.63l.86 4.13A1.5 1.5 0 0 1 11.76 21l-4.4-6.29A2 2 0 0 1 7 14V4a2 2 0 0 1 2-2Z"/>
+                                    </svg>
+                                </button>
+                            }
                         </div>
                     }
                 }
@@ -135,29 +154,33 @@
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
     private IDisposable? _llmOptionsSubscription;
-    private IDisposable? _plcOptionsSubscription;
     private UserContext? _user;
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
+    private int? _streamingAssistantIndex;
+    private readonly Dictionary<string, StringBuilder> _assistantStreamBuffers = new();
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
+    private readonly Dictionary<int, FeedbackRating> FeedbackRatings = new();
+    private readonly HashSet<int> FeedbackSubmitting = new();
+    private int? FeedbackCommentTarget;
+    private string FeedbackCommentInput = string.Empty;
     private static readonly TimeSpan ActivityPulseWindow = TimeSpan.FromSeconds(1.5);
 
     private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
-    private bool AgentLive => IsLlmConfigured(LlmOptions.CurrentValue);
-    private bool GatewayLive => PlcOptions.CurrentValue.Enabled;
-    private string AgentDotClass => $"dot {(AgentLive ? "dot-on" : "dot-off")}";
-    private string GatewayDotClass => $"dot {(GatewayLive ? "dot-on" : "dot-off")}";
-    private string AgentStatusLabel => AgentLive ? "Agents" : "Agents (local)";
-    private string GatewayStatusLabel => GatewayLive ? "Gateway" : "Gateway (fake)";
-#if DEBUG
-    private const bool IsDebug = true;
-#else
-    private const bool IsDebug = false;
-#endif
+
+    private string RenderMarkdown(string markdown)
+    {
+        if (MarkdownRenderer is null)
+        {
+            return HtmlEncoder.Default.Encode(markdown ?? string.Empty);
+        }
+
+        return MarkdownRenderer.Render(markdown);
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -172,7 +195,6 @@
         }
 
         _llmOptionsSubscription = LlmOptions.OnChange(_ => InvokeAsync(StateHasChanged));
-        _plcOptionsSubscription = PlcOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         AgentState.Changed += OnAgentStateChanged;
     }
 
@@ -230,6 +252,8 @@
         }
 
         ConversationId ??= Guid.NewGuid().ToString("N");
+        var sendingConversationId = ConversationId;
+        _assistantStreamBuffers[sendingConversationId] = new StringBuilder();
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
@@ -237,6 +261,7 @@
         Messages.Add(userMessage);
         StartNewTurn(TurnActivities.Count);
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
         ShowActivityPanel = false;
         await InvokeAsync(StateHasChanged);
 
@@ -244,38 +269,63 @@
         {
             await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
             {
+                var isStale = !string.Equals(ConversationId, sendingConversationId, StringComparison.Ordinal);
+
                 switch (ev.Type)
                 {
                     case ChatStreamEventType.Message when ev.Message is not null:
-                        _latestAssistant = ev.Message;
-                        RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(ev.Message.Content)}", ev.Message.Content);
-                        break;
-                    case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
-                        ConversationId ??= ev.ActionRequest.ConversationId;
-                        await HistoryState.UpsertAsync(user.UserId, ConversationId, text, agentNumber);
-                        RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
-                        break;
-                    case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
-                        ConversationId ??= ev.ActionResult.ConversationId;
-                        var payloadJson = SafeSerialize(ev.ActionResult.Payload);
-                        RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
-                        break;
-                    case ChatStreamEventType.Completed:
-                        Status = null;
-                        MarkActiveTurnCompleted();
-                        if (_latestAssistant is not null)
+                        if (!isStale)
                         {
-                            Messages.Add(_latestAssistant);
+                            HandleAssistantMessageChunk(ev.Message, sendingConversationId);
+                        }
+                        else if (ev.Message.Role == ChatRole.Assistant)
+                        {
+                            AppendToStreamBuffer(ev.Message.Content, sendingConversationId);
                         }
                         break;
+                    case ChatStreamEventType.ActionRequest when ev.ActionRequest is not null:
+                        await HistoryState.UpsertAsync(user.UserId, sendingConversationId, text, agentNumber, preserveExistingTitle: true);
+                        if (!isStale)
+                        {
+                            ConversationId ??= ev.ActionRequest.ConversationId;
+                            RecordActivity(ActivityKind.Action, $"ツール要求: {ev.ActionRequest.ActionName}", SafeSerialize(ev.ActionRequest.Payload));
+                        }
+                        break;
+                    case ChatStreamEventType.ToolResult when ev.ActionResult is not null:
+                        var payloadJson = SafeSerialize(ev.ActionResult.Payload);
+                        if (!isStale)
+                        {
+                            ConversationId ??= ev.ActionResult.ConversationId;
+                            RecordActivity(ActivityKind.ToolResult, $"ツール結果: {ev.ActionResult.ActionName}", payloadJson);
+                        }
+                        break;
+                    case ChatStreamEventType.Completed:
+                        if (!isStale)
+                        {
+                            Status = null;
+                            MarkActiveTurnCompleted();
+                            if (_latestAssistant is not null)
+                            {
+                                RecordActivity(ActivityKind.Assistant, $"アシスタント: {TrimForPreview(_latestAssistant.Content)}", _latestAssistant.Content);
+                            }
+                            _streamingAssistantIndex = null;
+                        }
+                        _assistantStreamBuffers.Remove(sendingConversationId);
+                        break;
                     case ChatStreamEventType.Error:
-                        Status = ev.Error;
-                        RecordActivity(ActivityKind.Error, "エラー", ev.Error);
+                        if (!isStale)
+                        {
+                            Status = ev.Error;
+                            RecordActivity(ActivityKind.Error, "エラー", ev.Error);
+                        }
                         break;
                 }
 
-                await ScrollToBottom();
-                await InvokeAsync(StateHasChanged);
+                if (!isStale)
+                {
+                    await ScrollToBottom();
+                    await InvokeAsync(StateHasChanged);
+                }
             }
         }
         catch (OperationCanceledException)
@@ -284,9 +334,15 @@
         }
         finally
         {
-            MarkActiveTurnCompleted();
-            IsSending = false;
-            await InvokeAsync(StateHasChanged);
+            var isStale = !string.Equals(ConversationId, sendingConversationId, StringComparison.Ordinal);
+            if (!isStale)
+            {
+                MarkActiveTurnCompleted();
+                IsSending = false;
+                _streamingAssistantIndex = null;
+                _assistantStreamBuffers.Remove(sendingConversationId);
+                await InvokeAsync(StateHasChanged);
+            }
         }
     }
 
@@ -335,6 +391,9 @@
         {
             _cts.Cancel();
         }
+
+        _assistantStreamBuffers.Clear();
+        _streamingAssistantIndex = null;
     }
 
     private void SeedInitialMessage()
@@ -344,7 +403,6 @@
 
     private void ResetConversation()
     {
-        CancelStream();
         ConversationId = null;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
@@ -354,12 +412,16 @@
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
+        FeedbackRatings.Clear();
+        FeedbackSubmitting.Clear();
+        FeedbackCommentTarget = null;
+        FeedbackCommentInput = string.Empty;
         SeedInitialMessage();
     }
 
     private async Task LoadConversationAsync(string conversationId)
     {
-        CancelStream();
         ConversationId = conversationId;
         _activeAgentNumber = AgentState.SelectedAgentNumber;
         Messages.Clear();
@@ -369,6 +431,7 @@
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
+        _streamingAssistantIndex = null;
 
         var user = _user ?? await ResolveUserAsync();
         var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
@@ -380,6 +443,7 @@
             SeedInitialMessage();
         }
 
+        await LoadFeedbackRatingsAsync();
         await InvokeAsync(StateHasChanged);
     }
 
@@ -387,17 +451,6 @@
     {
         // Placeholder for future JS interop to auto-scroll.
         await Task.CompletedTask;
-    }
-
-    private static bool IsLlmConfigured(LlmOptions options)
-    {
-        if (options is null)
-        {
-            return false;
-        }
-
-        return !string.IsNullOrWhiteSpace(options.ApiKey)
-               || !string.IsNullOrWhiteSpace(options.Endpoint);
     }
 
     private async Task<UserContext> ResolveUserAsync()
@@ -642,12 +695,239 @@
 
     private IEnumerable<ActivityLogItem> GetPanelLogs() => ActivityPanelService.GetPanelLogs(TurnActivities, SelectedTurnNumber);
 
+    private string GetFeedbackButtonClass(int messageIndex, FeedbackRating rating)
+    {
+        var classes = new List<string> { "feedback-btn" };
+        if (rating == FeedbackRating.Good)
+        {
+            classes.Add("good");
+        }
+        else
+        {
+            classes.Add("bad");
+        }
+
+        if (FeedbackRatings.TryGetValue(messageIndex, out var current))
+        {
+            classes.Add(current == rating ? "selected" : "muted");
+        }
+
+        if (FeedbackSubmitting.Contains(messageIndex))
+        {
+            classes.Add("submitting");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private bool IsFeedbackDisabled(int messageIndex)
+    {
+        if (string.IsNullOrWhiteSpace(ConversationId))
+        {
+            return true;
+        }
+
+        return FeedbackSubmitting.Contains(messageIndex);
+    }
+
+    private bool IsRatedAs(int messageIndex, FeedbackRating rating)
+    {
+        return FeedbackRatings.TryGetValue(messageIndex, out var existing) && existing == rating;
+    }
+
+    internal static bool ShouldShowFeedback(ChatMessage message, int messageIndex, int? streamingAssistantIndex)
+    {
+        if (message.Role != ChatRole.Assistant)
+        {
+            return false;
+        }
+
+        if (streamingAssistantIndex.HasValue && streamingAssistantIndex.Value == messageIndex)
+        {
+            return false;
+        }
+
+        var isInitialGreeting = messageIndex == 0 && message.Content == "こんにちは、何をお手伝いしましょうか？";
+        return !isInitialGreeting;
+    }
+
+    private async Task LoadFeedbackRatingsAsync()
+    {
+        FeedbackRatings.Clear();
+        if (string.IsNullOrWhiteSpace(ConversationId))
+        {
+            return;
+        }
+
+        try
+        {
+            var user = _user ?? await ResolveUserAsync();
+            var persistedMessages = await ChatRepository.GetMessagesAsync(user.UserId, ConversationId, AgentState.SelectedAgentNumber);
+            var ratings = await FeedbackService.GetRatingsAsync(user.UserId, ConversationId, default);
+            var persistedToUi = BuildAssistantIndexMap(persistedMessages);
+            if (ratings is not null && ratings.Count > 0)
+            {
+                foreach (var item in ratings)
+                {
+                    if (persistedToUi.TryGetValue(item.Key, out var uiIndex))
+                    {
+                        FeedbackRatings[uiIndex] = item.Value;
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "フィードバックの読み込みに失敗しました");
+        }
+    }
+
+    private async Task SubmitFeedbackAsync(int messageIndex, FeedbackRating rating, string? comment = null)
+    {
+        if (IsFeedbackDisabled(messageIndex))
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ConversationId))
+        {
+            Status = "会話が確定してからフィードバックできます";
+            return;
+        }
+
+        FeedbackSubmitting.Add(messageIndex);
+        try
+        {
+            var user = _user ?? await ResolveUserAsync();
+            var persistedMessages = await ChatRepository.GetMessagesAsync(user.UserId, ConversationId, AgentState.SelectedAgentNumber);
+            var uiToPersisted = BuildAssistantIndexMap(persistedMessages)
+                .ToDictionary(kvp => kvp.Value, kvp => kvp.Key);
+
+            if (!uiToPersisted.TryGetValue(messageIndex, out var persistedIndex))
+            {
+                Logger.LogWarning("対応するメッセージが見つからずフィードバックを送信できません (UI index: {UiIndex})", messageIndex);
+                return;
+            }
+
+            var alreadySame = FeedbackRatings.TryGetValue(messageIndex, out var existing) && existing == rating;
+
+            await FeedbackService.SubmitAsync(user.UserId, ConversationId, persistedIndex, rating, comment, default);
+
+            if (alreadySame)
+            {
+                FeedbackRatings.Remove(messageIndex);
+            }
+            else
+            {
+                FeedbackRatings[messageIndex] = rating;
+            }
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "フィードバック送信に失敗しました");
+        }
+        finally
+        {
+            FeedbackSubmitting.Remove(messageIndex);
+        }
+    }
+
     public void Dispose()
     {
         _llmOptionsSubscription?.Dispose();
-        _plcOptionsSubscription?.Dispose();
         _cts?.Dispose();
         AgentState.Changed -= OnAgentStateChanged;
+    }
+
+    private void AppendAssistantChunk(string content)
+    {
+        AppendAssistantChunk(content, ConversationId);
+    }
+
+    private void HandleAssistantMessageChunk(ChatMessage message, string streamConversationId)
+    {
+        if (message.Role != ChatRole.Assistant)
+        {
+            Messages.Add(message);
+            return;
+        }
+
+        var buffer = AppendToStreamBuffer(message.Content, streamConversationId);
+        AppendAssistantChunk(buffer, streamConversationId);
+    }
+
+    private string AppendToStreamBuffer(string content, string streamConversationId)
+    {
+        if (!_assistantStreamBuffers.TryGetValue(streamConversationId, out var buffer))
+        {
+            buffer = new StringBuilder();
+            _assistantStreamBuffers[streamConversationId] = buffer;
+        }
+
+        buffer.Append(content);
+        return buffer.ToString();
+    }
+
+    private void AppendAssistantChunk(string bufferedContent, string? streamConversationId)
+    {
+        if (_streamingAssistantIndex is null)
+        {
+            var message = new ChatMessage(ChatRole.Assistant, bufferedContent);
+            Messages.Add(message);
+            _streamingAssistantIndex = Messages.Count - 1;
+        }
+        else
+        {
+            var index = _streamingAssistantIndex.Value;
+            var current = Messages[index];
+            Messages[index] = current with { Content = bufferedContent };
+        }
+
+        _latestAssistant = _streamingAssistantIndex is int idx ? Messages[idx] : _latestAssistant;
+        if (!string.IsNullOrWhiteSpace(streamConversationId))
+        {
+            _assistantStreamBuffers[streamConversationId] = new StringBuilder(bufferedContent);
+        }
+    }
+
+    private Dictionary<int, int> BuildAssistantIndexMap(IReadOnlyList<ChatMessage> persistedMessages)
+    {
+        var map = new Dictionary<int, int>();
+
+        var uiAssistants = new List<(int Order, int Index)>();
+        var uiOrder = 0;
+        for (var i = 0; i < Messages.Count; i++)
+        {
+            var msg = Messages[i];
+            if (!ShouldShowFeedback(msg, i, _streamingAssistantIndex))
+            {
+                continue;
+            }
+
+            uiAssistants.Add((uiOrder, i));
+            uiOrder++;
+        }
+
+        var persistedAssistants = new List<(int Order, int Index)>();
+        var persistedOrder = 0;
+        for (var i = 0; i < persistedMessages.Count; i++)
+        {
+            if (persistedMessages[i].Role == ChatRole.Assistant)
+            {
+                persistedAssistants.Add((persistedOrder, i));
+                persistedOrder++;
+            }
+        }
+
+        var count = Math.Min(uiAssistants.Count, persistedAssistants.Count);
+        for (var i = 0; i < count; i++)
+        {
+            var persistedIndex = persistedAssistants[i].Index;
+            var uiIndex = uiAssistants[i].Index;
+            map[persistedIndex] = uiIndex;
+        }
+
+        return map;
     }
 
 }

@@ -12,10 +12,12 @@ using MOCHA.Models.Auth;
 using MOCHA.Services.Agents;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
-using MOCHA.Services.Plc;
 using MOCHA.Factories;
 using MOCHA.Services.Settings;
-using Microsoft.Extensions.Options;
+using MOCHA.Services.Drawings;
+using MOCHA.Services.Architecture;
+using MOCHA.Services.Feedback;
+using MOCHA.Services.Markdown;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -70,15 +72,17 @@ builder.Services.AddAuthorization(options =>
 });
 
 builder.Services.AddCascadingAuthenticationState();
+builder.Services.AddHttpClient();
 
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddDbContext<ChatDbContext>(options =>
+builder.Services.AddDbContextFactory<ChatDbContext>((sp, options) =>
 {
     var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Data Source=chat.db";
     options.UseSqlite(connectionString);
 });
+builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ChatDbContext>>().CreateDbContext());
 builder.Services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
 
 // Add services to the container.
@@ -86,31 +90,21 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
     .AddMicrosoftIdentityConsentHandler();
 
-builder.Services.Configure<PlcGatewayOptions>(builder.Configuration.GetSection("PlcGateway"));
-builder.Services.AddHttpClient<HttpPlcGatewayClient>((sp, client) =>
-{
-    var options = sp.GetRequiredService<IOptions<PlcGatewayOptions>>().Value;
-    if (Uri.TryCreate(options.BaseAddress, UriKind.Absolute, out var uri))
-    {
-        client.BaseAddress = uri;
-    }
-    client.Timeout = options.Timeout;
-});
-builder.Services.AddScoped<IPlcGatewayClient>(sp =>
-{
-    var options = sp.GetRequiredService<IOptions<PlcGatewayOptions>>().Value;
-    if (options.Enabled)
-    {
-        return sp.GetRequiredService<HttpPlcGatewayClient>();
-    }
-
-    return new FakePlcGatewayClient();
-});
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IChatTitleGenerator, ClientChatTitleGenerator>();
+builder.Services.AddScoped<IChatTitleService, ChatTitleService>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
 builder.Services.AddScoped<ConversationHistoryState>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IDeviceAgentRepository, DeviceAgentRepository>();
+builder.Services.AddScoped<IDeviceAgentPermissionRepository, DeviceAgentPermissionRepository>();
+builder.Services.AddScoped<IDeviceAgentAccessService, DeviceAgentAccessService>();
 builder.Services.AddScoped<DeviceAgentState>();
+builder.Services.AddSingleton<IDrawingRepository, InMemoryDrawingRepository>();
+builder.Services.AddScoped<DrawingRegistrationService>();
+builder.Services.AddSingleton<IPlcUnitRepository, InMemoryPlcUnitRepository>();
+builder.Services.AddScoped<PlcConfigurationService>();
 builder.Services.AddScoped<IUserPreferencesStore, LocalStorageUserPreferencesStore>();
 builder.Services.AddScoped<IColorSchemeProvider, BrowserColorSchemeProvider>();
 builder.Services.AddScoped<IThemeApplicator, DomThemeApplicator>();
@@ -125,6 +119,7 @@ builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
 builder.Services.AddScoped<IDevLoginService, DevLoginService>();
 builder.Services.AddScoped<IDevUserService, DevUserService>();
 builder.Services.AddScoped<IPasswordHasher<DevUserEntity>, PasswordHasher<DevUserEntity>>();
+builder.Services.AddScoped<IMarkdownRenderer, MarkdownRenderer>();
 
 var app = builder.Build();
 

@@ -9,19 +9,31 @@ using MOCHA.Agents.Infrastructure.Options;
 namespace MOCHA.Agents.Infrastructure.Manuals;
 
 /// <summary>
-/// ファイルベースのマニュアル検索・読取。
+/// ファイルベースのマニュアル検索・読取ストア
 /// </summary>
 public sealed class FileManualStore : IManualStore
 {
     private readonly ManualStoreOptions _options;
     private readonly ILogger<FileManualStore> _logger;
 
+    /// <summary>
+    /// オプションとロガー注入による初期化
+    /// </summary>
+    /// <param name="options">マニュアルストア設定</param>
+    /// <param name="logger">ロガー</param>
     public FileManualStore(IOptions<ManualStoreOptions> options, ILogger<FileManualStore> logger)
     {
         _options = options.Value ?? new ManualStoreOptions();
         _logger = logger;
     }
 
+    /// <summary>
+    /// マニュアルインデックス検索
+    /// </summary>
+    /// <param name="agentName">エージェント名</param>
+    /// <param name="query">検索クエリ</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索ヒット</returns>
     public async Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
     {
         var root = ResolveAgentRoot(agentName);
@@ -78,6 +90,14 @@ public sealed class FileManualStore : IManualStore
             .ToList();
     }
 
+    /// <summary>
+    /// マニュアル内容の読み取り
+    /// </summary>
+    /// <param name="agentName">エージェント名</param>
+    /// <param name="relativePath">マニュアル相対パス</param>
+    /// <param name="maxBytes">読み取り上限バイト数</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取ったマニュアル</returns>
     public async Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
     {
         var root = ResolveAgentRoot(agentName);
@@ -131,6 +151,11 @@ public sealed class FileManualStore : IManualStore
         }
     }
 
+    /// <summary>
+    /// エージェントごとのルートパス解決
+    /// </summary>
+    /// <param name="agentName">エージェント名</param>
+    /// <returns>ルートパス</returns>
     private string? ResolveAgentRoot(string agentName)
     {
         var normalized = NormalizeAgentName(agentName);
@@ -142,6 +167,11 @@ public sealed class FileManualStore : IManualStore
         return Path.Combine(AppContext.BaseDirectory, _options.BasePath, folder, "docs");
     }
 
+    /// <summary>
+    /// エージェント名正規化
+    /// </summary>
+    /// <param name="agentName">入力エージェント名</param>
+    /// <returns>正規化済みエージェント名</returns>
     private static string NormalizeAgentName(string agentName)
     {
         if (string.IsNullOrWhiteSpace(agentName))
@@ -167,6 +197,11 @@ public sealed class FileManualStore : IManualStore
         };
     }
 
+    /// <summary>
+    /// クエリ文字列のトークン分割
+    /// </summary>
+    /// <param name="query">検索クエリ</param>
+    /// <returns>分割トークン</returns>
     private static List<string> SplitTokens(string query)
     {
         return Regex.Matches(query ?? string.Empty, @"[\p{L}\p{N}\-_\.]+")
@@ -176,6 +211,12 @@ public sealed class FileManualStore : IManualStore
             .ToList();
     }
 
+    /// <summary>
+    /// トークン一致によるスコア計算
+    /// </summary>
+    /// <param name="text">対象テキスト</param>
+    /// <param name="tokens">検索トークン</param>
+    /// <returns>スコア</returns>
     private static double Score(string text, IReadOnlyCollection<string> tokens)
     {
         var lowered = text.ToLowerInvariant();
@@ -190,6 +231,11 @@ public sealed class FileManualStore : IManualStore
         return score;
     }
 
+    /// <summary>
+    /// 行からタイトル部分を抽出
+    /// </summary>
+    /// <param name="line">インデックス行</param>
+    /// <returns>抽出タイトル</returns>
     private static string ExtractTitle(string line)
     {
         var trimmed = line.TrimStart('-', ' ');

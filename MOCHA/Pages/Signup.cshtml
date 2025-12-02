@@ -91,6 +91,10 @@
                 <input asp-for="Input.Password" type="password" />
                 <div class="hint">6文字以上</div>
             </div>
+            <div>
+                <label asp-for="Input.ConfirmPassword"></label>
+                <input asp-for="Input.ConfirmPassword" type="password" />
+            </div>
             @if (!string.IsNullOrEmpty(Model.Error))
             {
                 <div class="error">@Model.Error</div>

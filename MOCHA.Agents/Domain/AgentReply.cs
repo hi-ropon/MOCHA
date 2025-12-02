@@ -1,7 +1,7 @@
 namespace MOCHA.Agents.Domain;
 
 /// <summary>
-/// エージェントからの応答。
+/// エージェントからの応答
 /// </summary>
 public sealed record AgentReply(
     string ConversationId,

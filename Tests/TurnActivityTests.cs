@@ -4,9 +4,15 @@ using MOCHA.Models.Chat;
 
 namespace MOCHA.Tests
 {
+    /// <summary>
+    /// TurnActivity の状態管理を検証するテスト
+    /// </summary>
     [TestClass]
     public class TurnActivityTests
     {
+        /// <summary>
+        /// ログ追加でライブ状態と件数が更新される確認
+        /// </summary>
         [TestMethod]
         public void ログ追加でライブ状態と件数が更新される()
         {
@@ -22,6 +28,9 @@ namespace MOCHA.Tests
             Assert.IsTrue(activity.LastUpdated > before);
         }
 
+        /// <summary>
+        /// 完了後にライブが止まり完了フラグが立つ確認
+        /// </summary>
         [TestMethod]
         public void 完了するとライブが止まり完了フラグが立つ()
         {
@@ -33,6 +42,9 @@ namespace MOCHA.Tests
             Assert.IsTrue(activity.IsCompleted);
         }
 
+        /// <summary>
+        /// 最近の更新判定が時間窓内のみ true になる確認
+        /// </summary>
         [TestMethod]
         public void 最近の更新判定は窓内のみ真になる()
         {

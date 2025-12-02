@@ -4,7 +4,7 @@ using MOCHA.Models.Auth;
 namespace MOCHA.Services.Auth;
 
 /// <summary>
-/// 設定されたユーザーに管理者ロールを付与する初期化処理。
+/// 設定されたユーザーに管理者ロールを付与する初期化処理
 /// </summary>
 internal sealed class RoleBootstrapper
 {
@@ -12,10 +12,10 @@ internal sealed class RoleBootstrapper
     private readonly RoleBootstrapOptions _options;
 
     /// <summary>
-    /// ロールプロバイダーとオプションを受け取り初期化する。
+    /// ロールプロバイダーとオプションを受け取り初期化する
     /// </summary>
-    /// <param name="roleProvider">ロールプロバイダー。</param>
-    /// <param name="options">ブートストラップ設定。</param>
+    /// <param name="roleProvider">ロールプロバイダー</param>
+    /// <param name="options">ブートストラップ設定</param>
     public RoleBootstrapper(IUserRoleProvider roleProvider, IOptions<RoleBootstrapOptions> options)
     {
         _roleProvider = roleProvider;
@@ -23,10 +23,10 @@ internal sealed class RoleBootstrapper
     }
 
     /// <summary>
-    /// 設定されたユーザー全員に管理者ロールを付与する。
+    /// 設定されたユーザー全員への管理者ロール付与
     /// </summary>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>非同期タスク。</returns>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>非同期タスク</returns>
     public async Task EnsureAdminRolesAsync(CancellationToken cancellationToken = default)
     {
         if (_options.AdminUserIds is null || _options.AdminUserIds.Count == 0)

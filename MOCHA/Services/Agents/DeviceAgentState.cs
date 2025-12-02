@@ -4,31 +4,34 @@ using MOCHA.Models.Agents;
 namespace MOCHA.Services.Agents;
 
 /// <summary>
-/// 装置エージェントの選択状態と一覧を管理する。
+/// 装置エージェントの選択状態と一覧を管理する
 /// </summary>
 internal sealed class DeviceAgentState
 {
     private readonly IDeviceAgentRepository _repository;
+    private readonly IDeviceAgentAccessService _accessService;
     private readonly List<DeviceAgentProfile> _agents = new();
     private readonly object _lock = new();
     private string? _currentUserId;
 
     /// <summary>
-    /// リポジトリを注入して状態管理を初期化する。
+    /// リポジトリ注入による状態管理初期化
     /// </summary>
-    /// <param name="repository">装置エージェントリポジトリ。</param>
-    public DeviceAgentState(IDeviceAgentRepository repository)
+    /// <param name="repository">装置エージェントリポジトリ</param>
+    /// <param name="accessService">装置エージェント権限サービス</param>
+    public DeviceAgentState(IDeviceAgentRepository repository, IDeviceAgentAccessService accessService)
     {
         _repository = repository;
+        _accessService = accessService;
     }
 
     /// <summary>
-    /// 状態変更を通知するイベント。
+    /// 状態変更の通知イベント
     /// </summary>
     public event Action? Changed;
 
     /// <summary>
-    /// 現在保持している装置エージェント一覧。
+    /// 現在保持している装置エージェント一覧
     /// </summary>
     public IReadOnlyList<DeviceAgentProfile> Agents
     {
@@ -42,18 +45,18 @@ internal sealed class DeviceAgentState
     }
 
     /// <summary>
-    /// 選択中のエージェント番号。
+    /// 選択中のエージェント番号
     /// </summary>
     public string? SelectedAgentNumber { get; private set; }
 
     /// <summary>
-    /// ユーザーのエージェント一覧を読み込み、状態を更新する。
+    /// ユーザーのエージェント一覧読み込みと状態更新
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task LoadAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var items = await _repository.GetAsync(userId, cancellationToken);
+        var items = await _accessService.GetAvailableAgentsAsync(userId, cancellationToken);
         lock (_lock)
         {
             _currentUserId = userId;
@@ -65,13 +68,13 @@ internal sealed class DeviceAgentState
     }
 
     /// <summary>
-    /// エージェントを追加または更新し、選択状態を更新する。
+    /// エージェントの追加または更新と選択状態の更新
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="number">エージェント番号。</param>
-    /// <param name="name">エージェント名。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
-    /// <returns>保存後のエージェント。</returns>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="number">エージェント番号</param>
+    /// <param name="name">エージェント名</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>保存後のエージェント</returns>
     public async Task<DeviceAgentProfile> AddOrUpdateAsync(string userId, string number, string name, CancellationToken cancellationToken = default)
     {
         var agent = await _repository.UpsertAsync(userId, number, name, cancellationToken);
@@ -100,11 +103,11 @@ internal sealed class DeviceAgentState
     }
 
     /// <summary>
-    /// エージェントを削除し、選択状態を適切に更新する。
+    /// エージェント削除と選択状態の更新
     /// </summary>
-    /// <param name="userId">ユーザーID。</param>
-    /// <param name="number">エージェント番号。</param>
-    /// <param name="cancellationToken">キャンセル通知。</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="number">エージェント番号</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
     public async Task RemoveAsync(string userId, string number, CancellationToken cancellationToken = default)
     {
         await _repository.DeleteAsync(userId, number, cancellationToken);
@@ -134,9 +137,9 @@ internal sealed class DeviceAgentState
     }
 
     /// <summary>
-    /// 指定番号のエージェントを選択する。存在しない番号は無視する。
+    /// 指定番号のエージェント選択（存在しない番号は無視）
     /// </summary>
-    /// <param name="number">エージェント番号。</param>
+    /// <param name="number">エージェント番号</param>
     public void Select(string? number)
     {
         lock (_lock)
