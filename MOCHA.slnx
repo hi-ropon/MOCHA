@@ -1,5 +1,5 @@
 <Solution>
   <Project Path="MOCHA.Agents/MOCHA.Agents.csproj" Id="ef9335eb-cdf0-4f30-82b5-2a0767a71758" />
   <Project Path="MOCHA/MOCHA.csproj" />
-  <Project Path="Tests/Tests.csproj" />
+  <Project Path="Tests/MOCHA.Tests.csproj" />
 </Solution>

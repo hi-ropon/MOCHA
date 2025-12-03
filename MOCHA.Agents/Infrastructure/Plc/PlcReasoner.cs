@@ -12,7 +12,7 @@ namespace MOCHA.Agents.Infrastructure.Plc;
 public sealed class PlcReasoner
 {
     // 日本語文中でもヒットさせるため単純な前後チェックにする
-    private static readonly Regex DeviceRegex = new(@"(?i)([dmxyct][0-9a-f]+)", RegexOptions.Compiled);
+    private static readonly Regex _deviceRegex = new(@"(?i)([dmxyct][0-9a-f]+)", RegexOptions.Compiled);
 
     public string InferSingle(string query)
     {
@@ -45,7 +45,7 @@ public sealed class PlcReasoner
 
     private static List<string> ExtractDevices(string query)
     {
-        return DeviceRegex.Matches(query ?? string.Empty)
+        return _deviceRegex.Matches(query ?? string.Empty)
             .Select(m => m.Groups[1].Value.ToUpperInvariant())
             .Distinct()
             .Take(8)
