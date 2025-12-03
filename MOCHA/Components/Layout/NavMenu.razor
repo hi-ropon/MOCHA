@@ -431,7 +431,7 @@
 
             <div class="drawing-modal-body">
                 <div class="field">
-                    <label>名前</label>
+                    <label>名前<span class="required-mark" aria-label="必須">*</span></label>
                     <input class="agent-input" @bind="_plcName" placeholder="例: PLC1" />
                 </div>
                 <div class="field double">
@@ -446,11 +446,11 @@
                 </div>
                 <div class="field double endpoint-fields">
                     <div>
-                        <label>IPアドレス</label>
+                        <label>IPアドレス<span class="required-mark" aria-label="必須">*</span></label>
                         <input class="agent-input" @bind="_plcIp" placeholder="例: 192.168.0.10" />
                     </div>
                     <div>
-                        <label>ポート</label>
+                        <label>ポート<span class="required-mark" aria-label="必須">*</span></label>
                         <input class="agent-input"
                                type="number"
                                min="1"
@@ -571,11 +571,11 @@
                     <div class="field double">
                         <div>
                             <label>種類</label>
-                            <input class="agent-input" @bind="_unitNameInput" placeholder="例: 入力" />
+                            <input class="agent-input" @bind="_unitNameInput" placeholder="例: アナログ" />
                         </div>
                         <div>
-                            <label>仕様</label>
-                            <input class="agent-input" @bind="_unitSpecInput" placeholder="例: 16点" />
+                            <label>役割</label>
+                            <input class="agent-input" @bind="_unitSpecInput" placeholder="例: センサモニター" />
                         </div>
                     </div>
                     <div class="plc-module-list">
