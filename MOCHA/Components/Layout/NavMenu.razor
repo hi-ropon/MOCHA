@@ -1,6 +1,7 @@
 @using System
 @using System.Linq
 @using System.Security.Claims
+@using MOCHA.Services.Agents
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
 @using System.IO
@@ -185,11 +186,20 @@
                                     {
                                         @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
                                         {
-                                            <div class="agent-row">
-                                                <div class="agent-row-info">
-                                                    <div class="agent-row-name">@agent.Name</div>
-                                                    <div class="agent-row-number">@agent.Number</div>
-                                                </div>
+                                            var isSelected = IsSettingsSelected(agent.Number);
+                                            <div class="agent-row @(isSelected ? "selected" : string.Empty)">
+                                                <button type="button"
+                                                        class="agent-row-main"
+                                                        aria-pressed="@isSelected"
+                                                        @onclick="() => SelectSettingsAgent(agent)">
+                                                    <span class="agent-radio">
+                                                        <span class="agent-radio-dot @(isSelected ? "active" : string.Empty)"></span>
+                                                    </span>
+                                                    <div class="agent-row-info">
+                                                        <div class="agent-row-name">@agent.Name</div>
+                                                        <div class="agent-row-number">@agent.Number</div>
+                                                    </div>
+                                                </button>
                                                 <button type="button"
                                                         class="agent-delete-btn"
                                                         title="エージェントを削除"
@@ -218,12 +228,12 @@
                                 <button type="button"
                                         class="new-chat-btn save-agent-btn drawing-open-btn"
                                         @onclick="OpenPlcModalForCreate"
-                                        disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber))">
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
                                     PLCユニットを追加
                                 </button>
                             </div>
 
-                            @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+                            @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
                             {
                                 <div class="drawing-empty">装置エージェントを選択してください</div>
                             }
@@ -327,12 +337,12 @@
                                 <button type="button"
                                         class="new-chat-btn save-agent-btn drawing-open-btn"
                                         @onclick="OpenDrawingModalForCreate"
-                                        disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber) || !isAdmin)">
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber) || !isAdmin)">
                                     図面を登録
                                 </button>
                             </div>
 
-                            @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+                            @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
                             {
                                 <div class="drawing-empty">装置エージェントを選択してください</div>
                             }
@@ -394,7 +404,7 @@
             <div class="drawing-modal-header">
                 <div>
                     <div class="drawing-modal-title">@(_editingDrawingId.HasValue ? "図面を編集" : "図面を登録")</div>
-                    <div class="drawing-modal-subtitle">装置エージェント @selectedAgentNumber</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @SettingsSelectedAgentNumber</div>
                 </div>
                 <button type="button" class="drawing-close" @onclick="CloseDrawingModal" aria-label="閉じる">×</button>
             </div>
@@ -492,7 +502,7 @@
             <div class="drawing-modal-header">
                 <div>
                     <div class="drawing-modal-title">@(_editingPlcId.HasValue ? "PLCユニット編集" : "PLCユニット追加")</div>
-                    <div class="drawing-modal-subtitle">装置エージェント @selectedAgentNumber</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @SettingsSelectedAgentNumber</div>
                 </div>
                 <button type="button" class="drawing-close" @onclick="ClosePlcModal" aria-label="閉じる">×</button>
             </div>
@@ -775,10 +785,12 @@
     private bool isDeveloper;
     private string selectedAgentNumber = string.Empty;
     private string selectedAgentName = string.Empty;
+    private readonly AgentSettingsSelection _agentSettingsSelection = new();
     private string agentNumberInput = string.Empty;
     private string agentNameInput = string.Empty;
     private bool _isRegistering;
     private AgentSettingsTab _agentSettingsTab = AgentSettingsTab.Register;
+    private string SettingsSelectedAgentNumber => _agentSettingsSelection.SelectedAgentNumber ?? string.Empty;
     private Theme _selectedTheme = Theme.Light;
     private IReadOnlyList<DrawingDocument> _drawings = Array.Empty<DrawingDocument>();
     private bool _drawingModalOpen;
@@ -864,8 +876,7 @@
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
-        await LoadDrawingsAsync();
-        await LoadPlcUnitsAsync();
+        await EnsureSettingsSelectionAsync();
         _loaded = true;
     }
 
@@ -895,8 +906,7 @@
         AgentState.Select(number);
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
-        await LoadDrawingsAsync();
-        await LoadPlcUnitsAsync();
+        await EnsureSettingsSelectionAsync(number);
     }
 
     private void OnAgentStateChanged()
@@ -908,14 +918,47 @@
             if (_userId is not null)
             {
                 await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
-                await LoadDrawingsAsync();
-                await LoadPlcUnitsAsync();
+                await EnsureSettingsSelectionAsync();
             }
             StateHasChanged();
         });
     }
 
-    private void ToggleSettings()
+    private async Task EnsureSettingsSelectionAsync(string? preferredNumber = null)
+    {
+        var candidate = preferredNumber ?? _agentSettingsSelection.SelectedAgentNumber ?? AgentState.SelectedAgentNumber;
+        var changed = _agentSettingsSelection.Reset(AgentState.Agents, candidate);
+        if (changed)
+        {
+            await LoadSettingsDataAsync();
+        }
+    }
+
+    private async Task LoadSettingsDataAsync()
+    {
+        await LoadDrawingsAsync();
+        await LoadPlcUnitsAsync();
+    }
+
+    private bool IsSettingsSelected(string number)
+    {
+        return !string.IsNullOrWhiteSpace(number)
+               && string.Equals(SettingsSelectedAgentNumber, number, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private async Task SelectSettingsAgent(DeviceAgentProfile agent)
+    {
+        var changed = _agentSettingsSelection.Select(AgentState.Agents, agent.Number);
+        if (!changed)
+        {
+            return;
+        }
+
+        await LoadSettingsDataAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ToggleSettings()
     {
         if (!CanManageAgents)
         {
@@ -926,6 +969,7 @@
         if (_settingsOpen)
         {
             _agentSettingsTab = AgentSettingsTab.Register;
+            await EnsureSettingsSelectionAsync();
         }
         else
         {
@@ -1026,24 +1070,24 @@
 
     private async Task LoadDrawingsAsync()
     {
-        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             _drawings = Array.Empty<DrawingDocument>();
             return;
         }
 
-        _drawings = await DrawingService.ListAsync(_userId, selectedAgentNumber);
+        _drawings = await DrawingService.ListAsync(_userId, SettingsSelectedAgentNumber);
     }
 
     private async Task LoadPlcUnitsAsync()
     {
-        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             _plcUnits = Array.Empty<PlcUnit>();
             return;
         }
 
-        _plcUnits = await PlcService.ListAsync(_userId, selectedAgentNumber);
+        _plcUnits = await PlcService.ListAsync(_userId, SettingsSelectedAgentNumber);
     }
 
     private async Task OpenDrawingModalForCreate()
@@ -1054,7 +1098,7 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
             return;
@@ -1134,7 +1178,7 @@
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             _drawingError = "装置エージェントを選択してください";
             return;
@@ -1168,7 +1212,7 @@
                     Description = _drawingDescription
                 }).ToList();
 
-                var batchResult = await DrawingService.RegisterManyAsync(_userId, selectedAgentNumber, uploads);
+                var batchResult = await DrawingService.RegisterManyAsync(_userId, SettingsSelectedAgentNumber, uploads);
 
                 if (!batchResult.Succeeded)
                 {
@@ -1188,7 +1232,7 @@
 
     private bool CanSaveDrawing => !_drawingSaving
                                    && isAdmin
-                                   && !string.IsNullOrWhiteSpace(selectedAgentNumber)
+                                   && !string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber)
                                    && (_editingDrawingId.HasValue || _drawingFiles.Count > 0);
 
     private async Task DeleteDrawingAsync(DrawingDocument drawing)
@@ -1219,7 +1263,7 @@
 
     private async Task OpenPlcModalForCreate()
     {
-        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
             return;
@@ -1243,7 +1287,7 @@
 
     private async Task OpenPlcModalForEdit(PlcUnit unit)
     {
-        if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
             return;
@@ -1440,7 +1484,7 @@
 
     private async Task SavePlcAsync()
     {
-        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             _plcError = "装置エージェントを選択してください";
             return;
@@ -1479,11 +1523,11 @@
             PlcUnitResult result;
             if (_editingPlcId.HasValue)
             {
-                result = await PlcService.UpdateAsync(_userId, selectedAgentNumber, _editingPlcId.Value, draft);
+                result = await PlcService.UpdateAsync(_userId, SettingsSelectedAgentNumber, _editingPlcId.Value, draft);
             }
             else
             {
-                result = await PlcService.AddAsync(_userId, selectedAgentNumber, draft);
+                result = await PlcService.AddAsync(_userId, SettingsSelectedAgentNumber, draft);
             }
 
             if (!result.Succeeded)
@@ -1503,7 +1547,7 @@
 
     private async Task DeletePlcUnitAsync(PlcUnit unit)
     {
-        if (_userId is null || string.IsNullOrWhiteSpace(selectedAgentNumber))
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             return;
         }
@@ -1517,7 +1561,7 @@
             return;
         }
 
-        var deleted = await PlcService.DeleteAsync(_userId, selectedAgentNumber, unit.Id);
+        var deleted = await PlcService.DeleteAsync(_userId, SettingsSelectedAgentNumber, unit.Id);
         if (deleted)
         {
             await LoadPlcUnitsAsync();
@@ -1532,7 +1576,7 @@
     }
 
     private bool CanSavePlc => !_plcSaving
-                               && !string.IsNullOrWhiteSpace(selectedAgentNumber)
+                               && !string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber)
                                && !string.IsNullOrWhiteSpace(_plcName)
                                && !string.IsNullOrWhiteSpace(_plcIp)
                                && _plcPort.HasValue
