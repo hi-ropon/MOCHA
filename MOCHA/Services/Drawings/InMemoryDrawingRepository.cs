@@ -67,4 +67,15 @@ internal sealed class InMemoryDrawingRepository : IDrawingRepository
         _store[document.Id] = document;
         return Task.FromResult(document);
     }
+
+    /// <summary>
+    /// 図面削除
+    /// </summary>
+    /// <param name="id">図面ID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>削除成否</returns>
+    public Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return Task.FromResult(_store.TryRemove(id, out _));
+    }
 }

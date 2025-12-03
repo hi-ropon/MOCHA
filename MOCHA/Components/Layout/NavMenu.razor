@@ -1,4 +1,5 @@
 @using System
+@using System.Linq
 @using System.Security.Claims
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -315,23 +316,32 @@
                                 <div class="drawing-card">
                                     <div class="drawing-file">
                                         <div class="drawing-file-name">@drawing.FileName</div>
-                                        <div class="drawing-meta">
-                                            <span>@FormatFileSize(drawing.FileSize)</span>
-                                            @if (!string.IsNullOrWhiteSpace(drawing.Description))
-                                            {
-                                                <span class="drawing-divider">•</span>
-                                                <span class="drawing-description">@drawing.Description</span>
-                                            }
-                                        </div>
+                                    <div class="drawing-meta">
+                                        <span>@FormatFileSize(drawing.FileSize)</span>
+                                        <span class="drawing-divider">•</span>
+                                        <span class="drawing-updated">更新 @drawing.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</span>
+                                        @if (!string.IsNullOrWhiteSpace(drawing.Description))
+                                        {
+                                            <span class="drawing-divider">•</span>
+                                            <span class="drawing-description">@drawing.Description</span>
+                                        }
                                     </div>
-                                    <div class="drawing-actions">
-                                        <div class="drawing-updated">更新 @drawing.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
-                                        <button type="button"
-                                                class="agent-delete-btn drawing-edit-btn"
-                                                disabled="@( !isAdmin)"
-                                                @onclick="() => OpenDrawingModalForEdit(drawing)">
-                                            編集
-                                        </button>
+                                </div>
+                                <div class="drawing-actions">
+                                        <div class="drawing-action-buttons">
+                                            <button type="button"
+                                                    class="agent-delete-btn drawing-edit-btn"
+                                                    disabled="@( !isAdmin)"
+                                                    @onclick="() => OpenDrawingModalForEdit(drawing)">
+                                                編集
+                                            </button>
+                                            <button type="button"
+                                                    class="agent-delete-btn danger-btn"
+                                                    disabled="@( !isAdmin)"
+                                                    @onclick="() => DeleteDrawingAsync(drawing)">
+                                                削除
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             }
@@ -364,19 +374,47 @@
                 {
                     <div class="field">
                         <label>図面ファイル</label>
-                        <div class="drawing-dropzone">
-                            <InputFile OnChange="OnDrawingFileSelected" accept=".pdf,.png,.jpg,.jpeg,.dwg" />
-                            <div class="drawing-drop-label">
-                                <div class="drop-primary">図面ファイルをドロップまたはクリックして選択</div>
-                                <div class="drop-secondary">PDF / DWG / PNG / JPG に対応・最大10MB</div>
+                        <label class="plc-file-box drawing-dropzone" for="drawingFileInput">
+                            <div class="plc-file-trigger">
+                                <span class="plc-file-icon drawing-drop-icon">⬆</span>
+                                <div class="drawing-drop-text">
+                                    <div class="drop-primary">図面ファイルを追加</div>
+                                    <div class="drop-secondary">PDF / PNG / JPG ・ 複数選択・最大20MB/件</div>
+                                </div>
                             </div>
+                            <div class="drawing-drop-pill">クリックまたはドロップで選択</div>
+                        </label>
+                        <InputFile id="drawingFileInput"
+                                   Multiple="true"
+                                   OnChange="OnDrawingFilesSelected"
+                                   accept=".pdf,.png,.jpg,.jpeg"
+                                   class="plc-file-input drawing-file-input"
+                                   hidden />
+                        <div class="program-file-list">
+                            @if (_drawingFiles.Count == 0)
+                            {
+                                <div class="drawing-empty">図面ファイルを選択してください</div>
+                            }
+                            else
+                            {
+                                @foreach (var file in _drawingFiles)
+                                {
+                                    <div class="program-file-row">
+                                        <div class="program-file-meta">
+                                            <div class="program-file-name">@file.FileName</div>
+                                            <div class="program-file-size">@FormatFileSize(file.FileSize)</div>
+                                        </div>
+                                        <div class="plc-actions">
+                                            <button type="button"
+                                                    class="plc-module-action-btn danger-btn"
+                                                    @onclick="() => RemoveDrawingFile(file.Id)">
+                                                削除
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            }
                         </div>
-                        @if (!string.IsNullOrWhiteSpace(_selectedDrawingFileName))
-                        {
-                            <div class="drawing-file-chip">
-                                @_selectedDrawingFileName (@FormatFileSize(_selectedDrawingFileSize))
-                            </div>
-                        }
                     </div>
                 }
                 else
@@ -715,7 +753,7 @@
     private bool _drawingModalOpen;
     private Guid? _editingDrawingId;
     private string _drawingDescription = string.Empty;
-    private IBrowserFile? _drawingFile;
+    private List<DrawingFileDraft> _drawingFiles = new();
     private string _selectedDrawingFileName = string.Empty;
     private long _selectedDrawingFileSize;
     private string? _drawingError;
@@ -983,7 +1021,7 @@
 
         _editingDrawingId = null;
         _drawingDescription = string.Empty;
-        _drawingFile = null;
+        _drawingFiles.Clear();
         _selectedDrawingFileName = string.Empty;
         _selectedDrawingFileSize = 0;
         _drawingError = null;
@@ -1002,7 +1040,7 @@
         _drawingDescription = drawing.Description ?? string.Empty;
         _selectedDrawingFileName = drawing.FileName;
         _selectedDrawingFileSize = drawing.FileSize;
-        _drawingFile = null;
+        _drawingFiles.Clear();
         _drawingError = null;
         _drawingModalOpen = true;
     }
@@ -1012,20 +1050,32 @@
         _drawingModalOpen = false;
         _editingDrawingId = null;
         _drawingDescription = string.Empty;
-        _drawingFile = null;
+        _drawingFiles.Clear();
         _selectedDrawingFileName = string.Empty;
         _selectedDrawingFileSize = 0;
         _drawingError = null;
     }
 
-    private async Task OnDrawingFileSelected(InputFileChangeEventArgs args)
+    private async Task OnDrawingFilesSelected(InputFileChangeEventArgs args)
     {
-        var file = args.File;
-        _drawingFile = file;
-        _selectedDrawingFileName = Path.GetFileName(file.Name);
-        _selectedDrawingFileSize = file.Size;
         _drawingError = null;
+        foreach (var file in args.GetMultipleFiles())
+        {
+            _drawingFiles.Add(new DrawingFileDraft
+            {
+                Id = Guid.NewGuid(),
+                FileName = Path.GetFileName(file.Name),
+                ContentType = file.ContentType,
+                FileSize = file.Size
+            });
+        }
+
         await InvokeAsync(StateHasChanged);
+    }
+
+    private void RemoveDrawingFile(Guid id)
+    {
+        _drawingFiles.RemoveAll(f => f.Id == id);
     }
 
     private async Task SaveDrawingAsync()
@@ -1052,34 +1102,38 @@
         _drawingSaving = true;
         try
         {
-            DrawingRegistrationResult result;
             if (_editingDrawingId.HasValue)
             {
-                result = await DrawingService.UpdateDescriptionAsync(_userId, _editingDrawingId.Value, _drawingDescription);
+                var result = await DrawingService.UpdateDescriptionAsync(_userId, _editingDrawingId.Value, _drawingDescription);
+                if (!result.Succeeded)
+                {
+                    _drawingError = result.Error;
+                    return;
+                }
             }
             else
             {
-                if (_drawingFile is null)
+                if (_drawingFiles.Count == 0)
                 {
                     _drawingError = "図面ファイルを選択してください";
                     return;
                 }
 
-                var upload = new DrawingUpload
+                var uploads = _drawingFiles.Select(file => new DrawingUpload
                 {
-                    FileName = _selectedDrawingFileName,
-                    ContentType = _drawingFile.ContentType,
-                    FileSize = _selectedDrawingFileSize,
+                    FileName = file.FileName,
+                    ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
+                    FileSize = file.FileSize,
                     Description = _drawingDescription
-                };
+                }).ToList();
 
-                result = await DrawingService.RegisterAsync(_userId, selectedAgentNumber, upload);
-            }
+                var batchResult = await DrawingService.RegisterManyAsync(_userId, selectedAgentNumber, uploads);
 
-            if (!result.Succeeded)
-            {
-                _drawingError = result.Error;
-                return;
+                if (!batchResult.Succeeded)
+                {
+                    _drawingError = batchResult.Error;
+                    return;
+                }
             }
 
             await LoadDrawingsAsync();
@@ -1094,7 +1148,33 @@
     private bool CanSaveDrawing => !_drawingSaving
                                    && isAdmin
                                    && !string.IsNullOrWhiteSpace(selectedAgentNumber)
-                                   && (_editingDrawingId.HasValue || _drawingFile is not null);
+                                   && (_editingDrawingId.HasValue || _drawingFiles.Count > 0);
+
+    private async Task DeleteDrawingAsync(DrawingDocument drawing)
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var confirmed = await JsRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"「{drawing.FileName}」を削除しますか？");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var result = await DrawingService.DeleteAsync(_userId, drawing.Id);
+        if (!result.Succeeded)
+        {
+            _drawingError = result.Error;
+            return;
+        }
+
+        await LoadDrawingsAsync();
+    }
 
     private async Task OpenPlcModalForCreate()
     {
@@ -1496,6 +1576,14 @@
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
         PreferencesState.Changed -= OnPreferencesChanged;
+    }
+
+    private sealed class DrawingFileDraft
+    {
+        public Guid Id { get; set; } = Guid.NewGuid();
+        public string FileName { get; set; } = string.Empty;
+        public string? ContentType { get; set; }
+        public long FileSize { get; set; }
     }
 
     private sealed class ProgramFileDraft

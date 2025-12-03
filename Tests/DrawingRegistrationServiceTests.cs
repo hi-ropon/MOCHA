@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -68,6 +69,78 @@ public class DrawingRegistrationServiceTests
     }
 
     /// <summary>
+    /// 管理者が複数の図面をまとめて登録できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task 管理者は複数の図面を登録できる()
+    {
+        var repository = new InMemoryDrawingRepository();
+        var service = CreateService(isAdmin: true, repository);
+
+        var uploads = new[]
+        {
+            new DrawingUpload
+            {
+                FileName = "layout.pdf",
+                ContentType = "application/pdf",
+                FileSize = 1024,
+                Description = "一括登録"
+            },
+            new DrawingUpload
+            {
+                FileName = "mechanical.dwg",
+                ContentType = "application/octet-stream",
+                FileSize = 2048,
+                Description = "一括登録"
+            }
+        };
+
+        var result = await service.RegisterManyAsync("admin-batch", "D-10", uploads);
+
+        Assert.IsTrue(result.Succeeded);
+        Assert.IsNotNull(result.Documents);
+        Assert.AreEqual(2, result.Documents!.Count);
+
+        var stored = await repository.ListAsync("admin-batch", "D-10");
+        var fileNames = stored.Select(x => x.FileName).OrderBy(x => x).ToList();
+        CollectionAssert.AreEqual(new List<string> { "layout.pdf", "mechanical.dwg" }, fileNames);
+    }
+
+    /// <summary>
+    /// 複数登録で不正なファイルを含む場合失敗する確認
+    /// </summary>
+    [TestMethod]
+    public async Task 複数登録で不正なファイルは失敗する()
+    {
+        var repository = new InMemoryDrawingRepository();
+        var service = CreateService(isAdmin: true, repository);
+
+        var uploads = new[]
+        {
+            new DrawingUpload
+            {
+                FileName = "ok.pdf",
+                ContentType = "application/pdf",
+                FileSize = 1024
+            },
+            new DrawingUpload
+            {
+                FileName = "zero.pdf",
+                ContentType = "application/pdf",
+                FileSize = 0
+            }
+        };
+
+        var result = await service.RegisterManyAsync("admin-batch2", "D-11", uploads);
+
+        Assert.IsFalse(result.Succeeded);
+        Assert.AreEqual("ファイルサイズが 0 バイトです", result.Error);
+
+        var stored = await repository.ListAsync("admin-batch2", "D-11");
+        Assert.AreEqual(0, stored.Count);
+    }
+
+    /// <summary>
     /// 非管理者が説明更新に失敗する確認
     /// </summary>
     [TestMethod]
@@ -118,6 +191,60 @@ public class DrawingRegistrationServiceTests
         Assert.IsNotNull(updated.Document);
         Assert.AreEqual("承認済みレイアウト", updated.Document!.Description);
         Assert.IsTrue(updated.Document.UpdatedAt > original.UpdatedAt);
+    }
+
+    /// <summary>
+    /// 管理者が図面を削除できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task 管理者は図面を削除できる()
+    {
+        var repository = new InMemoryDrawingRepository();
+        var service = CreateService(isAdmin: true, repository);
+        var registered = await service.RegisterAsync(
+            "admin-del",
+            "D-01",
+            new DrawingUpload
+            {
+                FileName = "delete.pdf",
+                ContentType = "application/pdf",
+                FileSize = 1024
+            });
+        Assert.IsTrue(registered.Succeeded);
+        var target = registered.Document!;
+
+        var result = await service.DeleteAsync("admin-del", target.Id);
+
+        Assert.IsTrue(result.Succeeded);
+        var remaining = await repository.ListAsync("admin-del", "D-01");
+        Assert.AreEqual(0, remaining.Count);
+    }
+
+    /// <summary>
+    /// 非管理者は図面を削除できない確認
+    /// </summary>
+    [TestMethod]
+    public async Task 非管理者は図面を削除できない()
+    {
+        var repository = new InMemoryDrawingRepository();
+        var adminService = CreateService(isAdmin: true, repository);
+        var ownerId = "owner-1";
+        var registered = await adminService.RegisterAsync(
+            ownerId,
+            "D-02",
+            new DrawingUpload
+            {
+                FileName = "keep.pdf",
+                ContentType = "application/pdf",
+                FileSize = 2048
+            });
+        Assert.IsTrue(registered.Succeeded);
+
+        var service = CreateService(isAdmin: false, repository);
+        var result = await service.DeleteAsync(ownerId, registered.Document!.Id);
+
+        Assert.IsFalse(result.Succeeded);
+        Assert.AreEqual("管理者のみ図面を削除できます", result.Error);
     }
 
     /// <summary>

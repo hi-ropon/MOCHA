@@ -13,7 +13,7 @@ namespace MOCHA.Services.Drawings;
 /// </summary>
 internal sealed class DrawingRegistrationService
 {
-    private const long _maxFileSizeBytes = 10 * 1024 * 1024;
+    private const long _maxFileSizeBytes = 20 * 1024 * 1024;
 
     private readonly IDrawingRepository _repository;
     private readonly IUserRoleProvider _roleProvider;
@@ -61,33 +61,79 @@ internal sealed class DrawingRegistrationService
         DrawingUpload upload,
         CancellationToken cancellationToken = default)
     {
+        var batchResult = await RegisterManyAsync(userId, agentNumber, new[] { upload }, cancellationToken);
+        if (!batchResult.Succeeded)
+        {
+            return DrawingRegistrationResult.Fail(batchResult.Error ?? "入力内容が正しくありません");
+        }
+
+        var first = batchResult.Documents?.Count > 0 ? batchResult.Documents[0] : null;
+        if (first is null)
+        {
+            return DrawingRegistrationResult.Fail("入力内容が正しくありません");
+        }
+
+        _logger.LogInformation("図面を登録しました: {FileName} ({Size} bytes)", first.FileName, first.FileSize);
+        return DrawingRegistrationResult.Success(first);
+    }
+
+    /// <summary>
+    /// 図面複数登録
+    /// </summary>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="uploads">アップロード情報一覧</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>登録結果</returns>
+    public async Task<DrawingBatchRegistrationResult> RegisterManyAsync(
+        string userId,
+        string? agentNumber,
+        IReadOnlyCollection<DrawingUpload> uploads,
+        CancellationToken cancellationToken = default)
+    {
         if (!await IsAdminAsync(userId, cancellationToken))
         {
-            return DrawingRegistrationResult.Fail("管理者のみ図面を登録できます");
+            return DrawingBatchRegistrationResult.Fail("管理者のみ図面を登録できます");
         }
 
         if (string.IsNullOrWhiteSpace(agentNumber))
         {
-            return DrawingRegistrationResult.Fail("装置エージェントを選択してください");
+            return DrawingBatchRegistrationResult.Fail("装置エージェントを選択してください");
         }
 
-        var validation = upload.Validate(_maxFileSizeBytes);
-        if (!validation.IsValid)
+        if (uploads is null || uploads.Count == 0)
         {
-            return DrawingRegistrationResult.Fail(validation.Error ?? "入力内容が正しくありません");
+            return DrawingBatchRegistrationResult.Fail("図面ファイルを選択してください");
         }
 
-        var document = DrawingDocument.Create(
-            userId,
-            agentNumber.Trim(),
-            upload.FileName.Trim(),
-            upload.ContentType,
-            upload.FileSize,
-            upload.Description);
+        var agent = agentNumber.Trim();
+        var documents = new List<DrawingDocument>();
+        foreach (var upload in uploads)
+        {
+            var validation = upload.Validate(_maxFileSizeBytes);
+            if (!validation.IsValid)
+            {
+                return DrawingBatchRegistrationResult.Fail(validation.Error ?? "入力内容が正しくありません");
+            }
 
-        var saved = await _repository.AddAsync(document, cancellationToken);
-        _logger.LogInformation("図面を登録しました: {FileName} ({Size} bytes)", saved.FileName, saved.FileSize);
-        return DrawingRegistrationResult.Success(saved);
+            documents.Add(DrawingDocument.Create(
+                userId,
+                agent,
+                upload.FileName.Trim(),
+                upload.ContentType,
+                upload.FileSize,
+                upload.Description));
+        }
+
+        var savedDocuments = new List<DrawingDocument>();
+        foreach (var document in documents)
+        {
+            var saved = await _repository.AddAsync(document, cancellationToken);
+            savedDocuments.Add(saved);
+        }
+
+        _logger.LogInformation("図面を登録しました: {Count} 件", savedDocuments.Count);
+        return DrawingBatchRegistrationResult.Success(savedDocuments);
     }
 
     /// <summary>
@@ -130,5 +176,35 @@ internal sealed class DrawingRegistrationService
     private Task<bool> IsAdminAsync(string userId, CancellationToken cancellationToken)
     {
         return _roleProvider.IsInRoleAsync(userId, UserRoleId.Predefined.Administrator.Value, cancellationToken);
+    }
+
+    /// <summary>
+    /// 図面削除
+    /// </summary>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="drawingId">図面ID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>削除結果</returns>
+    public async Task<DrawingDeletionResult> DeleteAsync(string userId, Guid drawingId, CancellationToken cancellationToken = default)
+    {
+        if (!await IsAdminAsync(userId, cancellationToken))
+        {
+            return DrawingDeletionResult.Fail("管理者のみ図面を削除できます");
+        }
+
+        var existing = await _repository.GetAsync(drawingId, cancellationToken);
+        if (existing is null || !string.Equals(existing.UserId, userId, StringComparison.Ordinal))
+        {
+            return DrawingDeletionResult.Fail("図面が見つかりません");
+        }
+
+        var deleted = await _repository.DeleteAsync(drawingId, cancellationToken);
+        if (!deleted)
+        {
+            return DrawingDeletionResult.Fail("図面削除に失敗しました");
+        }
+
+        _logger.LogInformation("図面を削除しました: {DrawingId}", drawingId);
+        return DrawingDeletionResult.Success();
     }
 }
