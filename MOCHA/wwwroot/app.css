@@ -990,6 +990,13 @@ h1:focus {
     align-items: center;
 }
 
+.activity-close {
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    border-radius: 8px;
+}
+
 .activity-title {
     font-weight: 700;
     color: var(--text-primary);

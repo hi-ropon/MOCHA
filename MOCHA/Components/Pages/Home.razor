@@ -131,7 +131,7 @@
                     <div class="activity-title">アクティビティ</div>
                     <div class="activity-sub">@GetActivitySummary()</div>
                 </div>
-                <button class="icon-btn tertiary" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
+                <button class="icon-btn tertiary activity-close" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
             </div>
             <div class="activity-body">
                 @RenderActivityList()
