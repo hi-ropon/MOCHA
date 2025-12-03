@@ -23,21 +23,21 @@
 
 <div class="sidebar-container @(IsCollapsed ? "collapsed" : string.Empty)">
     <div class="sidebar-header">
-    <div class="sidebar-title">
-        <img src="icon.png" alt="Chat" class="sidebar-title-icon" />
-        @if (isAdmin)
-        {
-            <button type="button" class="sidebar-admin-btn" title="ロール管理" @onclick="NavigateToRoles">
-                <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                    <path d="M12 3.2 5 6v5.3c0 4 3 7.5 7 8.5 4-1 7-4.5 7-8.5V6l-7-2.8Z" stroke="currentColor" stroke-width="1.4" fill="none" />
-                    <path d="M12 12.2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.4" fill="none" />
-                    <path d="M8.8 16.1c.5-1.2 1.8-2.1 3.2-2.1s2.7.9 3.2 2.1" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" />
-                </svg>
-                <span class="sr-only">ロール管理</span>
-            </button>
-        }
-        <span class="sr-only">Chat</span>
-    </div>
+        <div class="sidebar-title">
+            <img src="icon.png" alt="Chat" class="sidebar-title-icon" />
+            @if (isAdmin)
+            {
+                <button type="button" class="sidebar-admin-btn" title="ロール管理" @onclick="NavigateToRoles">
+                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                        <path d="M12 3.2 5 6v5.3c0 4 3 7.5 7 8.5 4-1 7-4.5 7-8.5V6l-7-2.8Z" stroke="currentColor" stroke-width="1.4" fill="none" />
+                        <path d="M12 12.2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" stroke="currentColor" stroke-width="1.4" fill="none" />
+                        <path d="M8.8 16.1c.5-1.2 1.8-2.1 3.2-2.1s2.7.9 3.2 2.1" stroke="currentColor" stroke-width="1.4" fill="none" stroke-linecap="round" />
+                    </svg>
+                    <span class="sr-only">ロール管理</span>
+                </button>
+            }
+            <span class="sr-only">Chat</span>
+        </div>
         <button class="new-chat-btn" @onclick="StartNewChat">New Chat</button>
         <button class="sidebar-toggle" type="button" @onclick="ToggleAsync" title="サイドバー切替">
             @(IsCollapsed ? "›" : "‹")
@@ -129,228 +129,258 @@
             </div>
 
             <div class="agent-settings-body">
-                <div class="agent-settings-section">
-                    <div class="field">
-                        <label for="agent-name">名前</label>
-                        <input id="agent-name"
-                               class="agent-input"
-                               @bind="agentNameInput"
-                               placeholder="装置名など" />
+                <div class="agent-settings-grid">
+                    <div class="agent-settings-sidebar" role="tablist" aria-label="装置エージェント設定切り替え">
+                        <button type="button"
+                                class="agent-nav @(_agentSettingsTab == AgentSettingsTab.Register ? "active" : string.Empty)"
+                                role="tab"
+                                aria-selected="@(_agentSettingsTab == AgentSettingsTab.Register)"
+                                @onclick="() => SelectAgentSettingsTab(AgentSettingsTab.Register)">
+                            <span class="agent-nav-title">登録</span>
+                            <span class="agent-nav-subtitle">新規エージェントを追加</span>
+                        </button>
+                        <button type="button"
+                                class="agent-nav @(_agentSettingsTab == AgentSettingsTab.List ? "active" : string.Empty)"
+                                role="tab"
+                                aria-selected="@(_agentSettingsTab == AgentSettingsTab.List)"
+                                @onclick="() => SelectAgentSettingsTab(AgentSettingsTab.List)">
+                            <span class="agent-nav-title">登録済み</span>
+                            <span class="agent-nav-subtitle">登録内容の確認・削除</span>
+                        </button>
                     </div>
-                    <div class="field">
-                        <label for="agent-number">番号</label>
-                        <input id="agent-number"
-                               class="agent-input"
-                               @bind="agentNumberInput"
-                               placeholder="例: A-01" />
-                    </div>
-                    <button class="new-chat-btn save-agent-btn"
-                            @onclick="RegisterAgentAsync"
-                            disabled="@(_isRegistering || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))">
-                        登録
-                    </button>
-                </div>
 
-                <div class="agent-settings-section">
-                    <div class="agent-settings-section-title">登録済みエージェント</div>
-                    <div class="agent-list">
-                        @if (AgentState.Agents.Any())
+                    <div class="agent-settings-main">
+                        @if (_agentSettingsTab == AgentSettingsTab.Register)
                         {
-                            @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
-                            {
-                                <div class="agent-row">
-                                    <div class="agent-row-info">
-                                        <div class="agent-row-name">@agent.Name</div>
-                                        <div class="agent-row-number">@agent.Number</div>
+                            <div class="agent-panel" role="tabpanel">
+                                <div class="agent-settings">
+                                    <div class="field">
+                                        <label for="agent-name">名前</label>
+                                        <input id="agent-name"
+                                               class="agent-input"
+                                               @bind="agentNameInput"
+                                               placeholder="装置名など" />
                                     </div>
-                                    <button type="button"
-                                            class="agent-delete-btn"
-                                            title="エージェントを削除"
-                                            @onclick="() => ConfirmDeleteAgentAsync(agent)">
-                                        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                                            <path d="M9 3.5h6m-9 3h12M10 10.5v7m4-7v7M5.5 6.5l1 13a1 1 0 0 0 1 .92h9a1 1 0 0 0 1-.92l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                                            <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
-                                        </svg>
+                                    <div class="field">
+                                        <label for="agent-number">番号</label>
+                                        <input id="agent-number"
+                                               class="agent-input"
+                                               @bind="agentNumberInput"
+                                               placeholder="例: A-01" />
+                                    </div>
+                                    <button class="new-chat-btn save-agent-btn"
+                                            @onclick="RegisterAgentAsync"
+                                            disabled="@(_isRegistering || string.IsNullOrWhiteSpace(agentNumberInput) || string.IsNullOrWhiteSpace(agentNameInput))">
+                                        登録
                                     </button>
                                 </div>
-                            }
+                            </div>
                         }
                         else
                         {
-                            <div class="agent-list-empty">エージェントがありません</div>
+                            <div class="agent-panel" role="tabpanel">
+                                <div class="agent-settings-section-title">登録済みエージェント</div>
+                                <div class="agent-list">
+                                    @if (AgentState.Agents.Any())
+                                    {
+                                        @foreach (var agent in AgentState.Agents.OrderBy(a => a.Number))
+                                        {
+                                            <div class="agent-row">
+                                                <div class="agent-row-info">
+                                                    <div class="agent-row-name">@agent.Name</div>
+                                                    <div class="agent-row-number">@agent.Number</div>
+                                                </div>
+                                                <button type="button"
+                                                        class="agent-delete-btn"
+                                                        title="エージェントを削除"
+                                                        @onclick="() => ConfirmDeleteAgentAsync(agent)">
+                                                    <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                                        <path d="M9 3.5h6m-9 3h12M10 10.5v7m4-7v7M5.5 6.5l1 13a1 1 0 0 0 1 .92h9a1 1 0 0 0 1-.92l1-13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                                        <path d="M9 4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="agent-list-empty">エージェントがありません</div>
+                                    }
+                                </div>
+                            </div>
                         }
-                    </div>
-                </div>
 
-                <div class="agent-settings-section architecture-manager">
-                    <div class="drawing-header">
-                        <div>
-                            <div class="agent-settings-section-title">アーキテクチャ設定</div>
-                        </div>
-                        <button type="button"
-                                class="new-chat-btn save-agent-btn drawing-open-btn"
-                                @onclick="OpenPlcModalForCreate"
-                                disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber))">
-                            PLCユニットを追加
-                        </button>
-                    </div>
+                        <div class="agent-settings-section architecture-manager">
+                            <div class="drawing-header">
+                                <div>
+                                    <div class="agent-settings-section-title">アーキテクチャ設定</div>
+                                </div>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="OpenPlcModalForCreate"
+                                        disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber))">
+                                    PLCユニットを追加
+                                </button>
+                            </div>
 
-                    @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
-                    {
-                        <div class="drawing-empty">装置エージェントを選択してください</div>
-                    }
-                    else if (_plcUnits.Any())
-                    {
-                        <div class="plc-list">
-                            @foreach (var plc in _plcUnits)
+                            @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
                             {
-                                <div class="plc-card">
-                                    <div class="plc-title-row">
-                                        <div>
-                                            <div class="plc-name">@plc.Name</div>
-                                            <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
-                                        </div>
-                                        <div class="plc-actions">
-                                            <button type="button"
-                                                    class="agent-delete-btn drawing-edit-btn"
-                                                    @onclick="() => OpenPlcModalForEdit(plc)">
-                                                編集
-                                            </button>
-                                            <button type="button"
-                                                    class="agent-delete-btn danger-btn"
-                                                    @onclick="() => DeletePlcUnitAsync(plc)">
-                                                削除
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="plc-row">
-                                        <span class="plc-label">役割:</span>
-                                        <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
-                                    </div>
-                                    <div class="plc-row endpoint-row">
-                                        <div class="endpoint-cell">
-                                            <div class="plc-label">IPアドレス</div>
-                                            <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</div>
-                                        </div>
-                                        <div class="endpoint-cell">
-                                            <div class="plc-label">ポート</div>
-                                            <div class="plc-value">@FormatPort(plc.Port)</div>
-                                        </div>
-                                    </div>
-                                    <div class="plc-row files-row">
-                                        <div>
-                                            <div class="plc-label">コメントファイル</div>
-                                            <div class="plc-value">@DisplayFileName(plc.CommentFile?.FileName)</div>
-                                        </div>
-                                        <div>
-                                            <div class="plc-label">プログラムファイル</div>
-                                            <div class="plc-program-list">
-                                                @if (plc.ProgramFiles?.Any() ?? false)
-                                                {
-                                                    var programNames = plc.ProgramFiles!.ToList();
-                                                    var take = programNames.Take(2).ToList();
-                                                    foreach (var file in take)
+                                <div class="drawing-empty">装置エージェントを選択してください</div>
+                            }
+                            else if (_plcUnits.Any())
+                            {
+                                <div class="plc-list">
+                                    @foreach (var plc in _plcUnits)
+                                    {
+                                        <div class="plc-card">
+                                            <div class="plc-title-row">
+                                                <div>
+                                                    <div class="plc-name">@plc.Name</div>
+                                                    <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
+                                                </div>
+                                                <div class="plc-actions">
+                                                    <button type="button"
+                                                            class="agent-delete-btn drawing-edit-btn"
+                                                            @onclick="() => OpenPlcModalForEdit(plc)">
+                                                        編集
+                                                    </button>
+                                                    <button type="button"
+                                                            class="agent-delete-btn danger-btn"
+                                                            @onclick="() => DeletePlcUnitAsync(plc)">
+                                                        削除
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div class="plc-row">
+                                                <span class="plc-label">役割:</span>
+                                                <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
+                                            </div>
+                                            <div class="plc-row endpoint-row">
+                                                <div class="endpoint-cell">
+                                                    <div class="plc-label">IPアドレス</div>
+                                                    <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</div>
+                                                </div>
+                                                <div class="endpoint-cell">
+                                                    <div class="plc-label">ポート</div>
+                                                    <div class="plc-value">@FormatPort(plc.Port)</div>
+                                                </div>
+                                            </div>
+                                            <div class="plc-row files-row">
+                                                <div>
+                                                    <div class="plc-label">コメントファイル</div>
+                                                    <div class="plc-value">@DisplayFileName(plc.CommentFile?.FileName)</div>
+                                                </div>
+                                                <div>
+                                                    <div class="plc-label">プログラムファイル</div>
+                                                    <div class="plc-program-list">
+                                                        @if (plc.ProgramFiles?.Any() ?? false)
+                                                        {
+                                                            var programNames = plc.ProgramFiles!.ToList();
+                                                            var take = programNames.Take(2).ToList();
+                                                            foreach (var file in take)
+                                                            {
+                                                                <span class="plc-chip">@DisplayFileName(file.FileName, file.DisplayName)</span>
+                                                            }
+                                                            if (programNames.Count > 2)
+                                                            {
+                                                                <span class="plc-chip muted">+@((programNames.Count - 2)) 件</span>
+                                                            }
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="plc-value">未設定</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="plc-row modules-row">
+                                                <div class="plc-label">ユニット</div>
+                                                <div class="plc-modules">
+                                                    @if (plc.Modules.Any())
                                                     {
-                                                        <span class="plc-chip">@DisplayFileName(file.FileName, file.DisplayName)</span>
-                                                    }
-                                                    if (programNames.Count > 2)
+                                                    @foreach (var unitItem in plc.Modules)
                                                     {
-                                                        <span class="plc-chip muted">+@((programNames.Count - 2)) 件</span>
+                                                        <span class="plc-chip">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</span>
                                                     }
-                                                }
-                                                else
-                                                {
-                                                    <span class="plc-value">未設定</span>
-                                                }
+                                                    }
+                                                    else
+                                                    {
+                                                        <span class="plc-value">未設定</span>
+                                                    }
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="plc-row modules-row">
-                                        <div class="plc-label">ユニット</div>
-                                        <div class="plc-modules">
-                                            @if (plc.Modules.Any())
-                                            {
-                                            @foreach (var unitItem in plc.Modules)
-                                            {
-                                                <span class="plc-chip">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</span>
-                                            }
-                                            }
-                                            else
-                                            {
-                                                <span class="plc-value">未設定</span>
-                                            }
-                                        </div>
-                                    </div>
+                                    }
                                 </div>
                             }
-                        </div>
-                    }
-                    else
-                    {
-                        <div class="drawing-empty">PLCユニットがありません</div>
-                    }
-                </div>
-
-                <div class="agent-settings-section drawing-manager">
-                    <div class="drawing-header">
-                        <div>
-                            <div class="agent-settings-section-title">図面管理</div>
-                        </div>
-                        <button type="button"
-                                class="new-chat-btn save-agent-btn drawing-open-btn"
-                                @onclick="OpenDrawingModalForCreate"
-                                disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber) || !isAdmin)">
-                            図面を登録
-                        </button>
-                    </div>
-
-                    @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
-                    {
-                        <div class="drawing-empty">装置エージェントを選択してください</div>
-                    }
-                    else if (_drawings.Any())
-                    {
-                        <div class="drawing-list">
-                            @foreach (var drawing in _drawings)
+                            else
                             {
-                                <div class="drawing-card">
-                                    <div class="drawing-file">
-                                        <div class="drawing-file-name">@drawing.FileName</div>
-                                    <div class="drawing-meta">
-                                        <span>@FormatFileSize(drawing.FileSize)</span>
-                                        <span class="drawing-divider">•</span>
-                                        <span class="drawing-updated">更新 @drawing.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</span>
-                                        @if (!string.IsNullOrWhiteSpace(drawing.Description))
-                                        {
-                                            <span class="drawing-divider">•</span>
-                                            <span class="drawing-description">@drawing.Description</span>
-                                        }
-                                    </div>
-                                </div>
-                                <div class="drawing-actions">
-                                        <div class="drawing-action-buttons">
-                                            <button type="button"
-                                                    class="agent-delete-btn drawing-edit-btn"
-                                                    disabled="@( !isAdmin)"
-                                                    @onclick="() => OpenDrawingModalForEdit(drawing)">
-                                                編集
-                                            </button>
-                                            <button type="button"
-                                                    class="agent-delete-btn danger-btn"
-                                                    disabled="@( !isAdmin)"
-                                                    @onclick="() => DeleteDrawingAsync(drawing)">
-                                                削除
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                <div class="drawing-empty">PLCユニットがありません</div>
                             }
                         </div>
-                    }
-                    else
-                    {
-                        <div class="drawing-empty">登録済みの図面がありません</div>
-                    }
+
+                        <div class="agent-settings-section drawing-manager">
+                            <div class="drawing-header">
+                                <div>
+                                    <div class="agent-settings-section-title">図面管理</div>
+                                </div>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="OpenDrawingModalForCreate"
+                                        disabled="@(string.IsNullOrWhiteSpace(selectedAgentNumber) || !isAdmin)">
+                                    図面を登録
+                                </button>
+                            </div>
+
+                            @if (string.IsNullOrWhiteSpace(selectedAgentNumber))
+                            {
+                                <div class="drawing-empty">装置エージェントを選択してください</div>
+                            }
+                            else if (_drawings.Any())
+                            {
+                                <div class="drawing-list">
+                                    @foreach (var drawing in _drawings)
+                                    {
+                                        <div class="drawing-card">
+                                            <div class="drawing-file">
+                                                <div class="drawing-file-name">@drawing.FileName</div>
+                                                <div class="drawing-meta">
+                                                    <span>@FormatFileSize(drawing.FileSize)</span>
+                                                    <span class="drawing-divider">•</span>
+                                                    <span class="drawing-updated">更新 @drawing.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</span>
+                                                    @if (!string.IsNullOrWhiteSpace(drawing.Description))
+                                                    {
+                                                        <span class="drawing-divider">•</span>
+                                                        <span class="drawing-description">@drawing.Description</span>
+                                                    }
+                                                </div>
+                                            </div>
+                                            <div class="drawing-actions">
+                                                <div class="drawing-action-buttons">
+                                                    <button type="button"
+                                                            class="agent-delete-btn drawing-edit-btn"
+                                                            disabled="@( !isAdmin)"
+                                                            @onclick="() => OpenDrawingModalForEdit(drawing)">
+                                                        編集
+                                                    </button>
+                                                    <button type="button"
+                                                            class="agent-delete-btn danger-btn"
+                                                            disabled="@( !isAdmin)"
+                                                            @onclick="() => DeleteDrawingAsync(drawing)">
+                                                        削除
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="drawing-empty">登録済みの図面がありません</div>
+                            }
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -748,6 +778,7 @@
     private string agentNumberInput = string.Empty;
     private string agentNameInput = string.Empty;
     private bool _isRegistering;
+    private AgentSettingsTab _agentSettingsTab = AgentSettingsTab.Register;
     private Theme _selectedTheme = Theme.Light;
     private IReadOnlyList<DrawingDocument> _drawings = Array.Empty<DrawingDocument>();
     private bool _drawingModalOpen;
@@ -892,10 +923,19 @@
         }
 
         _settingsOpen = !_settingsOpen;
-        if (!_settingsOpen)
+        if (_settingsOpen)
+        {
+            _agentSettingsTab = AgentSettingsTab.Register;
+        }
+        else
         {
             ClearAgentInputs();
         }
+    }
+
+    private void SelectAgentSettingsTab(AgentSettingsTab tab)
+    {
+        _agentSettingsTab = tab;
     }
 
     private void OpenUserActions()
@@ -974,6 +1014,7 @@
     private void CloseOverlay()
     {
         _settingsOpen = false;
+        _agentSettingsTab = AgentSettingsTab.Register;
         ClearAgentInputs();
     }
 
@@ -1592,6 +1633,12 @@
         public string FileName { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public string? DisplayName { get; set; }
+    }
+
+    private enum AgentSettingsTab
+    {
+        Register,
+        List
     }
 
     private enum UserAction
