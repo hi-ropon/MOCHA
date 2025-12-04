@@ -50,9 +50,8 @@ internal sealed class PlcFileStoragePathBuilder : IPlcFileStoragePathBuilder
         var safeCategory = Sanitize(string.IsNullOrWhiteSpace(category) ? "files" : category);
         var safeFileName = Sanitize(fileName);
         var stampedFileName = $"{now:yyyyMMddHHmmssfff}_{safeFileName}";
-        var datePath = Path.Combine($"{now:yyyy}", $"{now:MM}", $"{now:dd}");
-        var relativePath = Path.Combine(safeAgent, safeCategory, datePath, stampedFileName);
-        var directoryPath = Path.Combine(_options.RootPath, safeAgent, safeCategory, datePath);
+        var relativePath = Path.Combine(safeAgent, safeCategory, stampedFileName);
+        var directoryPath = Path.Combine(_options.RootPath, safeAgent, safeCategory);
         var fullPath = Path.Combine(_options.RootPath, relativePath);
 
         return new PlcFileStoragePath(

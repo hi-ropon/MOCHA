@@ -30,7 +30,7 @@ public class DrawingRepositoryTests
             "application/pdf",
             1024,
             "初版",
-            relativePath: "A-01/2024/05/01/layout.pdf",
+            relativePath: "A-01/layout.pdf",
             storageRoot: "C:/DrawingStorage");
 
         await harness.Repository.AddAsync(document);
@@ -39,7 +39,7 @@ public class DrawingRepositoryTests
 
         Assert.AreEqual(1, list.Count);
         Assert.AreEqual("layout.pdf", list[0].FileName);
-        Assert.AreEqual("A-01/2024/05/01/layout.pdf", list[0].RelativePath);
+        Assert.AreEqual("A-01/layout.pdf", list[0].RelativePath);
         Assert.AreEqual("C:/DrawingStorage", list[0].StorageRoot);
     }
 

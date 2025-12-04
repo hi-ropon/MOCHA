@@ -138,7 +138,7 @@ public class DrawingRegistrationServiceTests
 
             Assert.IsTrue(result.Succeeded);
 
-            var expectedDir = Path.Combine(root, "S-01", "2024", "01", "02");
+            var expectedDir = Path.Combine(root, "S-01");
             Assert.IsTrue(Directory.Exists(expectedDir));
             Assert.AreEqual(1, Directory.GetFiles(expectedDir).Length);
         }

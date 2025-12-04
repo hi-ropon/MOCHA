@@ -54,9 +54,8 @@ internal sealed class DrawingStoragePathBuilder : IDrawingStoragePathBuilder
         var safeAgent = Sanitize(agentNumber);
         var safeFileName = Sanitize(fileName);
         var stampedFileName = $"{now:yyyyMMddHHmmssfff}_{safeFileName}";
-        var datePath = Path.Combine($"{now:yyyy}", $"{now:MM}", $"{now:dd}");
-        var relativePath = Path.Combine(safeAgent, datePath, stampedFileName);
-        var directoryPath = Path.Combine(_options.RootPath, safeAgent, datePath);
+        var relativePath = Path.Combine(safeAgent, stampedFileName);
+        var directoryPath = Path.Combine(_options.RootPath, safeAgent);
         var fullPath = Path.Combine(_options.RootPath, relativePath);
 
         return new DrawingStoragePath(

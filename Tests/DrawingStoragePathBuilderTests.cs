@@ -14,20 +14,20 @@ namespace MOCHA.Tests;
 public class DrawingStoragePathBuilderTests
 {
     /// <summary>
-    /// エージェントと日付から階層化された相対パスを構築する
+    /// 日付フォルダなしでエージェント配下にパス構築
     /// </summary>
     [TestMethod]
-    public void エージェント番号と日付でパスを構築する()
+    public void エージェント番号でパスを構築する()
     {
         var builder = CreateBuilder("C:\\DrawingStorage", new DateTimeOffset(2024, 5, 1, 12, 34, 56, TimeSpan.Zero));
 
         var path = builder.Build("A-01", "layout.pdf");
 
-        var expectedRelative = Path.Combine("A-01", "2024", "05", "01", "20240501123456000_layout.pdf");
+        var expectedRelative = Path.Combine("A-01", "20240501123456000_layout.pdf");
         Assert.AreEqual(expectedRelative, path.RelativePath);
         Assert.AreEqual("C:\\DrawingStorage", path.RootPath);
         Assert.AreEqual(Path.Combine("C:\\DrawingStorage", expectedRelative), path.FullPath);
-        Assert.AreEqual(Path.Combine("C:\\DrawingStorage", "A-01", "2024", "05", "01"), path.DirectoryPath);
+        Assert.AreEqual(Path.Combine("C:\\DrawingStorage", "A-01"), path.DirectoryPath);
         Assert.AreEqual("20240501123456000_layout.pdf", path.FileName);
     }
 
