@@ -33,9 +33,20 @@ public sealed class PlcToolset
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    /// <summary>提供するツール一覧</summary>
+    /// <summary>
+    /// 提供するツール一覧
+    /// </summary>
     public IReadOnlyList<AITool> All { get; }
 
+    /// <summary>
+    /// 依存関係の注入による初期化
+    /// </summary>
+    /// <param name="store">PLCデータストア</param>
+    /// <param name="gateway">PLCゲートウェイクライアント</param>
+    /// <param name="programAnalyzer">プログラム解析器</param>
+    /// <param name="reasoner">デバイス推論器</param>
+    /// <param name="manuals">PLCマニュアルサービス</param>
+    /// <param name="logger">ロガー</param>
     public PlcToolset(
         IPlcDataStore store,
         IPlcGatewayClient gateway,
@@ -98,12 +109,23 @@ public sealed class PlcToolset
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="sink">イベント受け口</param>
+    /// <returns>スコープハンドル</returns>
     public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
     {
         _context.Value = new ScopeContext(conversationId, sink);
         return new Scope(this);
     }
 
+    /// <summary>
+    /// プログラム行取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="context">前後行数</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>プログラム行 JSON</returns>
     private Task<string> GetProgramLinesAsync(string dev, int address, int context, CancellationToken cancellationToken)
     {
         var call = new ToolCall("program_lines", JsonSerializer.Serialize(new { dev, address, context }, _serializerOptions));
@@ -124,6 +146,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 関連デバイス取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>関連デバイス一覧</returns>
     private Task<string> GetRelatedDevicesAsync(string dev, int address, CancellationToken cancellationToken)
     {
         var call = new ToolCall("related_devices", JsonSerializer.Serialize(new { dev, address }, _serializerOptions));
@@ -144,6 +173,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// コメント取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>コメント文字列</returns>
     private Task<string> GetCommentAsync(string dev, int address, CancellationToken cancellationToken)
     {
         var call = new ToolCall("get_comment", JsonSerializer.Serialize(new { dev, address }, _serializerOptions));
@@ -163,6 +199,12 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 単一デバイス推論
+    /// </summary>
+    /// <param name="query">質問文</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>推論結果</returns>
     private Task<string> InferDeviceAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("reasoning_device", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -172,6 +214,12 @@ public sealed class PlcToolset
         return Task.FromResult(result);
     }
 
+    /// <summary>
+    /// 複数デバイス推論
+    /// </summary>
+    /// <param name="query">質問文</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>推論結果</returns>
     private Task<string> InferDevicesAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("reasoning_multiple_devices", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -181,6 +229,16 @@ public sealed class PlcToolset
         return Task.FromResult(result);
     }
 
+    /// <summary>
+    /// 単一デバイス読み取り
+    /// </summary>
+    /// <param name="spec">デバイス指定</param>
+    /// <param name="ip">IPアドレス</param>
+    /// <param name="port">ポート</param>
+    /// <param name="timeoutSeconds">タイムアウト秒</param>
+    /// <param name="baseUrl">ゲートウェイURL</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
     private async Task<string> ReadValuesAsync(string spec, string ip, int port, int timeoutSeconds, string? baseUrl, CancellationToken cancellationToken)
     {
         var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
@@ -204,6 +262,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 複数デバイス読み取り
+    /// </summary>
+    /// <param name="specs">デバイス指定一覧</param>
+    /// <param name="baseUrl">ゲートウェイURL</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
     private async Task<string> ReadMultipleValuesAsync(IEnumerable<string> specs, string? baseUrl, CancellationToken cancellationToken)
     {
         var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs, baseUrl }, _serializerOptions));
@@ -226,6 +291,12 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// マニュアル検索
+    /// </summary>
+    /// <param name="query">検索語</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索結果</returns>
     private async Task<string> SearchManualAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("search_manual", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -244,6 +315,12 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 命令検索
+    /// </summary>
+    /// <param name="instruction">命令名</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索結果</returns>
     private async Task<string> SearchInstructionAsync(string instruction, CancellationToken cancellationToken)
     {
         var call = new ToolCall("search_instruction", JsonSerializer.Serialize(new { instruction }, _serializerOptions));
@@ -262,6 +339,11 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 命令一覧概要取得
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>概要文字列</returns>
     private async Task<string> GetCommandOverviewAsync(CancellationToken cancellationToken)
     {
         var call = new ToolCall("get_command_overview", JsonSerializer.Serialize(new { }, _serializerOptions));
@@ -280,6 +362,10 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// ツール開始イベント送出
+    /// </summary>
+    /// <param name="call">ツール呼び出し</param>
     private void EmitRequested(ToolCall call)
     {
         var ctx = _context.Value;
@@ -287,6 +373,13 @@ public sealed class PlcToolset
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
     }
 
+    /// <summary>
+    /// ツール完了イベント送出
+    /// </summary>
+    /// <param name="call">ツール呼び出し</param>
+    /// <param name="result">結果</param>
+    /// <param name="success">成功フラグ</param>
+    /// <param name="error">エラーメッセージ</param>
     private void EmitCompleted(ToolCall call, string result, bool success, string? error = null)
     {
         var ctx = _context.Value;
