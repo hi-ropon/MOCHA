@@ -23,5 +23,6 @@ public class OrganizerInstructionsTests
         StringAssert.Contains(text, "invoke_plc_agent");
         StringAssert.Contains(text, "invoke_iai_agent");
         StringAssert.Contains(text, "invoke_oriental_agent");
+        StringAssert.Contains(text, "invoke_drawing_agent");
     }
 }

@@ -78,7 +78,12 @@ public sealed class OrganizerToolset
             AIFunctionFactory.Create(
                 new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
                 name: "invoke_plc_agent",
-                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。")
+                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。"),
+
+            AIFunctionFactory.Create(
+                new Func<string, CancellationToken, Task<string>>(InvokeDrawingAgentAsync),
+                name: "invoke_drawing_agent",
+                description: "登録済み図面を検索・要約します。図面に関する質問で利用します。")
         };
     }
 
@@ -172,6 +177,22 @@ public sealed class OrganizerToolset
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Agent 実行エラー: {ex.Message}";
         }
+    }
+
+    /// <summary>
+    /// 図面エージェント呼び出しツール実行
+    /// </summary>
+    /// <param name="question">問い合わせ内容</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>実行結果</returns>
+    private Task<string> InvokeDrawingAgentAsync(string question, CancellationToken cancellationToken)
+    {
+        var ctx = _context.Value;
+        var call = new ToolCall("invoke_drawing_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
+
+        return RunManualAgentAsync(call, "drawingAgent", question, cancellationToken);
     }
 
     /// <summary>

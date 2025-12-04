@@ -106,6 +106,8 @@ builder.Services.AddScoped<IDeviceAgentPermissionRepository, DeviceAgentPermissi
 builder.Services.AddScoped<IDeviceAgentAccessService, DeviceAgentAccessService>();
 builder.Services.AddScoped<DeviceAgentState>();
 builder.Services.AddScoped<IDrawingRepository, DrawingRepository>();
+builder.Services.AddScoped<DrawingCatalog>();
+builder.Services.AddScoped<DrawingContentReader>();
 builder.Services.AddScoped<DrawingRegistrationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();

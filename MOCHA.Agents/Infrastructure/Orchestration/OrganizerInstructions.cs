@@ -13,6 +13,7 @@ public static class OrganizerInstructions
            - invoke_plc_agent : PLC/デバイス/ラダー/三菱/MELSEC/MCプロトコル関連
            - invoke_iai_agent : IAI/アクチュエータ/RCON/RSEL/SCON/XSEL関連
            - invoke_oriental_agent : Oriental Motor/αSTEP-AZ/ステッピング/サーボ/MEXE02関連
+           - invoke_drawing_agent : 図面/寸法/型番/製番/設計変更/リビジョン確認/部品配置関連
         2) IAI/PLC/Oriental の各エージェントは、自分の agentName で find_manuals を呼び出し候補を出し、必要に応じて read_manual で根拠を読んで要約する（IAI系は常に agentName=iaiAgent）。
         3) Organizer 自身は find_manuals / read_manual を直接使わず、状況要約と依頼内容に基づいて適切なエージェントを選ぶ。ツール不要な場合のみ短く直接回答する。
         4) 不明点があれば追加質問してからツールを呼ぶ。無関係なツールは呼ばない。

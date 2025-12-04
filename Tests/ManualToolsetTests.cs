@@ -50,7 +50,7 @@ public class ManualToolsetTests
         var plcLoader = new NullPlcDataLoader();
         var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
 
-        Assert.AreEqual(3, organizerToolset.All.Count);
+        Assert.AreEqual(4, organizerToolset.All.Count);
     }
 
     /// <summary>

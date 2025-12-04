@@ -154,6 +154,7 @@ public sealed class ManualAgentTool
         {
             "iai" => "iaiAgent",
             "oriental" => "orientalAgent",
+            "drawing" => "drawingAgent",
             "plc" => "plcAgent",
             _ => trimmed
         };
