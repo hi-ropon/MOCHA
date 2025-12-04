@@ -258,6 +258,7 @@ public class DrawingRegistrationServiceTests
         var roleProvider = new FakeRoleProvider(isAdmin);
         return new DrawingRegistrationService(
             repository ?? new InMemoryDrawingRepository(),
+            new FakePathBuilder(),
             roleProvider,
             NullLogger<DrawingRegistrationService>.Instance);
     }
@@ -310,6 +311,18 @@ public class DrawingRegistrationServiceTests
         public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
+        }
+    }
+
+    /// <summary>
+    /// テスト用のパスビルダー
+    /// </summary>
+    private sealed class FakePathBuilder : IDrawingStoragePathBuilder
+    {
+        public DrawingStoragePath Build(string agentNumber, string fileName)
+        {
+            var relative = $"{agentNumber}/{fileName}";
+            return new DrawingStoragePath("root", relative, "root/" + agentNumber, fileName, "root/" + relative);
         }
     }
 }

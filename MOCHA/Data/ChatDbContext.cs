@@ -3,6 +3,8 @@ using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Agents;
 using MOCHA.Services.Feedback;
+using MOCHA.Services.Drawings;
+using MOCHA.Services.Architecture;
 
 namespace MOCHA.Data;
 
@@ -26,6 +28,8 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions => Set<DeviceAgentPermissionEntity>();
     public DbSet<DevUserEntity> DevUsers => Set<DevUserEntity>();
     public DbSet<FeedbackEntity> Feedbacks => Set<FeedbackEntity>();
+    public DbSet<DrawingDocumentEntity> Drawings => Set<DrawingDocumentEntity>();
+    public DbSet<PlcUnitEntity> PlcUnits => Set<PlcUnitEntity>();
 
     /// <summary>
     /// エンティティの制約やインデックス構成
@@ -102,6 +106,34 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.DisplayName).HasMaxLength(200);
             builder.Property(x => x.PasswordHash).IsRequired();
             builder.HasIndex(x => x.Email).IsUnique();
+        });
+
+        modelBuilder.Entity<DrawingDocumentEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.UserId).HasMaxLength(200);
+            builder.Property(x => x.AgentNumber).HasMaxLength(100);
+            builder.Property(x => x.FileName).HasMaxLength(260);
+            builder.Property(x => x.ContentType).HasMaxLength(200);
+            builder.Property(x => x.Description).HasMaxLength(1000);
+            builder.Property(x => x.RelativePath).HasMaxLength(500);
+            builder.Property(x => x.StorageRoot).HasMaxLength(300);
+            builder.HasIndex(x => new { x.UserId, x.AgentNumber, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<PlcUnitEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.UserId).HasMaxLength(200);
+            builder.Property(x => x.AgentNumber).HasMaxLength(100);
+            builder.Property(x => x.Name).HasMaxLength(200);
+            builder.Property(x => x.Model).HasMaxLength(200);
+            builder.Property(x => x.Role).HasMaxLength(200);
+            builder.Property(x => x.IpAddress).HasMaxLength(100);
+            builder.Property(x => x.CommentFileJson).HasColumnType("TEXT");
+            builder.Property(x => x.ProgramFilesJson).HasColumnType("TEXT");
+            builder.Property(x => x.ModulesJson).HasColumnType("TEXT");
+            builder.HasIndex(x => new { x.UserId, x.AgentNumber, x.CreatedAt });
         });
     }
 }

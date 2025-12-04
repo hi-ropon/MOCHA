@@ -16,6 +16,7 @@ internal sealed class DrawingRegistrationService
     private const long _maxFileSizeBytes = 20 * 1024 * 1024;
 
     private readonly IDrawingRepository _repository;
+    private readonly IDrawingStoragePathBuilder _pathBuilder;
     private readonly IUserRoleProvider _roleProvider;
     private readonly ILogger<DrawingRegistrationService> _logger;
 
@@ -23,14 +24,17 @@ internal sealed class DrawingRegistrationService
     /// 依存リポジトリとロールプロバイダー注入による初期化
     /// </summary>
     /// <param name="repository">図面リポジトリ</param>
+    /// <param name="pathBuilder">保存パスビルダー</param>
     /// <param name="roleProvider">ロールプロバイダー</param>
     /// <param name="logger">ロガー</param>
     public DrawingRegistrationService(
         IDrawingRepository repository,
+        IDrawingStoragePathBuilder pathBuilder,
         IUserRoleProvider roleProvider,
         ILogger<DrawingRegistrationService> logger)
     {
         _repository = repository;
+        _pathBuilder = pathBuilder;
         _roleProvider = roleProvider;
         _logger = logger;
     }
@@ -116,13 +120,17 @@ internal sealed class DrawingRegistrationService
                 return DrawingBatchRegistrationResult.Fail(validation.Error ?? "入力内容が正しくありません");
             }
 
+            var storagePath = _pathBuilder.Build(agent, upload.FileName.Trim());
             documents.Add(DrawingDocument.Create(
                 userId,
                 agent,
                 upload.FileName.Trim(),
                 upload.ContentType,
                 upload.FileSize,
-                upload.Description));
+                upload.Description,
+                createdAt: null,
+                relativePath: storagePath.RelativePath,
+                storageRoot: storagePath.RootPath));
         }
 
         var savedDocuments = new List<DrawingDocument>();

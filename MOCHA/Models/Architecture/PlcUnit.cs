@@ -110,6 +110,54 @@ public sealed class PlcUnit
     }
 
     /// <summary>
+    /// 永続化情報からユニットを復元
+    /// </summary>
+    /// <param name="id">ユニットID</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="name">ユニット名</param>
+    /// <param name="model">機種</param>
+    /// <param name="role">役割</param>
+    /// <param name="ipAddress">IPアドレス</param>
+    /// <param name="port">ポート番号</param>
+    /// <param name="commentFile">コメントファイル</param>
+    /// <param name="programFiles">プログラムファイル</param>
+    /// <param name="modules">モジュール</param>
+    /// <param name="createdAt">作成日時</param>
+    /// <param name="updatedAt">更新日時</param>
+    /// <returns>復元したユニット</returns>
+    public static PlcUnit Restore(
+        Guid id,
+        string userId,
+        string agentNumber,
+        string name,
+        string? model,
+        string? role,
+        string? ipAddress,
+        int? port,
+        PlcFileUpload? commentFile,
+        IReadOnlyCollection<PlcFileUpload> programFiles,
+        IReadOnlyCollection<PlcUnitModule> modules,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        return new PlcUnit(
+            id,
+            userId,
+            agentNumber,
+            name,
+            model,
+            role,
+            ipAddress,
+            port,
+            commentFile,
+            programFiles ?? Array.Empty<PlcFileUpload>(),
+            modules ?? Array.Empty<PlcUnitModule>(),
+            createdAt,
+            updatedAt);
+    }
+
+    /// <summary>
     /// ドラフトでユニットを更新
     /// </summary>
     /// <param name="draft">更新内容</param>

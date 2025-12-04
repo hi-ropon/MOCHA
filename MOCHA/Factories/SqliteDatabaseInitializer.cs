@@ -105,6 +105,38 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             );
             CREATE UNIQUE INDEX IF NOT EXISTS IX_Feedbacks_ConversationId_MessageIndex_UserObjectId ON Feedbacks(ConversationId, MessageIndex, UserObjectId);
             CREATE INDEX IF NOT EXISTS IX_Feedbacks_UserObjectId_CreatedAt ON Feedbacks(UserObjectId, CreatedAt);
+
+            CREATE TABLE IF NOT EXISTS Drawings(
+                Id TEXT NOT NULL CONSTRAINT PK_Drawings PRIMARY KEY,
+                UserId TEXT NOT NULL,
+                AgentNumber TEXT NULL,
+                FileName TEXT NOT NULL,
+                ContentType TEXT NOT NULL,
+                FileSize INTEGER NOT NULL,
+                Description TEXT NULL,
+                RelativePath TEXT NULL,
+                StorageRoot TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_Drawings_UserId_AgentNumber_CreatedAt ON Drawings(UserId, AgentNumber, CreatedAt);
+
+            CREATE TABLE IF NOT EXISTS PlcUnits(
+                Id TEXT NOT NULL CONSTRAINT PK_PlcUnits PRIMARY KEY,
+                UserId TEXT NOT NULL,
+                AgentNumber TEXT NOT NULL,
+                Name TEXT NOT NULL,
+                Model TEXT NULL,
+                Role TEXT NULL,
+                IpAddress TEXT NULL,
+                Port INTEGER NULL,
+                CommentFileJson TEXT NULL,
+                ProgramFilesJson TEXT NULL,
+                ModulesJson TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_PlcUnits_UserId_AgentNumber_CreatedAt ON PlcUnits(UserId, AgentNumber, CreatedAt);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
@@ -120,11 +152,16 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         const string pragmaSql = "PRAGMA table_info(Conversations);";
         var hasAgentColumn = false;
 
-        await using (var connection = new SqliteConnection(_db.Database.GetConnectionString()))
+        await using var connection = _db.Database.GetDbConnection();
+        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
+        if (shouldClose)
         {
             await connection.OpenAsync(cancellationToken);
-            await using var command = new SqliteCommand(pragmaSql, connection);
-            await using var reader = await command.ExecuteReaderAsync(cancellationToken);
+        }
+
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
             while (await reader.ReadAsync(cancellationToken))
             {
                 var name = reader.GetString(1);
@@ -136,13 +173,20 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             }
         }
 
-        if (!hasAgentColumn)
+        if (shouldClose)
         {
-            const string alterSql = """
-                ALTER TABLE Conversations ADD COLUMN AgentNumber TEXT NULL;
-                CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
-            """;
-            await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+            await connection.CloseAsync();
         }
+
+        if (hasAgentColumn)
+        {
+            return;
+        }
+
+        const string alterSql = """
+            ALTER TABLE Conversations ADD COLUMN AgentNumber TEXT NULL;
+            CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
+        """;
+        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

@@ -19,6 +19,8 @@ public sealed class DrawingDocument
     /// <param name="description">説明</param>
     /// <param name="createdAt">作成日時</param>
     /// <param name="updatedAt">更新日時</param>
+    /// <param name="relativePath">ストレージ内の相対パス</param>
+    /// <param name="storageRoot">保存ルート</param>
     public DrawingDocument(
         Guid id,
         string userId,
@@ -28,7 +30,9 @@ public sealed class DrawingDocument
         long fileSize,
         string? description,
         DateTimeOffset createdAt,
-        DateTimeOffset updatedAt)
+        DateTimeOffset updatedAt,
+        string? relativePath = null,
+        string? storageRoot = null)
     {
         Id = id;
         UserId = userId;
@@ -39,6 +43,8 @@ public sealed class DrawingDocument
         Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim();
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
+        RelativePath = Normalize(relativePath);
+        StorageRoot = Normalize(storageRoot);
     }
 
     /// <summary>図面ID</summary>
@@ -59,6 +65,10 @@ public sealed class DrawingDocument
     public DateTimeOffset CreatedAt { get; }
     /// <summary>更新日時</summary>
     public DateTimeOffset UpdatedAt { get; }
+    /// <summary>ストレージ内相対パス</summary>
+    public string? RelativePath { get; }
+    /// <summary>保存ルート</summary>
+    public string? StorageRoot { get; }
 
     /// <summary>
     /// 図面ドキュメント生成
@@ -70,6 +80,8 @@ public sealed class DrawingDocument
     /// <param name="fileSize">ファイルサイズ</param>
     /// <param name="description">説明</param>
     /// <param name="createdAt">作成日時</param>
+    /// <param name="relativePath">ストレージ内相対パス</param>
+    /// <param name="storageRoot">保存ルート</param>
     /// <returns>生成した図面</returns>
     public static DrawingDocument Create(
         string userId,
@@ -78,7 +90,9 @@ public sealed class DrawingDocument
         string contentType,
         long fileSize,
         string? description,
-        DateTimeOffset? createdAt = null)
+        DateTimeOffset? createdAt = null,
+        string? relativePath = null,
+        string? storageRoot = null)
     {
         var now = createdAt ?? DateTimeOffset.UtcNow;
         return new DrawingDocument(
@@ -90,7 +104,9 @@ public sealed class DrawingDocument
             fileSize,
             description,
             now,
-            now);
+            now,
+            relativePath,
+            storageRoot);
     }
 
     /// <summary>
@@ -110,6 +126,13 @@ public sealed class DrawingDocument
             FileSize,
             description,
             CreatedAt,
-            updatedAt ?? DateTimeOffset.UtcNow);
+            updatedAt ?? DateTimeOffset.UtcNow,
+            RelativePath,
+            StorageRoot);
+    }
+
+    private static string? Normalize(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
     }
 }
