@@ -10,8 +10,12 @@ namespace MOCHA.Models.Architecture;
 /// </summary>
 public sealed class PlcUnitDraft
 {
+    /// <summary>サポートするメーカー一覧</summary>
+    public static readonly IReadOnlyList<string> SupportedManufacturers = new[] { "三菱電機", "KEYENCE" };
     /// <summary>ユニット名</summary>
     public string Name { get; init; } = string.Empty;
+    /// <summary>メーカー</summary>
+    public string Manufacturer { get; init; } = string.Empty;
     /// <summary>機種</summary>
     public string? Model { get; init; }
     /// <summary>役割</summary>
@@ -37,6 +41,16 @@ public sealed class PlcUnitDraft
         if (string.IsNullOrWhiteSpace(Name))
         {
             return (false, "PLC名は必須です");
+        }
+
+        if (string.IsNullOrWhiteSpace(Manufacturer))
+        {
+            return (false, "メーカーを選択してください");
+        }
+
+        if (!SupportedManufacturers.Contains(Manufacturer.Trim(), StringComparer.Ordinal))
+        {
+            return (false, "メーカーは「三菱電機」「KEYENCE」から選択してください");
         }
 
         if (Port is not null && (Port <= 0 || Port > 65535))

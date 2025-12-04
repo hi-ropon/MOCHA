@@ -27,6 +27,7 @@ public class PlcConfigurationServiceTests
         var draft = new PlcUnitDraft
         {
             Name = "PLC-1",
+            Manufacturer = "三菱電機",
             Model = "Q03UDV",
             Role = "制御",
             Modules = new List<PlcModuleDraft>
@@ -39,6 +40,7 @@ public class PlcConfigurationServiceTests
         var second = await service.AddAsync("user-1", "A-01", new PlcUnitDraft
         {
             Name = "PLC-2",
+            Manufacturer = "KEYENCE",
             Model = "Q03UDV",
             Role = "制御",
             Modules = new List<PlcModuleDraft>
@@ -67,6 +69,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
+                Manufacturer = "三菱電機",
                 CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024, Content = new byte[1024] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -83,6 +86,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
+                Manufacturer = "三菱電機",
                 CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072, Content = new byte[3072] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -108,7 +112,8 @@ public class PlcConfigurationServiceTests
             "C-03",
             new PlcUnitDraft
             {
-                Name = "PLC-4"
+                Name = "PLC-4",
+                Manufacturer = "KEYENCE"
             });
         Assert.IsTrue(added.Succeeded);
 
@@ -132,6 +137,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-5",
+                Manufacturer = "三菱電機",
                 IpAddress = "192.168.0.20",
                 Port = 5000
             });
@@ -154,6 +160,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-7",
+                Manufacturer = "KEYENCE",
                 ProgramFiles = new List<PlcFileUpload>
                 {
                     new() { FileName = "logic_a.csv", FileSize = 1024, DisplayName = "ロジックA", Content = new byte[1024] },
@@ -187,6 +194,7 @@ public class PlcConfigurationServiceTests
                 new PlcUnitDraft
                 {
                     Name = "PLC-8",
+                    Manufacturer = "三菱電機",
                     ProgramFiles = new List<PlcFileUpload>
                     {
                         new() { FileName = "logic.csv", FileSize = 3, Content = new byte[] { 1, 2, 3 } }
@@ -222,6 +230,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-6",
+                Manufacturer = "KEYENCE",
                 CommentFile = new PlcFileUpload { FileName = "memo.txt", FileSize = 512 },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -231,6 +240,25 @@ public class PlcConfigurationServiceTests
 
         Assert.IsFalse(result.Succeeded);
         StringAssert.Contains(result.Error!, "CSV");
+    }
+
+    /// <summary>
+    /// メーカー未選択の場合は保存しない確認
+    /// </summary>
+    [TestMethod]
+    public async Task メーカー未選択なら保存に失敗する()
+    {
+        var service = CreateService();
+        var result = await service.AddAsync(
+            "user-8",
+            "H-08",
+            new PlcUnitDraft
+            {
+                Name = "PLC-9"
+            });
+
+        Assert.IsFalse(result.Succeeded);
+        StringAssert.Contains(result.Error!, "メーカー");
     }
 
     /// <summary>

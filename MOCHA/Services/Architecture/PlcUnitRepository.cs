@@ -146,13 +146,14 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             else
             {
                 entity.UserId = unit.UserId;
-                entity.AgentNumber = unit.AgentNumber;
-                entity.Name = unit.Name;
-                entity.Model = unit.Model;
-                entity.Role = unit.Role;
-                entity.IpAddress = unit.IpAddress;
-                entity.Port = unit.Port;
-                entity.CommentFileJson = SerializeFile(unit.CommentFile);
+            entity.AgentNumber = unit.AgentNumber;
+            entity.Name = unit.Name;
+            entity.Manufacturer = unit.Manufacturer;
+            entity.Model = unit.Model;
+            entity.Role = unit.Role;
+            entity.IpAddress = unit.IpAddress;
+            entity.Port = unit.Port;
+            entity.CommentFileJson = SerializeFile(unit.CommentFile);
                 entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
                 entity.ModulesJson = SerializeModules(unit.Modules);
                 entity.CreatedAt = unit.CreatedAt;
@@ -184,6 +185,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             UserId = unit.UserId,
             AgentNumber = unit.AgentNumber,
             Name = unit.Name,
+            Manufacturer = unit.Manufacturer,
             Model = unit.Model,
             Role = unit.Role,
             IpAddress = unit.IpAddress,
@@ -207,6 +209,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             entity.UserId,
             entity.AgentNumber,
             entity.Name,
+            entity.Manufacturer ?? string.Empty,
             entity.Model,
             entity.Role,
             entity.IpAddress,
@@ -274,6 +277,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
                 UserId TEXT NOT NULL,
                 AgentNumber TEXT NOT NULL,
                 Name TEXT NOT NULL,
+                Manufacturer TEXT NOT NULL,
                 Model TEXT NULL,
                 Role TEXT NULL,
                 IpAddress TEXT NULL,
@@ -288,6 +292,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         """;
 
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+        await EnsureManufacturerColumnAsync(cancellationToken);
     }
 
     private static bool IsMissingTable(Exception exception, string tableName)
@@ -305,5 +310,44 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         }
 
         return false;
+    }
+
+    private async Task EnsureManufacturerColumnAsync(CancellationToken cancellationToken)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        var shouldClose = connection.State != System.Data.ConnectionState.Open;
+        if (shouldClose)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
+        var hasColumn = false;
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "Manufacturer", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+
+        if (hasColumn)
+        {
+            return;
+        }
+
+        const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN Manufacturer TEXT NULL;";
+        await _dbContext.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

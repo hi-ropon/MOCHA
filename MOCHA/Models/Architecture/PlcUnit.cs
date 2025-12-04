@@ -16,6 +16,7 @@ public sealed class PlcUnit
     /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="name">ユニット名</param>
+    /// <param name="manufacturer">メーカー</param>
     /// <param name="model">機種</param>
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
@@ -30,6 +31,7 @@ public sealed class PlcUnit
         string userId,
         string agentNumber,
         string name,
+        string manufacturer,
         string? model,
         string? role,
         string? ipAddress,
@@ -44,6 +46,7 @@ public sealed class PlcUnit
         UserId = userId;
         AgentNumber = agentNumber;
         Name = name;
+        Manufacturer = manufacturer;
         Model = model;
         Role = role;
         IpAddress = ipAddress;
@@ -63,6 +66,8 @@ public sealed class PlcUnit
     public string AgentNumber { get; }
     /// <summary>ユニット名</summary>
     public string Name { get; }
+    /// <summary>メーカー</summary>
+    public string Manufacturer { get; }
     /// <summary>機種</summary>
     public string? Model { get; }
     /// <summary>役割</summary>
@@ -98,6 +103,7 @@ public sealed class PlcUnit
             userId,
             agentNumber,
             draft.Name.Trim(),
+            NormalizeRequired(draft.Manufacturer),
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
@@ -116,6 +122,7 @@ public sealed class PlcUnit
     /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="name">ユニット名</param>
+    /// <param name="manufacturer">メーカー</param>
     /// <param name="model">機種</param>
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
@@ -131,6 +138,7 @@ public sealed class PlcUnit
         string userId,
         string agentNumber,
         string name,
+        string manufacturer,
         string? model,
         string? role,
         string? ipAddress,
@@ -146,6 +154,7 @@ public sealed class PlcUnit
             userId,
             agentNumber,
             name,
+            NormalizeRequired(manufacturer),
             model,
             role,
             ipAddress,
@@ -169,6 +178,7 @@ public sealed class PlcUnit
             UserId,
             AgentNumber,
             draft.Name.Trim(),
+            NormalizeRequired(draft.Manufacturer),
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
@@ -188,6 +198,11 @@ public sealed class PlcUnit
     private static string? NormalizeNullable(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string NormalizeRequired(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     private static PlcFileUpload? NormalizeFile(PlcFileUpload? file)

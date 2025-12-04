@@ -126,6 +126,7 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 UserId TEXT NOT NULL,
                 AgentNumber TEXT NOT NULL,
                 Name TEXT NOT NULL,
+                Manufacturer TEXT NOT NULL,
                 Model TEXT NULL,
                 Role TEXT NULL,
                 IpAddress TEXT NULL,
@@ -141,6 +142,7 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
         await EnsureAgentColumnAsync(cancellationToken);
+        await EnsurePlcManufacturerColumnAsync(cancellationToken);
     }
 
     /// <summary>
@@ -187,6 +189,50 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             ALTER TABLE Conversations ADD COLUMN AgentNumber TEXT NULL;
             CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
         """;
+        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+    }
+
+    /// <summary>
+    /// PlcUnits テーブルへの Manufacturer 列追加確認
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    private async Task EnsurePlcManufacturerColumnAsync(CancellationToken cancellationToken)
+    {
+        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
+        var hasColumn = false;
+
+        await using var connection = _db.Database.GetDbConnection();
+        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
+        if (shouldClose)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "Manufacturer", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+
+        if (hasColumn)
+        {
+            return;
+        }
+
+        const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN Manufacturer TEXT NULL;";
         await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

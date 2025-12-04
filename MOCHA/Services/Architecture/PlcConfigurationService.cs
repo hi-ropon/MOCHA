@@ -295,6 +295,7 @@ internal sealed class PlcConfigurationService
         var updatedDraft = new PlcUnitDraft
         {
             Name = draft.Name,
+            Manufacturer = draft.Manufacturer,
             Model = draft.Model,
             Role = draft.Role,
             IpAddress = draft.IpAddress,

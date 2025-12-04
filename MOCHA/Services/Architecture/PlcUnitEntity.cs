@@ -15,6 +15,8 @@ internal sealed class PlcUnitEntity
     public string AgentNumber { get; set; } = string.Empty;
     /// <summary>ユニット名</summary>
     public string Name { get; set; } = string.Empty;
+    /// <summary>メーカー</summary>
+    public string? Manufacturer { get; set; }
     /// <summary>機種</summary>
     public string? Model { get; set; }
     /// <summary>役割</summary>

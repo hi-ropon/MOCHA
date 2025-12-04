@@ -127,6 +127,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.UserId).HasMaxLength(200);
             builder.Property(x => x.AgentNumber).HasMaxLength(100);
             builder.Property(x => x.Name).HasMaxLength(200);
+            builder.Property(x => x.Manufacturer).HasMaxLength(100);
             builder.Property(x => x.Model).HasMaxLength(200);
             builder.Property(x => x.Role).HasMaxLength(200);
             builder.Property(x => x.IpAddress).HasMaxLength(100);

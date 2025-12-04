@@ -236,6 +236,7 @@
                                             <div class="plc-title-row">
                                                 <div>
                                                     <div class="plc-name">@plc.Name</div>
+                                                    <div class="plc-meta">メーカー: @(!string.IsNullOrWhiteSpace(plc.Manufacturer) ? plc.Manufacturer : "未設定")</div>
                                                     <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
                                                 </div>
                                                 <div class="plc-actions">
@@ -498,9 +499,21 @@
             </div>
 
             <div class="drawing-modal-body">
-                <div class="field">
-                    <label>名前<span class="required-mark" aria-label="必須">*</span></label>
-                    <input class="agent-input" @bind="_plcName" placeholder="例: PLC1" />
+                <div class="field double">
+                    <div>
+                        <label>名前<span class="required-mark" aria-label="必須">*</span></label>
+                        <input class="agent-input" @bind="_plcName" placeholder="例: PLC1" />
+                    </div>
+                    <div>
+                        <label>メーカー<span class="required-mark" aria-label="必須">*</span></label>
+                        <select class="agent-input" @bind="_plcManufacturer">
+                            <option value="">選択してください</option>
+                            @foreach (var maker in PlcUnitDraft.SupportedManufacturers)
+                            {
+                                <option value="@maker">@maker</option>
+                            }
+                        </select>
+                    </div>
                 </div>
                 <div class="field double">
                     <div>
@@ -797,6 +810,7 @@
     private bool _plcModalOpen;
     private Guid? _editingPlcId;
     private string _plcName = string.Empty;
+    private string _plcManufacturer = string.Empty;
     private string _plcModel = string.Empty;
     private string _plcRole = string.Empty;
     private string _plcIp = string.Empty;
@@ -1279,6 +1293,7 @@
 
         _editingPlcId = null;
         _plcName = string.Empty;
+        _plcManufacturer = string.Empty;
         _plcModel = string.Empty;
         _plcRole = string.Empty;
         _plcIp = string.Empty;
@@ -1303,6 +1318,7 @@
 
         _editingPlcId = unit.Id;
         _plcName = unit.Name;
+        _plcManufacturer = unit.Manufacturer ?? string.Empty;
         _plcModel = unit.Model ?? string.Empty;
         _plcRole = unit.Role ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
@@ -1340,6 +1356,7 @@
         _commentFileName = null;
         _commentFileSize = 0;
         _commentFileContent = null;
+        _plcManufacturer = string.Empty;
         ResetUnitInput();
     }
 
@@ -1550,6 +1567,7 @@
             var draft = new PlcUnitDraft
             {
                 Name = _plcName,
+                Manufacturer = _plcManufacturer,
                 Model = _plcModel,
                 Role = _plcRole,
                 IpAddress = _plcIp,
@@ -1633,6 +1651,7 @@
     private bool CanSavePlc => !_plcSaving
                                && !string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber)
                                && !string.IsNullOrWhiteSpace(_plcName)
+                               && !string.IsNullOrWhiteSpace(_plcManufacturer)
                                && !string.IsNullOrWhiteSpace(_plcIp)
                                && _plcPort.HasValue
                                && _plcPort > 0
