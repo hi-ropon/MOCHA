@@ -203,7 +203,10 @@ public sealed class PlcUnit
             FileName = file.FileName.Trim(),
             ContentType = file.ContentType,
             FileSize = file.FileSize,
-            DisplayName = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName.Trim() : file.DisplayName.Trim()
+            DisplayName = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName.Trim() : file.DisplayName.Trim(),
+            RelativePath = string.IsNullOrWhiteSpace(file.RelativePath) ? null : file.RelativePath.Trim(),
+            StorageRoot = string.IsNullOrWhiteSpace(file.StorageRoot) ? null : file.StorageRoot.Trim(),
+            Content = null
         };
     }
 

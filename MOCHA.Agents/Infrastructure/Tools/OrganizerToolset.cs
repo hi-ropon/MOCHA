@@ -81,15 +81,15 @@ public sealed class OrganizerToolset
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
-    /// <param name="conversationId">会話ID</param>
+    /// <param name="chatContext">チャットコンテキスト</param>
     /// <param name="sink">イベント受け取りコールバック</param>
     /// <returns>スコープ破棄用ハンドル</returns>
-    public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
+    public IDisposable UseContext(ChatContext chatContext, Action<AgentEvent> sink)
     {
-        _context.Value = new ScopeContext(conversationId, sink);
-        var manualScope = _manualTools.UseContext(conversationId, sink);
-        var agentScope = _manualAgentTool.UseContext(conversationId, sink);
-        var plcScope = _plcToolset.UseContext(conversationId, sink);
+        _context.Value = new ScopeContext(chatContext, sink);
+        var manualScope = _manualTools.UseContext(chatContext, sink);
+        var agentScope = _manualAgentTool.UseContext(chatContext.ConversationId, sink);
+        var plcScope = _plcToolset.UseContext(chatContext.ConversationId, sink);
         return new Scope(this, manualScope, agentScope, plcScope);
     }
 
@@ -103,8 +103,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_iai_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
     }
@@ -119,8 +119,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_oriental_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
     }
@@ -136,8 +136,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_plc_agent", JsonSerializer.Serialize(new { question, options = optionsJson }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunPlcAsync(call, question, optionsJson, cancellationToken);
     }
@@ -158,13 +158,13 @@ public sealed class OrganizerToolset
             var extraTools = new[] { _plcGatewayTool };
             var contextHint = BuildPlcContextHint(optionsJson);
             var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "invoke_plc_agent 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Agent 実行エラー: {ex.Message}";
         }
     }
@@ -183,13 +183,13 @@ public sealed class OrganizerToolset
         try
         {
             var result = await _manualAgentTool.RunAsync(agentName, question, cancellationToken: cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Tool} 実行に失敗しました。", call.Name);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"{call.Name} 実行エラー: {ex.Message}";
         }
     }
@@ -204,19 +204,19 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("read_plc_gateway", JsonSerializer.Serialize(new { options = optionsJson }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         try
         {
             var result = await _plcAgentTool.RunGatewayAsync(optionsJson, cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "read_plc_gateway 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Gateway 実行エラー: {ex.Message}";
         }
     }
@@ -236,7 +236,7 @@ public sealed class OrganizerToolset
         return $"ゲートウェイ読み取りに使う optionsJson: {optionsJson}";
     }
 
-    private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
+    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink)
     {
         public void Emit(AgentEvent ev) => Sink(ev);
     }

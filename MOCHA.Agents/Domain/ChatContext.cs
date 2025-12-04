@@ -1,3 +1,5 @@
+using System;
+
 namespace MOCHA.Agents.Domain;
 
 /// <summary>
@@ -5,6 +7,12 @@ namespace MOCHA.Agents.Domain;
 /// </summary>
 public sealed record ChatContext(string ConversationId, IReadOnlyList<ChatTurn> History)
 {
+    /// <summary>装置エージェント番号</summary>
+    public string? AgentNumber { get; init; }
+
+    /// <summary>ユーザーID</summary>
+    public string? UserId { get; init; }
+
     /// <summary>
     /// 履歴なしのチャットコンテキスト生成
     /// </summary>

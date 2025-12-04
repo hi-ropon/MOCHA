@@ -121,12 +121,23 @@ internal sealed class DrawingRegistrationService
             }
 
             var storagePath = _pathBuilder.Build(agent, upload.FileName.Trim());
+            try
+            {
+                Directory.CreateDirectory(storagePath.DirectoryPath);
+                await File.WriteAllBytesAsync(storagePath.FullPath, upload.Content!, cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "図面ファイルの保存に失敗しました: {FileName}", upload.FileName);
+                return DrawingBatchRegistrationResult.Fail("図面ファイルの保存に失敗しました");
+            }
+
             documents.Add(DrawingDocument.Create(
                 userId,
                 agent,
                 upload.FileName.Trim(),
                 upload.ContentType,
-                upload.FileSize,
+                upload.Content!.LongLength,
                 upload.Description,
                 createdAt: null,
                 relativePath: storagePath.RelativePath,
@@ -210,6 +221,22 @@ internal sealed class DrawingRegistrationService
         if (!deleted)
         {
             return DrawingDeletionResult.Fail("図面削除に失敗しました");
+        }
+
+        if (!string.IsNullOrWhiteSpace(existing.StorageRoot) && !string.IsNullOrWhiteSpace(existing.RelativePath))
+        {
+            var fullPath = Path.Combine(existing.StorageRoot!, existing.RelativePath!);
+            try
+            {
+                if (File.Exists(fullPath))
+                {
+                    File.Delete(fullPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "図面ファイルの削除に失敗しました: {Path}", fullPath);
+            }
         }
 
         _logger.LogInformation("図面を削除しました: {DrawingId}", drawingId);

@@ -791,6 +791,8 @@
     private long _selectedDrawingFileSize;
     private string? _drawingError;
     private bool _drawingSaving;
+    private const long _drawingMaxFileSizeBytes = 20 * 1024 * 1024;
+    private const long _plcMaxFileSizeBytes = 10 * 1024 * 1024;
     private IReadOnlyList<PlcUnit> _plcUnits = Array.Empty<PlcUnit>();
     private bool _plcModalOpen;
     private Guid? _editingPlcId;
@@ -802,6 +804,7 @@
     private IBrowserFile? _commentFile;
     private string? _commentFileName;
     private long _commentFileSize;
+    private byte[]? _commentFileContent;
     private List<ProgramFileDraft> _programFiles = new();
     private Guid? _editingProgramFileId;
     private string _programDisplayNameInput = string.Empty;
@@ -1136,13 +1139,27 @@
         _drawingError = null;
         foreach (var file in args.GetMultipleFiles())
         {
+            try
+            {
+                await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var buffer = ms.ToArray();
+
             _drawingFiles.Add(new DrawingFileDraft
             {
                 Id = Guid.NewGuid(),
                 FileName = Path.GetFileName(file.Name),
                 ContentType = file.ContentType,
-                FileSize = file.Size
+                FileSize = buffer.LongLength,
+                Content = buffer
             });
+            }
+            catch (Exception ex)
+            {
+                _drawingError = $"ファイルの読み込みに失敗しました: {ex.Message}";
+                break;
+            }
         }
 
         await InvokeAsync(StateHasChanged);
@@ -1198,8 +1215,9 @@
                 {
                     FileName = file.FileName,
                     ContentType = string.IsNullOrWhiteSpace(file.ContentType) ? "application/octet-stream" : file.ContentType,
-                    FileSize = file.FileSize,
-                    Description = _drawingDescription
+                    FileSize = file.Content?.LongLength ?? file.FileSize,
+                    Description = _drawingDescription,
+                    Content = file.Content
                 }).ToList();
 
                 var batchResult = await DrawingService.RegisterManyAsync(_userId, SettingsSelectedAgentNumber, uploads);
@@ -1318,6 +1336,10 @@
         _editingProgramFileId = null;
         _programDisplayNameInput = string.Empty;
         _programFiles.Clear();
+        _commentFile = null;
+        _commentFileName = null;
+        _commentFileSize = 0;
+        _commentFileContent = null;
         ResetUnitInput();
     }
 
@@ -1333,13 +1355,27 @@
                 continue;
             }
 
-            _programFiles.Add(new ProgramFileDraft
+            try
             {
-                Id = Guid.NewGuid(),
-                FileName = fileName,
-                FileSize = file.Size,
-                DisplayName = fileName
-            });
+                await using var stream = file.OpenReadStream(_drawingMaxFileSizeBytes);
+                using var ms = new MemoryStream();
+                await stream.CopyToAsync(ms);
+                var buffer = ms.ToArray();
+
+                _programFiles.Add(new ProgramFileDraft
+                {
+                    Id = Guid.NewGuid(),
+                    FileName = fileName,
+                    FileSize = buffer.LongLength,
+                    DisplayName = fileName,
+                    Content = buffer
+                });
+            }
+            catch (Exception ex)
+            {
+                _plcError = $"プログラムファイルの読み込みに失敗しました: {ex.Message}";
+                break;
+            }
         }
 
         await InvokeAsync(StateHasChanged);
@@ -1351,6 +1387,19 @@
         _commentFile = file;
         _commentFileName = Path.GetFileName(file.Name);
         _commentFileSize = file.Size;
+        try
+        {
+            await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            _commentFileContent = ms.ToArray();
+            _commentFileSize = _commentFileContent.LongLength;
+        }
+        catch (Exception ex)
+        {
+            _plcError = $"コメントファイルの読み込みに失敗しました: {ex.Message}";
+            _commentFileContent = null;
+        }
         await InvokeAsync(StateHasChanged);
     }
 
@@ -1371,8 +1420,22 @@
             return;
         }
 
-        target.FileName = fileName;
-        target.FileSize = file.Size;
+        try
+        {
+            await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
+            using var ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            var buffer = ms.ToArray();
+
+            target.FileName = fileName;
+            target.FileSize = buffer.LongLength;
+            target.Content = buffer;
+        }
+        catch (Exception ex)
+        {
+            _plcError = $"プログラムファイルの読み込みに失敗しました: {ex.Message}";
+            return;
+        }
         if (string.IsNullOrWhiteSpace(target.DisplayName))
         {
             target.DisplayName = fileName;
@@ -1497,7 +1560,8 @@
                     {
                         FileName = _commentFileName ?? string.Empty,
                         ContentType = _commentFile.ContentType,
-                        FileSize = _commentFileSize
+                        FileSize = _commentFileSize,
+                        Content = _commentFileContent
                     }
                     : null,
                 ProgramFiles = _programFiles.Select(f => new PlcFileUpload
@@ -1506,7 +1570,8 @@
                     FileName = f.FileName,
                     DisplayName = f.DisplayName,
                     ContentType = "text/csv",
-                    FileSize = f.FileSize
+                    FileSize = f.FileSize,
+                    Content = f.Content
                 }).ToList()
             };
 
@@ -1659,6 +1724,7 @@
         public string FileName { get; set; } = string.Empty;
         public string? ContentType { get; set; }
         public long FileSize { get; set; }
+        public byte[]? Content { get; set; }
     }
 
     private sealed class ProgramFileDraft
@@ -1667,6 +1733,7 @@
         public string FileName { get; set; } = string.Empty;
         public long FileSize { get; set; }
         public string? DisplayName { get; set; }
+        public byte[]? Content { get; set; }
     }
 
     private enum AgentSettingsTab

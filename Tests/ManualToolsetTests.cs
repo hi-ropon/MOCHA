@@ -62,7 +62,7 @@ public class ManualToolsetTests
         var manualTools = new ManualToolset(new DummyManualStore(), NullLogger<ManualToolset>.Instance);
         var tool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
 
-        using var _ = manualTools.UseContext("conv-test", _ => { });
+        using var _ = manualTools.UseContext(new ChatContext("conv-test", Array.Empty<ChatTurn>()), _ => { });
         var result = await tool.RunAsync("iaiAgent", "ping");
 
         StringAssert.Contains(result, "tool-result");
@@ -120,12 +120,12 @@ public class ManualToolsetTests
 
     private sealed class DummyManualStore : IManualStore
     {
-        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy-content", 10));
         }
 
-        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy", "path", 1.0) };
             return Task.FromResult(hits);

@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Auth;
 using MOCHA.Models.Drawings;
@@ -32,7 +34,8 @@ public class DrawingRegistrationServiceTests
             {
                 FileName = "layout.pdf",
                 ContentType = "application/pdf",
-                FileSize = 1024
+                FileSize = 1024,
+                Content = new byte[1024]
             });
 
         Assert.IsFalse(result.Succeeded);
@@ -56,7 +59,8 @@ public class DrawingRegistrationServiceTests
                 FileName = "panel.dwg",
                 ContentType = "application/octet-stream",
                 FileSize = 2048,
-                Description = "制御盤図"
+                Description = "制御盤図",
+                Content = new byte[2048]
             });
 
         Assert.IsTrue(result.Succeeded);
@@ -84,14 +88,16 @@ public class DrawingRegistrationServiceTests
                 FileName = "layout.pdf",
                 ContentType = "application/pdf",
                 FileSize = 1024,
-                Description = "一括登録"
+                Description = "一括登録",
+                Content = new byte[1024]
             },
             new DrawingUpload
             {
                 FileName = "mechanical.dwg",
                 ContentType = "application/octet-stream",
                 FileSize = 2048,
-                Description = "一括登録"
+                Description = "一括登録",
+                Content = new byte[2048]
             }
         };
 
@@ -104,6 +110,45 @@ public class DrawingRegistrationServiceTests
         var stored = await repository.ListAsync("admin-batch", "D-10");
         var fileNames = stored.Select(x => x.FileName).OrderBy(x => x).ToList();
         CollectionAssert.AreEqual(new List<string> { "layout.pdf", "mechanical.dwg" }, fileNames);
+    }
+
+    /// <summary>
+    /// 図面登録時にファイルが保存される確認
+    /// </summary>
+    [TestMethod]
+    public async Task 図面登録でファイルが保存される()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mocha-drawings-{Guid.NewGuid():N}");
+        var builder = CreatePathBuilder(root, new DateTimeOffset(2024, 1, 2, 3, 4, 5, TimeSpan.Zero));
+        var repository = new InMemoryDrawingRepository();
+        var service = CreateService(isAdmin: true, repository, builder);
+
+        try
+        {
+            var result = await service.RegisterAsync(
+                "admin-save",
+                "S-01",
+                new DrawingUpload
+                {
+                    FileName = "save.dwg",
+                    ContentType = "application/octet-stream",
+                    FileSize = 3,
+                    Content = new byte[] { 1, 2, 3 }
+                });
+
+            Assert.IsTrue(result.Succeeded);
+
+            var expectedDir = Path.Combine(root, "S-01", "2024", "01", "02");
+            Assert.IsTrue(Directory.Exists(expectedDir));
+            Assert.AreEqual(1, Directory.GetFiles(expectedDir).Length);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
     }
 
     /// <summary>
@@ -121,13 +166,15 @@ public class DrawingRegistrationServiceTests
             {
                 FileName = "ok.pdf",
                 ContentType = "application/pdf",
-                FileSize = 1024
+                FileSize = 1024,
+                Content = new byte[1024]
             },
             new DrawingUpload
             {
                 FileName = "zero.pdf",
                 ContentType = "application/pdf",
-                FileSize = 0
+                FileSize = 0,
+                Content = Array.Empty<byte>()
             }
         };
 
@@ -179,7 +226,8 @@ public class DrawingRegistrationServiceTests
                 FileName = "line.png",
                 ContentType = "image/png",
                 FileSize = 5120,
-                Description = "初回レイアウト"
+                Description = "初回レイアウト",
+                Content = new byte[5120]
             });
         Assert.IsTrue(registered.Succeeded);
         var original = registered.Document!;
@@ -208,7 +256,8 @@ public class DrawingRegistrationServiceTests
             {
                 FileName = "delete.pdf",
                 ContentType = "application/pdf",
-                FileSize = 1024
+                FileSize = 1024,
+                Content = new byte[1024]
             });
         Assert.IsTrue(registered.Succeeded);
         var target = registered.Document!;
@@ -236,7 +285,8 @@ public class DrawingRegistrationServiceTests
             {
                 FileName = "keep.pdf",
                 ContentType = "application/pdf",
-                FileSize = 2048
+                FileSize = 2048,
+                Content = new byte[2048]
             });
         Assert.IsTrue(registered.Succeeded);
 
@@ -253,14 +303,23 @@ public class DrawingRegistrationServiceTests
     /// <param name="isAdmin">管理者判定</param>
     /// <param name="repository">図面リポジトリ</param>
     /// <returns>サービス</returns>
-    private static DrawingRegistrationService CreateService(bool isAdmin, IDrawingRepository? repository = null)
+    private static DrawingRegistrationService CreateService(bool isAdmin, IDrawingRepository? repository = null, IDrawingStoragePathBuilder? pathBuilder = null)
     {
         var roleProvider = new FakeRoleProvider(isAdmin);
         return new DrawingRegistrationService(
             repository ?? new InMemoryDrawingRepository(),
-            new FakePathBuilder(),
+            pathBuilder ?? new FakePathBuilder(),
             roleProvider,
             NullLogger<DrawingRegistrationService>.Instance);
+    }
+
+    private static DrawingStoragePathBuilder CreatePathBuilder(string rootPath, DateTimeOffset now)
+    {
+        var options = Options.Create(new DrawingStorageOptions
+        {
+            RootPath = rootPath
+        });
+        return new DrawingStoragePathBuilder(options, () => now);
     }
 
     /// <summary>
@@ -321,8 +380,11 @@ public class DrawingRegistrationServiceTests
     {
         public DrawingStoragePath Build(string agentNumber, string fileName)
         {
+            var root = Path.Combine(Path.GetTempPath(), "mocha-drawings-tests");
             var relative = $"{agentNumber}/{fileName}";
-            return new DrawingStoragePath("root", relative, "root/" + agentNumber, fileName, "root/" + relative);
+            var directory = Path.Combine(root, agentNumber);
+            var full = Path.Combine(root, relative);
+            return new DrawingStoragePath(root, relative, directory, fileName, full);
         }
     }
 }

@@ -258,7 +258,7 @@ public class AgentFrameworkOrchestratorTests
         /// <summary>
         /// マニュアル読取
         /// </summary>
-        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy", 5));
         }
@@ -266,7 +266,7 @@ public class AgentFrameworkOrchestratorTests
         /// <summary>
         /// マニュアル検索
         /// </summary>
-        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit>
             {

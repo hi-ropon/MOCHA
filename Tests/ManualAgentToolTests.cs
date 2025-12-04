@@ -29,7 +29,7 @@ public class ManualAgentToolTests
         var manualTools = new ManualToolset(new FakeManualStore(), NullLogger<ManualToolset>.Instance);
         var tool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
 
-        using var _ = manualTools.UseContext("conv-oriental", _ => { });
+        using var _ = manualTools.UseContext(new ChatContext("conv-oriental", Array.Empty<ChatTurn>()), _ => { });
         var result = await tool.RunAsync("orientalAgent", "冷却ファンの確認");
 
         StringAssert.Contains(result, "[oriental]");
@@ -45,7 +45,7 @@ public class ManualAgentToolTests
         var manualTools = new ManualToolset(new FakeManualStore(), NullLogger<ManualToolset>.Instance);
         var tool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
 
-        using var _ = manualTools.UseContext("conv-iai", _ => { });
+        using var _ = manualTools.UseContext(new ChatContext("conv-iai", Array.Empty<ChatTurn>()), _ => { });
         var result = await tool.RunAsync(string.Empty, "RCON 設定");
 
         StringAssert.Contains(result, "IAI-response");
@@ -122,12 +122,12 @@ public class ManualAgentToolTests
 
     private sealed class FakeManualStore : IManualStore
     {
-        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy", 10));
         }
 
-        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit> { new("dummy", "path", 1.0) };
             return Task.FromResult(hits);

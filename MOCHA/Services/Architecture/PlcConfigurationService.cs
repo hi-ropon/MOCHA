@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -15,6 +16,7 @@ internal sealed class PlcConfigurationService
 {
     private const long _maxFileSizeBytesm = 10 * 1024 * 1024;
     private readonly IPlcUnitRepository _repository;
+    private readonly IPlcFileStoragePathBuilder _pathBuilder;
     private readonly ILogger<PlcConfigurationService> _logger;
 
     /// <summary>
@@ -22,9 +24,14 @@ internal sealed class PlcConfigurationService
     /// </summary>
     /// <param name="repository">PLCユニットリポジトリ</param>
     /// <param name="logger">ロガー</param>
-    public PlcConfigurationService(IPlcUnitRepository repository, ILogger<PlcConfigurationService> logger)
+    /// <param name="pathBuilder">ファイル保存パスビルダー</param>
+    public PlcConfigurationService(
+        IPlcUnitRepository repository,
+        IPlcFileStoragePathBuilder pathBuilder,
+        ILogger<PlcConfigurationService> logger)
     {
         _repository = repository;
+        _pathBuilder = pathBuilder;
         _logger = logger;
     }
 
@@ -61,7 +68,13 @@ internal sealed class PlcConfigurationService
             return PlcUnitResult.Fail(validation.Error!);
         }
 
-        var unit = PlcUnit.Create(userId.Trim(), agentNumber.Trim(), draft);
+        var processed = await SaveFilesAsync(agentNumber.Trim(), draft, existing: null, cancellationToken);
+        if (!processed.Succeeded)
+        {
+            return PlcUnitResult.Fail(processed.Error!);
+        }
+
+        var unit = PlcUnit.Create(userId.Trim(), agentNumber.Trim(), processed.Draft);
         var saved = await _repository.AddAsync(unit, cancellationToken);
         _logger.LogInformation("PLCユニットを登録しました: {Name}", saved.Name);
         return PlcUnitResult.Success(saved);
@@ -95,8 +108,20 @@ internal sealed class PlcConfigurationService
             return PlcUnitResult.Fail("別の装置エージェントに紐づくため更新できません");
         }
 
-        var updated = existing.Update(draft);
+        var processed = await SaveFilesAsync(agentNumber.Trim(), draft, existing, cancellationToken);
+        if (!processed.Succeeded)
+        {
+            return PlcUnitResult.Fail(processed.Error!);
+        }
+
+        var updated = existing.Update(processed.Draft);
         updated = await _repository.UpdateAsync(updated, cancellationToken);
+
+        foreach (var oldPath in processed.PathsToDelete)
+        {
+            DeletePhysicalFile(oldPath);
+        }
+
         _logger.LogInformation("PLCユニットを更新しました: {Name}", updated.Name);
         return PlcUnitResult.Success(updated);
     }
@@ -126,6 +151,11 @@ internal sealed class PlcConfigurationService
         var deleted = await _repository.DeleteAsync(unitId, cancellationToken);
         if (deleted)
         {
+            DeletePhysicalFile(existing.CommentFile);
+            foreach (var file in existing.ProgramFiles ?? Array.Empty<PlcFileUpload>())
+            {
+                DeletePhysicalFile(file);
+            }
             _logger.LogInformation("PLCユニットを削除しました: {Id}", unitId);
         }
 
@@ -158,5 +188,191 @@ internal sealed class PlcConfigurationService
         }
 
         return (true, null);
+    }
+
+    private async Task<(bool Succeeded, string? Error, PlcUnitDraft Draft, List<string> PathsToDelete)> SaveFilesAsync(
+        string agentNumber,
+        PlcUnitDraft draft,
+        PlcUnit? existing,
+        CancellationToken cancellationToken)
+    {
+        var updatedComment = existing?.CommentFile;
+        var pathsToDelete = new List<string>();
+
+        if (draft.CommentFile is not null)
+        {
+            var commentContent = draft.CommentFile.Content;
+            if (commentContent is null || commentContent.Length == 0)
+            {
+                if (existing?.CommentFile is null)
+                {
+                    return (false, "コメントファイルの内容がありません", draft, pathsToDelete);
+                }
+            }
+            else
+            {
+                var commentPath = _pathBuilder.Build(agentNumber, draft.CommentFile.FileName, "comment");
+                if (!TryEnsureDirectory(commentPath.DirectoryPath, out var err))
+                {
+                    return (false, err, draft, pathsToDelete);
+                }
+
+                await File.WriteAllBytesAsync(commentPath.FullPath, commentContent, cancellationToken);
+                if (existing?.CommentFile is not null)
+                {
+                    var oldPath = Combine(existing.CommentFile);
+                    if (!string.IsNullOrWhiteSpace(oldPath))
+                    {
+                        pathsToDelete.Add(oldPath!);
+                    }
+                }
+
+                updatedComment = CloneFile(draft.CommentFile, commentContent.LongLength, commentPath.RelativePath, commentPath.RootPath);
+            }
+        }
+
+        var processedPrograms = new List<PlcFileUpload>();
+        var existingPrograms = existing?.ProgramFiles?.ToDictionary(f => f.Id, f => f) ?? new Dictionary<Guid, PlcFileUpload>();
+
+        foreach (var incoming in draft.ProgramFiles ?? Array.Empty<PlcFileUpload>())
+        {
+            var hasContent = incoming.Content is not null && incoming.Content.Length > 0;
+            if (!existingPrograms.TryGetValue(incoming.Id, out var current))
+            {
+                if (!hasContent)
+                {
+                    return (false, "プログラムファイルの内容がありません", draft, pathsToDelete);
+                }
+
+                var path = _pathBuilder.Build(agentNumber, incoming.FileName, "program");
+                if (!TryEnsureDirectory(path.DirectoryPath, out var err))
+                {
+                    return (false, err, draft, pathsToDelete);
+                }
+
+                await File.WriteAllBytesAsync(path.FullPath, incoming.Content!, cancellationToken);
+                processedPrograms.Add(CloneFile(incoming, incoming.Content!.LongLength, path.RelativePath, path.RootPath));
+            }
+            else if (hasContent)
+            {
+                var path = _pathBuilder.Build(agentNumber, incoming.FileName, "program");
+                if (!TryEnsureDirectory(path.DirectoryPath, out var err))
+                {
+                    return (false, err, draft, pathsToDelete);
+                }
+
+                await File.WriteAllBytesAsync(path.FullPath, incoming.Content!, cancellationToken);
+                var oldPath = Combine(current);
+                if (!string.IsNullOrWhiteSpace(oldPath))
+                {
+                    pathsToDelete.Add(oldPath!);
+                }
+
+                processedPrograms.Add(CloneFile(incoming, incoming.Content!.LongLength, path.RelativePath, path.RootPath));
+            }
+            else
+            {
+                processedPrograms.Add(current);
+            }
+        }
+
+        if (existingPrograms.Count > 0)
+        {
+            var incomingIds = new HashSet<Guid>((draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()).Select(f => f.Id));
+            foreach (var kv in existingPrograms)
+            {
+                if (!incomingIds.Contains(kv.Key))
+                {
+                    var oldPath = Combine(kv.Value);
+                    if (!string.IsNullOrWhiteSpace(oldPath))
+                    {
+                        pathsToDelete.Add(oldPath!);
+                    }
+                }
+            }
+        }
+
+        var updatedDraft = new PlcUnitDraft
+        {
+            Name = draft.Name,
+            Model = draft.Model,
+            Role = draft.Role,
+            IpAddress = draft.IpAddress,
+            Port = draft.Port,
+            Modules = draft.Modules,
+            CommentFile = updatedComment,
+            ProgramFiles = processedPrograms
+        };
+
+        return (true, null, updatedDraft, pathsToDelete);
+    }
+
+    private static bool TryEnsureDirectory(string directoryPath, out string? error)
+    {
+        try
+        {
+            Directory.CreateDirectory(directoryPath);
+            error = null;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            error = $"ファイル保存用ディレクトリ作成に失敗しました: {ex.Message}";
+            return false;
+        }
+    }
+
+    private static string? Combine(PlcFileUpload? file)
+    {
+        if (file is null || string.IsNullOrWhiteSpace(file.StorageRoot) || string.IsNullOrWhiteSpace(file.RelativePath))
+        {
+            return null;
+        }
+
+        return Path.Combine(file.StorageRoot, file.RelativePath);
+    }
+
+    private void DeletePhysicalFile(string? fullPath)
+    {
+        if (string.IsNullOrWhiteSpace(fullPath))
+        {
+            return;
+        }
+
+        try
+        {
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ファイル削除に失敗しました: {Path}", fullPath);
+        }
+    }
+
+    private void DeletePhysicalFile(PlcFileUpload? file)
+    {
+        var path = Combine(file);
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            DeletePhysicalFile(path);
+        }
+    }
+
+    private static PlcFileUpload CloneFile(PlcFileUpload source, long size, string? relativePath, string? storageRoot)
+    {
+        return new PlcFileUpload
+        {
+            Id = source.Id == Guid.Empty ? Guid.NewGuid() : source.Id,
+            FileName = source.FileName,
+            ContentType = source.ContentType,
+            FileSize = size,
+            DisplayName = source.DisplayName,
+            RelativePath = relativePath,
+            StorageRoot = storageRoot,
+            Content = null
+        };
     }
 }

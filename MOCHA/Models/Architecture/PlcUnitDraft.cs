@@ -51,7 +51,18 @@ public sealed class PlcUnitDraft
 
         if (CommentFile is not null)
         {
-            var validation = CommentFile.Validate(maxFileSizeBytes);
+            var normalizedComment = new PlcFileUpload
+            {
+                Id = CommentFile.Id,
+                FileName = CommentFile.FileName,
+                ContentType = CommentFile.ContentType,
+                FileSize = GetSize(CommentFile),
+                DisplayName = CommentFile.DisplayName,
+                RelativePath = CommentFile.RelativePath,
+                StorageRoot = CommentFile.StorageRoot
+            };
+
+            var validation = normalizedComment.Validate(maxFileSizeBytes);
             if (!validation.IsValid)
             {
                 return validation;
@@ -66,7 +77,18 @@ public sealed class PlcUnitDraft
         var programFiles = ProgramFiles ?? Array.Empty<PlcFileUpload>();
         foreach (var programFile in programFiles)
         {
-            var validation = programFile.Validate(maxFileSizeBytes);
+            var normalizedProgram = new PlcFileUpload
+            {
+                Id = programFile.Id,
+                FileName = programFile.FileName,
+                ContentType = programFile.ContentType,
+                FileSize = GetSize(programFile),
+                DisplayName = programFile.DisplayName,
+                RelativePath = programFile.RelativePath,
+                StorageRoot = programFile.StorageRoot
+            };
+
+            var validation = normalizedProgram.Validate(maxFileSizeBytes);
             if (!validation.IsValid)
             {
                 return validation;
@@ -84,5 +106,10 @@ public sealed class PlcUnitDraft
     private static bool IsCsvFile(string fileName)
     {
         return string.Equals(Path.GetExtension(fileName), ".csv", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static long GetSize(PlcFileUpload file)
+    {
+        return file.Content?.LongLength ?? file.FileSize;
     }
 }

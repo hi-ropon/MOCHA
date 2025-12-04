@@ -66,7 +66,9 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
             ? Guid.NewGuid().ToString("N")
             : context.ConversationId;
 
-        return Task.FromResult<IAsyncEnumerable<AgentEvent>>(ReplyStreamAsync(conversationId, userTurn, context, cancellationToken));
+        var scopedContext = context with { ConversationId = conversationId };
+
+        return Task.FromResult<IAsyncEnumerable<AgentEvent>>(ReplyStreamAsync(conversationId, userTurn, scopedContext, cancellationToken));
     }
 
     /// <summary>
@@ -100,7 +102,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
             channel.Writer.TryWrite(ev);
         }
 
-        using var _ = _tools.UseContext(conversationId, Emit);
+        using var _ = _tools.UseContext(context, Emit);
 
         var runTask = Task.Run(async () =>
         {

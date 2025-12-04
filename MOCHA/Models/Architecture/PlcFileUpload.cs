@@ -17,6 +17,12 @@ public sealed class PlcFileUpload
     public long FileSize { get; init; }
     /// <summary>表示名</summary>
     public string? DisplayName { get; init; }
+    /// <summary>保存相対パス</summary>
+    public string? RelativePath { get; init; }
+    /// <summary>保存ルート</summary>
+    public string? StorageRoot { get; init; }
+    /// <summary>ファイル内容</summary>
+    public byte[]? Content { get; init; }
 
     /// <summary>
     /// 入力値のバリデーション
