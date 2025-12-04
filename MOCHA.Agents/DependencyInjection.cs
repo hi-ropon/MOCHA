@@ -29,17 +29,18 @@ public static class DependencyInjection
         services.Configure<ManualStoreOptions>(configuration.GetSection("Manuals"));
         services.AddSingleton<ILlmChatClientFactory, LlmChatClientFactory>();
         services.AddSingleton<IManualStore, FileManualStore>();
-        services.AddSingleton<ManualToolset>();
-        services.AddSingleton<ManualAgentTool>();
-        services.AddSingleton<PlcAgentTool>();
+        services.AddScoped<ManualToolset>();
+        services.AddScoped<ManualAgentTool>();
+        services.AddScoped<PlcAgentTool>();
+        services.AddScoped<IPlcDataLoader, NullPlcDataLoader>();
         services.AddSingleton<IPlcDataStore, PlcDataStore>();
         services.AddSingleton<PlcProgramAnalyzer>();
         services.AddSingleton<PlcReasoner>();
         services.AddSingleton<PlcManualService>();
         services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>();
         services.AddSingleton<PlcToolset>();
-        services.AddSingleton<OrganizerToolset>();
-        services.AddSingleton<IAgentOrchestrator, AgentFrameworkOrchestrator>();
+        services.AddScoped<OrganizerToolset>();
+        services.AddScoped<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 
         services.AddSingleton<ITaskAgent, PlcTaskAgent>();
         services.AddSingleton<ITaskAgent, IaiTaskAgent>();

@@ -72,11 +72,17 @@ public sealed class ManualAgentTool
         {
             var normalized = NormalizeAgentName(agentName);
             var chatClient = _chatClientFactory.Create();
+            var description = normalized.Equals("plcAgent", StringComparison.OrdinalIgnoreCase)
+                ? PlcAgentInstructions.Description(normalized)
+                : ManualAgentInstructions.Description(normalized);
+            var instructions = normalized.Equals("plcAgent", StringComparison.OrdinalIgnoreCase)
+                ? PlcAgentInstructions.For(normalized)
+                : ManualAgentInstructions.For(normalized);
             var agent = new ChatClientAgent(
                 chatClient,
                 name: normalized,
-                description: ManualAgentInstructions.Description(normalized),
-                instructions: ManualAgentInstructions.For(normalized),
+                description: description,
+                instructions: instructions,
                 tools: _manualTools.All.Concat(extraTools ?? Enumerable.Empty<AITool>()).ToList());
 
             var messages = new List<ChatMessage>();

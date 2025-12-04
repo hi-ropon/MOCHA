@@ -23,6 +23,7 @@ public sealed class OrganizerToolset
     private readonly ManualAgentTool _manualAgentTool;
     private readonly PlcAgentTool _plcAgentTool;
     private readonly PlcToolset _plcToolset;
+    private readonly IPlcDataLoader _plcDataLoader;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -41,12 +42,14 @@ public sealed class OrganizerToolset
     /// <param name="manualAgentTool">マニュアルエージェントツール</param>
     /// <param name="plcAgentTool">PLC エージェントツール</param>
     /// <param name="plcToolset">PLC 専用ツールセット</param>
+    /// <param name="plcDataLoader">PLC データローダー</param>
     /// <param name="logger">ロガー</param>
     public OrganizerToolset(
         ManualToolset manualTools,
         ManualAgentTool manualAgentTool,
         PlcAgentTool plcAgentTool,
         PlcToolset plcToolset,
+        IPlcDataLoader plcDataLoader,
         ILogger<OrganizerToolset> logger)
     {
         _logger = logger;
@@ -54,6 +57,7 @@ public sealed class OrganizerToolset
         _manualAgentTool = manualAgentTool;
         _plcAgentTool = plcAgentTool;
         _plcToolset = plcToolset;
+        _plcDataLoader = plcDataLoader;
         _plcGatewayTool = AIFunctionFactory.Create(
             new Func<string?, CancellationToken, Task<string>>(RunPlcGatewayAsync),
             name: "read_plc_gateway",
@@ -155,6 +159,7 @@ public sealed class OrganizerToolset
         var ctx = _context.Value;
         try
         {
+            await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, cancellationToken);
             var extraTools = new[] { _plcGatewayTool };
             var contextHint = BuildPlcContextHint(optionsJson);
             var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);

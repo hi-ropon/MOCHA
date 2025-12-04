@@ -27,3 +27,5 @@ coverage*/
 Thumbs.db
 
 sample/
+MOCHA/DrawingStorage/
+MOCHA/PlcStorage/

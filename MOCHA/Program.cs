@@ -125,6 +125,7 @@ builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
 builder.Services.AddMochaAgents(builder.Configuration);
 builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
 builder.Services.AddSingleton<IManualStore, UserDrawingManualStore>();
+builder.Services.AddScoped<IPlcDataLoader, PlcAgentDataLoader>();
 builder.Services.AddScoped<IDevLoginService, DevLoginService>();
 builder.Services.AddScoped<IDevUserService, DevUserService>();
 builder.Services.AddScoped<IPasswordHasher<DevUserEntity>, PasswordHasher<DevUserEntity>>();

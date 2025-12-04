@@ -48,7 +48,8 @@ public class AgentFrameworkOrchestratorTests
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
+        var plcLoader = new NullPlcDataLoader();
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -100,7 +101,8 @@ public class AgentFrameworkOrchestratorTests
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
+        var plcLoader = new NullPlcDataLoader();
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,

@@ -11,7 +11,7 @@ namespace MOCHA.Agents.Infrastructure.Plc;
 /// </summary>
 public sealed class PlcProgramAnalyzer
 {
-    private static readonly Regex DeviceRegex = new(@"(?i)\b([dmxyct]\d+)\b", RegexOptions.Compiled);
+    private static readonly Regex _deviceRegex = new(@"(?i)\b([dmxyct]\d+)\b", RegexOptions.Compiled);
     private readonly IPlcDataStore _store;
 
     public PlcProgramAnalyzer(IPlcDataStore store)
@@ -68,7 +68,7 @@ public sealed class PlcProgramAnalyzer
                 var end = Math.Min(program.Count - 1, i + 1);
                 for (var cursor = start; cursor <= end; cursor++)
                 {
-                    foreach (Match m in DeviceRegex.Matches(program[cursor]))
+                    foreach (Match m in _deviceRegex.Matches(program[cursor]))
                     {
                         var value = m.Groups[1].Value;
                         if (!string.Equals(value, target, StringComparison.OrdinalIgnoreCase))

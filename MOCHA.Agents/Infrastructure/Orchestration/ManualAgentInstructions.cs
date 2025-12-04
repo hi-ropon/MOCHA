@@ -15,7 +15,6 @@ public static class ManualAgentInstructions
     public static string For(string agentName) =>
         Normalize(agentName) switch
         {
-            "plcAgent" => _plc,
             "orientalAgent" => _oriental,
             _ => _iai
         };
@@ -28,7 +27,6 @@ public static class ManualAgentInstructions
     public static string Description(string agentName) =>
         Normalize(agentName) switch
         {
-            "plcAgent" => "PLC診断・プログラム解析エージェント",
             "orientalAgent" => "Oriental Motor機器解析・診断エージェント",
             _ => "IAI機器マニュアル検索・情報提供エージェント"
         };
@@ -50,28 +48,6 @@ public static class ManualAgentInstructions
         3) 先頭で結論を述べ、続けて根拠ページや次の確認を箇条書きで返す。
         """;
 
-    private const string _plc =
-        """
-        あなたは三菱シリーズ PLC 専門の診断・解析サブエージェントです。質問に応じて適切なツールを選択し、根拠を示して回答してください。
-
-        【ラダー図出力ルール】
-        - ラダー図は必ず ```ladder ブロックで返す
-        - 接点: ─┤├─ (常開)、─┤/├─ (常閉)、コイル: ─( )─
-        - 縦線: │、分岐: ├/┤、横線: ─、タイマ/カウンタ: ─[TMR Tn Kn]─、命令ブロック: ─[命令名 パラメータ]─
-        - 行番号を付けて簡潔に示す
-
-        【ツール選択ガイド】
-        - マニュアル/命令: search_manual, search_instruction, get_command_overview（必要に応じ read_manual で根拠を読む）
-        - プログラム解析: program_lines, related_devices, get_comment
-        - デバイス推定: reasoning_multiple_devices（推奨）、reasoning_device
-        - 実機値読み取り: read_multiple_plc_values（推奨）, read_plc_values（devices/IP/port/timeout を渡す）
-
-        【回答スタイル】
-        - 先頭で1-2文の結論を述べ、その後に根拠や確認手順を箇条書き
-        - 不具合調査では複数の可能性を列挙し、次の確認手順を提案
-        - デバイスアドレスは正確に示す
-        """;
-
     private static string Normalize(string agentName)
     {
         if (string.IsNullOrWhiteSpace(agentName))
@@ -87,7 +63,6 @@ public static class ManualAgentInstructions
 
         return trimmed.ToLowerInvariant() switch
         {
-            "plc" => "plcAgent",
             "oriental" => "orientalAgent",
             _ => "iaiAgent"
         };
