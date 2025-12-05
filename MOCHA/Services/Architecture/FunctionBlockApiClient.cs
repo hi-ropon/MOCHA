@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
 using System.Text.Json;
 using MOCHA.Models.Architecture;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.Http;
+using System.Net;
 
 namespace MOCHA.Services.Architecture;
 
@@ -9,15 +12,19 @@ namespace MOCHA.Services.Architecture;
 /// </summary>
 public sealed class FunctionBlockApiClient
 {
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly NavigationManager _navigationManager;
+    private readonly IHttpContextAccessor _httpContextAccessor;
     private readonly JsonSerializerOptions _jsonOptions = new(JsonSerializerDefaults.Web);
 
     /// <summary>
     /// HTTPクライアントファクトリ注入による初期化
     /// </summary>
-    public FunctionBlockApiClient(IHttpClientFactory httpClientFactory)
+    public FunctionBlockApiClient(
+        NavigationManager navigationManager,
+        IHttpContextAccessor httpContextAccessor)
     {
-        _httpClientFactory = httpClientFactory;
+        _navigationManager = navigationManager;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     /// <summary>
@@ -25,7 +32,7 @@ public sealed class FunctionBlockApiClient
     /// </summary>
     public async Task<IReadOnlyList<PlcUnitSummary>> ListUnitsAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
-        using var client = _httpClientFactory.CreateClient();
+        using var client = CreateClient();
         var uri = $"api/plc-units?agentNumber={Uri.EscapeDataString(agentNumber)}";
         var response = await client.GetAsync(uri, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -43,7 +50,7 @@ public sealed class FunctionBlockApiClient
     /// </summary>
     public async Task<IReadOnlyList<FunctionBlockSummary>> ListAsync(Guid plcUnitId, string agentNumber, CancellationToken cancellationToken = default)
     {
-        using var client = _httpClientFactory.CreateClient();
+        using var client = CreateClient();
         var uri = $"api/plc-units/{plcUnitId}/function-blocks?agentNumber={Uri.EscapeDataString(agentNumber)}";
         var response = await client.GetAsync(uri, cancellationToken);
         if (!response.IsSuccessStatusCode)
@@ -61,7 +68,7 @@ public sealed class FunctionBlockApiClient
     /// </summary>
     public async Task<bool> DeleteAsync(Guid plcUnitId, Guid functionBlockId, string agentNumber, CancellationToken cancellationToken = default)
     {
-        using var client = _httpClientFactory.CreateClient();
+        using var client = CreateClient();
         var uri = $"api/plc-units/{plcUnitId}/function-blocks/{functionBlockId}?agentNumber={Uri.EscapeDataString(agentNumber)}";
         var response = await client.DeleteAsync(uri, cancellationToken);
         return response.IsSuccessStatusCode;
@@ -80,7 +87,7 @@ public sealed class FunctionBlockApiClient
         string programFileName,
         CancellationToken cancellationToken = default)
     {
-        using var client = _httpClientFactory.CreateClient();
+        using var client = CreateClient();
         using var content = new MultipartFormDataContent();
 
         content.Add(new StringContent(agentNumber), "AgentNumber");
@@ -97,6 +104,36 @@ public sealed class FunctionBlockApiClient
         var uri = $"api/plc-units/{plcUnitId}/function-blocks";
         var response = await client.PostAsync(uri, content, cancellationToken);
         return response.IsSuccessStatusCode;
+    }
+
+    private HttpClient CreateClient()
+    {
+        var baseUri = new Uri(_navigationManager.BaseUri);
+        var handler = new HttpClientHandler
+        {
+            UseCookies = true,
+            CookieContainer = new CookieContainer()
+        };
+
+        var cookies = _httpContextAccessor.HttpContext?.Request?.Cookies;
+        if (cookies is not null)
+        {
+            foreach (var pair in cookies)
+            {
+                handler.CookieContainer.Add(baseUri, new Cookie(pair.Key, pair.Value));
+            }
+        }
+
+        var client = new HttpClient(handler)
+        {
+            BaseAddress = baseUri
+        };
+        if (!client.DefaultRequestHeaders.Accept.Any())
+        {
+            client.DefaultRequestHeaders.Accept.ParseAdd("application/json");
+        }
+
+        return client;
     }
 }
 

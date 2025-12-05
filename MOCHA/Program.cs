@@ -77,6 +77,7 @@ builder.Services.AddAuthorization(options =>
 
 builder.Services.AddCascadingAuthenticationState();
 builder.Services.AddHttpClient();
+builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddRazorPages();
 builder.Services.AddControllersWithViews();

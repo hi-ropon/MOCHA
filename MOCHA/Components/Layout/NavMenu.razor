@@ -1,6 +1,7 @@
 @using System
 @using System.Linq
 @using System.Security.Claims
+@using System.Threading
 @using MOCHA.Services.Agents
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.AspNetCore.Components.Forms
@@ -11,6 +12,7 @@
 @using MOCHA.Models.Auth
 @using MOCHA.Models.Drawings
 @using MOCHA.Models.Architecture
+@using MOCHA.Services.Architecture
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
@@ -18,6 +20,7 @@
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
+@inject FunctionBlockService FunctionBlockService
 @inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
 @implements IDisposable
@@ -64,9 +67,6 @@
                     </svg>
                 </button>
             }
-        </div>
-        <div class="agent-extra">
-            <a class="agent-manage-link" href="/plc/function-blocks">ファンクションブロック管理</a>
         </div>
     </div>
 
@@ -413,7 +413,7 @@
                                 <span class="plc-file-icon drawing-drop-icon">⬆</span>
                                 <div class="drawing-drop-text">
                                     <div class="drop-primary">図面ファイルを追加</div>
-                                    <div class="drop-secondary">PDF / PNG / JPG ・ 複数選択・最大20MB/件</div>
+                                    <div class="drop-secondary">PDF / PNG / JPG ・ 複数選択・最大10MB/件</div>
                                 </div>
                             </div>
                             <div class="drawing-drop-pill">クリックまたはドロップで選択</div>
@@ -685,6 +685,116 @@
                     </div>
                 </div>
 
+                <div class="plc-modules-group">
+                    <div class="plc-module-header">
+                        <div>
+                            <div class="plc-file-title">ファンクションブロック</div>
+                            <div class="drawing-subtitle">ラベル/プログラムCSVをユニットに紐づけ</div>
+                        </div>
+                        <div class="plc-actions">
+                            <button type="button"
+                                    class="plc-module-action-btn drawing-edit-btn"
+                                    disabled="@(!_editingPlcId.HasValue || _fbLoading)"
+                                    @onclick="LoadFunctionBlocksAsync">
+                                再読込
+                            </button>
+                        </div>
+                    </div>
+
+                    @if (!_editingPlcId.HasValue)
+                    {
+                        <div class="drawing-empty">保存済みのPLCユニット編集時に利用できます</div>
+                    }
+                    else
+                    {
+                        <div class="plc-fb-upload">
+                            <div class="field">
+                                <label>ファンクションブロック名</label>
+                                <input class="agent-input" @bind="_fbName" placeholder="例: Start" />
+                            </div>
+                            <div class="plc-file-group">
+                                <div class="plc-file-title">ラベルCSV</div>
+                                <label class="plc-file-box" for="fbLabelInput">
+                                    <div class="plc-file-trigger">
+                                        <span class="plc-file-icon">⬆</span>
+                                        <div>
+                                            <div class="plc-file-trigger-main">CSVを選択</div>
+                                            <div class="plc-file-trigger-sub">コメントラベルを含むCSV</div>
+                                        </div>
+                                    </div>
+                                    <div class="plc-file-info">@(_fbLabelFileName ?? "未選択")</div>
+                                </label>
+                                <InputFile id="fbLabelInput"
+                                           OnChange="OnFunctionBlockLabelSelected"
+                                           accept=".csv,text/csv"
+                                           class="plc-file-input"
+                                           hidden />
+                            </div>
+                            <div class="plc-file-group">
+                                <div class="plc-file-title">プログラムCSV</div>
+                                <label class="plc-file-box" for="fbProgramInput">
+                                    <div class="plc-file-trigger">
+                                        <span class="plc-file-icon">⬆</span>
+                                        <div>
+                                            <div class="plc-file-trigger-main">CSVを選択</div>
+                                            <div class="plc-file-trigger-sub">命令リストを含むCSV</div>
+                                        </div>
+                                    </div>
+                                    <div class="plc-file-info">@(_fbProgramFileName ?? "未選択")</div>
+                                </label>
+                                <InputFile id="fbProgramInput"
+                                           OnChange="OnFunctionBlockProgramSelected"
+                                           accept=".csv,text/csv"
+                                           class="plc-file-input"
+                                           hidden />
+                            </div>
+                            <div class="plc-actions">
+                                <button type="button"
+                                        class="plc-module-action-btn drawing-edit-btn"
+                                        disabled="@(_fbUploading || string.IsNullOrWhiteSpace(_fbName))"
+                                        @onclick="UploadFunctionBlockAsync">
+                                    登録
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="plc-module-list">
+                            @if (_fbLoading)
+                            {
+                                <div class="drawing-empty">読み込み中...</div>
+                            }
+                            else if (_functionBlocks.Count == 0)
+                            {
+                                <div class="drawing-empty">登録済みのファンクションブロックがありません</div>
+                            }
+                            else
+                            {
+                                @foreach (var fb in _functionBlocks)
+                                {
+                                    <div class="plc-module-row">
+                                        <div class="plc-module-name">
+                                            <div class="plc-name">@fb.Name</div>
+                                            <div class="plc-meta">更新 @fb.UpdatedAt.ToLocalTime().ToString("MM/dd HH:mm")</div>
+                                        </div>
+                                        <div class="plc-actions">
+                                            <button type="button"
+                                                    class="plc-module-action-btn danger-btn"
+                                                    @onclick="() => DeleteFunctionBlockAsync(fb)">
+                                                削除
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+                    }
+
+                    @if (!string.IsNullOrWhiteSpace(_fbError))
+                    {
+                        <div class="drawing-error">@_fbError</div>
+                    }
+                </div>
+
                 @if (!string.IsNullOrWhiteSpace(_plcError))
                 {
                     <div class="drawing-error">@_plcError</div>
@@ -807,7 +917,7 @@
     private long _selectedDrawingFileSize;
     private string? _drawingError;
     private bool _drawingSaving;
-    private const long _drawingMaxFileSizeBytes = 20 * 1024 * 1024;
+    private const long _drawingMaxFileSizeBytes = 10 * 1024 * 1024;
     private const long _plcMaxFileSizeBytes = 10 * 1024 * 1024;
     private IReadOnlyList<PlcUnit> _plcUnits = Array.Empty<PlcUnit>();
     private bool _plcModalOpen;
@@ -831,6 +941,15 @@
     private bool _plcSaving;
     private string _unitNameInput = string.Empty;
     private string _unitSpecInput = string.Empty;
+    private List<FunctionBlock> _functionBlocks = new();
+    private string _fbName = string.Empty;
+    private IBrowserFile? _fbLabelFile;
+    private IBrowserFile? _fbProgramFile;
+    private string? _fbLabelFileName;
+    private string? _fbProgramFileName;
+    private bool _fbLoading;
+    private bool _fbUploading;
+    private string? _fbError;
 
     protected override async Task OnInitializedAsync()
     {
@@ -1158,19 +1277,19 @@
         {
             try
             {
-                await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
+                await using var stream = file.OpenReadStream(_drawingMaxFileSizeBytes);
                 using var ms = new MemoryStream();
                 await stream.CopyToAsync(ms);
                 var buffer = ms.ToArray();
 
-            _drawingFiles.Add(new DrawingFileDraft
-            {
-                Id = Guid.NewGuid(),
-                FileName = Path.GetFileName(file.Name),
-                ContentType = file.ContentType,
-                FileSize = buffer.LongLength,
-                Content = buffer
-            });
+                _drawingFiles.Add(new DrawingFileDraft
+                {
+                    Id = Guid.NewGuid(),
+                    FileName = Path.GetFileName(file.Name),
+                    ContentType = file.ContentType,
+                    FileSize = buffer.LongLength,
+                    Content = buffer
+                });
             }
             catch (Exception ex)
             {
@@ -1307,6 +1426,13 @@
         _programFiles.Clear();
         _unitInputs.Clear();
         ResetUnitInput();
+        _functionBlocks.Clear();
+        _fbName = string.Empty;
+        _fbLabelFile = null;
+        _fbProgramFile = null;
+        _fbLabelFileName = null;
+        _fbProgramFileName = null;
+        _fbError = null;
         _plcError = null;
         _plcModalOpen = true;
     }
@@ -1344,8 +1470,16 @@
             .Select(m => new PlcModuleDraft { Name = m.Name, Specification = m.Specification })
             .ToList();
         ResetUnitInput();
+        _functionBlocks.Clear();
+        _fbName = string.Empty;
+        _fbLabelFile = null;
+        _fbProgramFile = null;
+        _fbLabelFileName = null;
+        _fbProgramFileName = null;
+        _fbError = null;
         _plcError = null;
         _plcModalOpen = true;
+        await LoadFunctionBlocksAsync();
     }
 
     private void ClosePlcModal()
@@ -1361,6 +1495,13 @@
         _commentFileContent = null;
         _plcManufacturer = string.Empty;
         ResetUnitInput();
+        _functionBlocks.Clear();
+        _fbName = string.Empty;
+        _fbLabelFile = null;
+        _fbProgramFile = null;
+        _fbLabelFileName = null;
+        _fbProgramFileName = null;
+        _fbError = null;
     }
 
     private async Task OnProgramFilesSelected(InputFileChangeEventArgs args)
@@ -1377,7 +1518,7 @@
 
             try
             {
-                await using var stream = file.OpenReadStream(_drawingMaxFileSizeBytes);
+                await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
                 using var ms = new MemoryStream();
                 await stream.CopyToAsync(ms);
                 var buffer = ms.ToArray();
@@ -1555,6 +1696,174 @@
         ResetUnitInput();
     }
 
+    private async Task LoadFunctionBlocksAsync()
+    {
+        if (!_editingPlcId.HasValue || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            return;
+        }
+
+        _fbError = null;
+        _fbLoading = true;
+        try
+        {
+            if (_userId is null)
+            {
+                _fbError = "ユーザー情報を取得できませんでした";
+                return;
+            }
+
+            var list = await FunctionBlockService.ListAsync(_userId, SettingsSelectedAgentNumber, _editingPlcId.Value, CancellationToken.None);
+            _functionBlocks = list.ToList();
+        }
+        catch (Exception ex)
+        {
+            _fbError = $"ファンクションブロック取得に失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            _fbLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private void OnFunctionBlockLabelSelected(InputFileChangeEventArgs args)
+    {
+        _fbLabelFile = args.File;
+        _fbLabelFileName = Path.GetFileName(args.File.Name);
+    }
+
+    private void OnFunctionBlockProgramSelected(InputFileChangeEventArgs args)
+    {
+        _fbProgramFile = args.File;
+        _fbProgramFileName = Path.GetFileName(args.File.Name);
+    }
+
+    private async Task UploadFunctionBlockAsync()
+    {
+        if (!_editingPlcId.HasValue || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _fbError = "ユニットを選択してください";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_fbName))
+        {
+            _fbError = "ファンクションブロック名を入力してください";
+            return;
+        }
+
+        if (_fbLabelFile is null || _fbProgramFile is null)
+        {
+            _fbError = "ラベルCSVとプログラムCSVを選択してください";
+            return;
+        }
+
+        _fbError = null;
+        _fbUploading = true;
+        try
+        {
+            if (_userId is null)
+            {
+                _fbError = "ユーザー情報を取得できませんでした";
+                return;
+            }
+
+            var labelBytes = await ReadFileAsync(_fbLabelFile);
+            var programBytes = await ReadFileAsync(_fbProgramFile);
+
+            var draft = new FunctionBlockDraft
+            {
+                Name = _fbName.Trim(),
+                LabelFile = new PlcFileUpload
+                {
+                    FileName = _fbLabelFileName ?? _fbLabelFile.Name,
+                    ContentType = _fbLabelFile.ContentType,
+                    FileSize = labelBytes.Length,
+                    Content = labelBytes
+                },
+                ProgramFile = new PlcFileUpload
+                {
+                    FileName = _fbProgramFileName ?? _fbProgramFile.Name,
+                    ContentType = _fbProgramFile.ContentType,
+                    FileSize = programBytes.Length,
+                    Content = programBytes
+                }
+            };
+
+            var result = await FunctionBlockService.AddAsync(
+                _userId,
+                SettingsSelectedAgentNumber,
+                _editingPlcId.Value,
+                draft,
+                CancellationToken.None);
+
+            if (!result.Succeeded)
+            {
+                _fbError = result.Error ?? "ファンクションブロックの登録に失敗しました";
+                return;
+            }
+
+            _fbName = string.Empty;
+            _fbLabelFile = null;
+            _fbProgramFile = null;
+            _fbLabelFileName = null;
+            _fbProgramFileName = null;
+            await LoadFunctionBlocksAsync();
+        }
+        catch (Exception ex)
+        {
+            _fbError = $"ファンクションブロックの登録に失敗しました: {ex.Message}";
+        }
+        finally
+        {
+            _fbUploading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task DeleteFunctionBlockAsync(FunctionBlock fb)
+    {
+        if (!_editingPlcId.HasValue || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            return;
+        }
+
+        var confirmed = await JsRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"「{fb.Name}」を削除しますか？");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            if (_userId is null)
+            {
+                _fbError = "ユーザー情報を取得できませんでした";
+                return;
+            }
+
+            var ok = await FunctionBlockService.DeleteAsync(_userId, SettingsSelectedAgentNumber, _editingPlcId.Value, fb.Id, CancellationToken.None);
+            if (ok)
+            {
+                _functionBlocks.RemoveAll(x => x.Id == fb.Id);
+            }
+            else
+            {
+                _fbError = "削除に失敗しました";
+            }
+        }
+        catch (Exception ex)
+        {
+            _fbError = $"削除に失敗しました: {ex.Message}";
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
     private async Task SavePlcAsync()
     {
         if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
@@ -1674,6 +1983,14 @@
     private static bool IsCsvFile(string fileName)
     {
         return string.Equals(Path.GetExtension(fileName), ".csv", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static async Task<byte[]> ReadFileAsync(IBrowserFile file)
+    {
+        await using var stream = file.OpenReadStream(_plcMaxFileSizeBytes);
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        return ms.ToArray();
     }
 
     private static string FormatFileSize(long size)
