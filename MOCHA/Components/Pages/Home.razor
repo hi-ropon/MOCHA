@@ -103,7 +103,7 @@
 
             <div class="composer">
                 <div class="composer-inner">
-                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                    <textarea class="chat-input" placeholder="メッセージを入力 (Enter または Ctrl+Enter で送信)"
                               @bind="Input"
                               @bind:event="oninput"
                               @onkeydown="HandleKeyDown"
@@ -359,10 +359,17 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.CtrlKey && e.Key == "Enter")
+        if (e.Key != "Enter")
         {
-            await SendAsync();
+            return;
         }
+
+        if (e.ShiftKey)
+        {
+            return;
+        }
+
+        await SendAsync();
     }
 
     private void OnAgentStateChanged()
