@@ -111,6 +111,8 @@ builder.Services.AddScoped<DrawingContentReader>();
 builder.Services.AddScoped<DrawingRegistrationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();
+builder.Services.AddScoped<FunctionBlockApiClient>();
+builder.Services.AddScoped<FunctionBlockService>();
 builder.Services.AddSingleton<IDrawingStoragePathBuilder, DrawingStoragePathBuilder>();
 builder.Services.AddSingleton<IPlcFileStoragePathBuilder, PlcFileStoragePathBuilder>();
 builder.Services.AddScoped<IUserPreferencesStore, LocalStorageUserPreferencesStore>();

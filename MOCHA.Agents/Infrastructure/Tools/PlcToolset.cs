@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -102,8 +103,56 @@ public sealed class PlcToolset
 
             AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(GetCommandOverviewAsync),
                 name: "get_command_overview",
-                description: "命令一覧の概要を取得します。")
+                description: "命令一覧の概要を取得します。"),
+
+            AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(ListFunctionBlocksAsync),
+                name: "list_function_blocks",
+                description: "登録済みファンクションブロックの一覧を返します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(AnalyzeFunctionBlockAsync),
+                name: "analyze_function_block",
+                description: "指定ファンクションブロックのラベルとプログラムを要約します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchFunctionBlocksAsync),
+                name: "search_function_blocks",
+                description: "キーワードでファンクションブロックを検索します。")
         };
+    }
+
+    /// <summary>
+    /// データロード後のコンテキストヒントを構築
+    /// </summary>
+    /// <param name="optionsJson">ゲートウェイオプション</param>
+    /// <returns>ヒント文字列</returns>
+    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("登録済みPLCデータ概要");
+        sb.AppendLine($"- プログラムファイル: {_store.Programs.Count}");
+        sb.AppendLine($"- ファンクションブロック: {_store.FunctionBlocks.Count} ({(enableFunctionBlocks ? "enabled" : "disabled")})");
+
+        if (_store.FunctionBlocks.Count > 0)
+        {
+            var names = string.Join(", ", _store.FunctionBlocks.Take(5).Select(f => f.Name));
+            sb.AppendLine($"  例: {names}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(plcUnitId) || !string.IsNullOrWhiteSpace(plcUnitName))
+        {
+            sb.AppendLine($"対象ユニット: {plcUnitName ?? "(unknown)"} ({plcUnitId ?? "n/a"})");
+        }
+
+        if (!string.IsNullOrWhiteSpace(gatewayOptionsJson))
+        {
+            sb.AppendLine($"ゲートウェイオプション: {gatewayOptionsJson}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            sb.AppendLine($"補足: {note}");
+        }
+
+        return sb.ToString().Trim();
     }
 
     /// <summary>
@@ -197,6 +246,207 @@ public sealed class PlcToolset
             EmitCompleted(call, ex.Message, false, ex.Message);
             return Task.FromResult(ex.Message);
         }
+    }
+
+    /// <summary>
+    /// ファンクションブロック一覧取得
+    /// </summary>
+    private Task<string> ListFunctionBlocksAsync(CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("list_function_blocks", "{}");
+        EmitRequested(call);
+
+        try
+        {
+            var blocks = _store.FunctionBlocks
+                .Select(b => new
+                {
+                    b.Name,
+                    b.SafeName,
+                    HasLabel = !string.IsNullOrWhiteSpace(b.LabelContent),
+                    HasProgram = !string.IsNullOrWhiteSpace(b.ProgramContent),
+                    b.CreatedAt,
+                    b.UpdatedAt
+                })
+                .ToList();
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                count = blocks.Count,
+                functionBlocks = blocks
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "list_function_blocks 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// ファンクションブロック解析
+    /// </summary>
+    private Task<string> AnalyzeFunctionBlockAsync(string name, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("analyze_function_block", JsonSerializer.Serialize(new { name }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            if (!_store.TryGetFunctionBlock(name, out var block) || block is null)
+            {
+                const string notFound = "ファンクションブロックが見つかりません";
+                EmitCompleted(call, notFound, false, notFound);
+                return Task.FromResult(notFound);
+            }
+
+            var labels = ParseLabels(block.LabelContent);
+            var program = ParseProgram(block.ProgramContent);
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                name = block.Name,
+                labels,
+                program
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "analyze_function_block 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// ファンクションブロック検索
+    /// </summary>
+    private Task<string> SearchFunctionBlocksAsync(string keyword, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("search_function_blocks", JsonSerializer.Serialize(new { keyword }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            var matches = _store.FunctionBlocks
+                .Where(b => (!string.IsNullOrWhiteSpace(b.Name) && b.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(b.LabelContent) && b.LabelContent.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(b.ProgramContent) && b.ProgramContent.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                .Select(b => new { b.Name, b.SafeName, b.CreatedAt, b.UpdatedAt })
+                .ToList();
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                keyword,
+                matchCount = matches.Count,
+                results = matches
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "search_function_blocks 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    private static IReadOnlyCollection<Dictionary<string, string>> ParseLabels(string content)
+    {
+        var rows = ParseCsv(content);
+        if (rows.Count <= 1)
+        {
+            return Array.Empty<Dictionary<string, string>>();
+        }
+
+        var list = new List<Dictionary<string, string>>();
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count < 2 || row.All(string.IsNullOrWhiteSpace))
+            {
+                continue;
+            }
+
+            list.Add(new Dictionary<string, string>
+            {
+                ["name"] = row.ElementAtOrDefault(0)?.Trim() ?? string.Empty,
+                ["type"] = row.ElementAtOrDefault(1)?.Trim() ?? string.Empty,
+                ["description"] = row.ElementAtOrDefault(2)?.Trim() ?? string.Empty
+            });
+
+            if (list.Count >= 10)
+            {
+                break;
+            }
+        }
+
+        return list;
+    }
+
+    private static object ParseProgram(string content)
+    {
+        var rows = ParseCsv(content);
+        if (rows.Count <= 1)
+        {
+            return new { lineCount = 0 };
+        }
+
+        var instructions = new List<object>();
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count < 2 || row.All(string.IsNullOrWhiteSpace))
+            {
+                continue;
+            }
+
+            instructions.Add(new
+            {
+                line = row[0]?.Trim(),
+                instruction = string.Join(" ", row.Skip(1).Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v.Trim()))
+            });
+
+            if (instructions.Count >= 20)
+            {
+                break;
+            }
+        }
+
+        return new
+        {
+            lineCount = rows.Count - 1,
+            instructions
+        };
+    }
+
+    private static List<List<string>> ParseCsv(string content)
+    {
+        var result = new List<List<string>>();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return result;
+        }
+
+        var delimiter = content.Contains('\t') ? '\t' : ',';
+        using var reader = new System.IO.StringReader(content);
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            var parts = line.Split(delimiter);
+            result.Add(parts.ToList());
+        }
+
+        return result;
     }
 
     /// <summary>

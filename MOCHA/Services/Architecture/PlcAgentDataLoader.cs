@@ -34,7 +34,7 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
     }
 
     /// <inheritdoc />
-    public async Task LoadAsync(string? userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public async Task LoadAsync(string? userId, string? agentNumber, Guid? plcUnitId = null, bool includeFunctionBlocks = true, CancellationToken cancellationToken = default)
     {
         _store.Clear();
 
@@ -44,6 +44,11 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
         }
 
         var units = await _repository.ListAsync(userId, agentNumber, cancellationToken);
+        if (plcUnitId is not null)
+        {
+            units = units.Where(u => u.Id == plcUnitId.Value).ToList();
+        }
+
         if (units.Count == 0)
         {
             return;
@@ -51,6 +56,7 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
 
         var comments = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         var programs = new List<ProgramFile>();
+        var functionBlocks = new List<FunctionBlockData>();
 
         foreach (var unit in units)
         {
@@ -63,10 +69,19 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
             {
                 await TryLoadProgramAsync(program, programs, cancellationToken);
             }
+
+            if (includeFunctionBlocks)
+            {
+                foreach (var fb in unit.FunctionBlocks ?? Array.Empty<FunctionBlock>())
+                {
+                    await TryLoadFunctionBlockAsync(fb, functionBlocks, cancellationToken);
+                }
+            }
         }
 
         _store.SetComments(comments);
         _store.SetPrograms(programs);
+        _store.SetFunctionBlocks(includeFunctionBlocks ? functionBlocks : Array.Empty<FunctionBlockData>());
     }
 
     private async Task TryLoadCommentsAsync(PlcFileUpload file, IDictionary<string, string> comments, CancellationToken cancellationToken)
@@ -153,6 +168,27 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
         }
     }
 
+    private async Task TryLoadFunctionBlockAsync(FunctionBlock block, IList<FunctionBlockData> destination, CancellationToken cancellationToken)
+    {
+        var labelPath = BuildFullPath(block.LabelFile);
+        var programPath = BuildFullPath(block.ProgramFile);
+        if (string.IsNullOrWhiteSpace(labelPath) || string.IsNullOrWhiteSpace(programPath))
+        {
+            return;
+        }
+
+        try
+        {
+            var labelContent = await ReadFileWithFallbackAsync(labelPath, cancellationToken);
+            var programContent = await ReadFileWithFallbackAsync(programPath, cancellationToken);
+            destination.Add(new FunctionBlockData(block.Name, block.SafeName, labelContent ?? string.Empty, programContent ?? string.Empty, block.CreatedAt, block.UpdatedAt));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ファンクションブロック読取に失敗しました: {Name}", block.Name);
+        }
+    }
+
     private static string? BuildFullPath(PlcFileUpload file)
     {
         if (string.IsNullOrWhiteSpace(file.StorageRoot) || string.IsNullOrWhiteSpace(file.RelativePath))
@@ -167,6 +203,42 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
         }
 
         return Path.Combine(root, file.RelativePath);
+    }
+
+    private async Task<string?> ReadFileWithFallbackAsync(string path, CancellationToken cancellationToken)
+    {
+        foreach (var encoding in new[] { "utf-8", "shift_jis", "cp932", "utf-16", "utf-16le", "utf-16be" })
+        {
+            try
+            {
+                var content = await File.ReadAllTextAsync(path, Encoding.GetEncoding(encoding), cancellationToken);
+                if (content.Contains('\0'))
+                {
+                    continue;
+                }
+
+                return content;
+            }
+            catch (DecoderFallbackException)
+            {
+                continue;
+            }
+            catch (ArgumentException)
+            {
+                continue;
+            }
+        }
+
+        try
+        {
+            var raw = await File.ReadAllBytesAsync(path, cancellationToken);
+            return Encoding.UTF8.GetString(raw);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "ファイル読取に失敗しました: {Path}", path);
+            return null;
+        }
     }
 
     private static string[] Split(string line)

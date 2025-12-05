@@ -164,9 +164,11 @@ public sealed class OrganizerToolset
         var ctx = _context.Value;
         try
         {
-            await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, cancellationToken);
+            var parsedOptions = ParsePlcOptions(optionsJson);
+            var unitId = parsedOptions.PlcUnitId is not null && Guid.TryParse(parsedOptions.PlcUnitId, out var guid) ? guid : (Guid?)null;
+            await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
             var extraTools = new[] { _plcGatewayTool };
-            var contextHint = BuildPlcContextHint(optionsJson);
+            var contextHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note);
             var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
@@ -176,6 +178,23 @@ public sealed class OrganizerToolset
             _logger.LogError(ex, "invoke_plc_agent 実行に失敗しました。");
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Agent 実行エラー: {ex.Message}";
+        }
+    }
+
+    private static PlcAgentOptions ParsePlcOptions(string? optionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(optionsJson))
+        {
+            return new PlcAgentOptions();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<PlcAgentOptions>(optionsJson, new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? new PlcAgentOptions();
+        }
+        catch
+        {
+            return new PlcAgentOptions { GatewayOptionsJson = optionsJson };
         }
     }
 
@@ -245,21 +264,6 @@ public sealed class OrganizerToolset
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Gateway 実行エラー: {ex.Message}";
         }
-    }
-
-    /// <summary>
-    /// PLC エージェントへのコンテキストヒント生成
-    /// </summary>
-    /// <param name="optionsJson">ゲートウェイオプション</param>
-    /// <returns>システムメッセージ</returns>
-    private static string? BuildPlcContextHint(string? optionsJson)
-    {
-        if (string.IsNullOrWhiteSpace(optionsJson))
-        {
-            return "ゲートウェイ読み取りが必要なら read_plc_gateway を呼び出して devices/IP/port を指定してください。";
-        }
-
-        return $"ゲートウェイ読み取りに使う optionsJson: {optionsJson}";
     }
 
     private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink)

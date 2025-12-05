@@ -156,6 +156,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             entity.CommentFileJson = SerializeFile(unit.CommentFile);
                 entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
                 entity.ModulesJson = SerializeModules(unit.Modules);
+                entity.FunctionBlocksJson = SerializeFunctionBlocks(unit.FunctionBlocks);
                 entity.CreatedAt = unit.CreatedAt;
                 entity.UpdatedAt = unit.UpdatedAt;
             }
@@ -193,6 +194,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             CommentFileJson = SerializeFile(unit.CommentFile),
             ProgramFilesJson = SerializeFiles(unit.ProgramFiles),
             ModulesJson = SerializeModules(unit.Modules),
+            FunctionBlocksJson = SerializeFunctionBlocks(unit.FunctionBlocks),
             CreatedAt = unit.CreatedAt,
             UpdatedAt = unit.UpdatedAt
         };
@@ -203,6 +205,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         var commentFile = DeserializeFile(entity.CommentFileJson);
         var programFiles = DeserializeFiles(entity.ProgramFilesJson);
         var modules = DeserializeModules(entity.ModulesJson);
+        var functionBlocks = DeserializeFunctionBlocks(entity.FunctionBlocksJson);
 
         return PlcUnit.Restore(
             entity.Id,
@@ -217,6 +220,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             commentFile,
             programFiles,
             modules,
+            functionBlocks,
             entity.CreatedAt,
             entity.UpdatedAt);
     }
@@ -234,6 +238,11 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
     private string SerializeModules(IReadOnlyCollection<PlcUnitModule> modules)
     {
         return JsonSerializer.Serialize(modules ?? Array.Empty<PlcUnitModule>(), _serializerOptions);
+    }
+
+    private string SerializeFunctionBlocks(IReadOnlyCollection<FunctionBlock> functionBlocks)
+    {
+        return JsonSerializer.Serialize(functionBlocks ?? Array.Empty<FunctionBlock>(), _serializerOptions);
     }
 
     private PlcFileUpload? DeserializeFile(string? json)
@@ -263,6 +272,17 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         return modules ?? Array.Empty<PlcUnitModule>();
     }
 
+    private IReadOnlyCollection<FunctionBlock> DeserializeFunctionBlocks(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return Array.Empty<FunctionBlock>();
+        }
+
+        var blocks = JsonSerializer.Deserialize<IReadOnlyCollection<FunctionBlock>>(json, _serializerOptions);
+        return blocks ?? Array.Empty<FunctionBlock>();
+    }
+
     private async Task EnsureTableIfMissingAsync(CancellationToken cancellationToken)
     {
         var connection = _dbContext.Database.GetDbConnection();
@@ -285,6 +305,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
                 CommentFileJson TEXT NULL,
                 ProgramFilesJson TEXT NULL,
                 ModulesJson TEXT NULL,
+                FunctionBlocksJson TEXT NULL,
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
@@ -293,6 +314,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
 
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
         await EnsureManufacturerColumnAsync(cancellationToken);
+        await EnsureFunctionBlocksColumnAsync(cancellationToken);
     }
 
     private static bool IsMissingTable(Exception exception, string tableName)
@@ -348,6 +370,45 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         }
 
         const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN Manufacturer TEXT NULL;";
+        await _dbContext.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+    }
+
+    private async Task EnsureFunctionBlocksColumnAsync(CancellationToken cancellationToken)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        var shouldClose = connection.State != System.Data.ConnectionState.Open;
+        if (shouldClose)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
+        var hasColumn = false;
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "FunctionBlocksJson", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+
+        if (hasColumn)
+        {
+            return;
+        }
+
+        const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN FunctionBlocksJson TEXT NULL;";
         await _dbContext.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

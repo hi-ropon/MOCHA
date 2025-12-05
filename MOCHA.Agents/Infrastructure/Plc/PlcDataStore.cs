@@ -18,15 +18,19 @@ public sealed class PlcDataStore : IPlcDataStore
 {
     private readonly ConcurrentDictionary<string, string> _comments = new();
     private readonly ConcurrentDictionary<string, IReadOnlyList<string>> _programs = new();
+    private readonly ConcurrentDictionary<string, FunctionBlockData> _functionBlocks = new(StringComparer.OrdinalIgnoreCase);
 
     /// <inheritdoc />
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Programs => _programs;
+    /// <inheritdoc />
+    public IReadOnlyCollection<FunctionBlockData> FunctionBlocks => _functionBlocks.Values.ToList();
 
     /// <inheritdoc />
     public void Clear()
     {
         _comments.Clear();
         _programs.Clear();
+        _functionBlocks.Clear();
     }
 
     /// <inheritdoc />
@@ -57,6 +61,21 @@ public sealed class PlcDataStore : IPlcDataStore
             }
 
             _programs[program.Name] = program.Lines.ToList();
+        }
+    }
+
+    /// <inheritdoc />
+    public void SetFunctionBlocks(IEnumerable<FunctionBlockData> blocks)
+    {
+        _functionBlocks.Clear();
+        foreach (var block in blocks ?? Enumerable.Empty<FunctionBlockData>())
+        {
+            if (string.IsNullOrWhiteSpace(block.Name))
+            {
+                continue;
+            }
+
+            _functionBlocks[block.Name.Trim()] = block;
         }
     }
 
@@ -132,6 +151,18 @@ public sealed class PlcDataStore : IPlcDataStore
         }
 
         SetPrograms(programs);
+    }
+
+    /// <inheritdoc />
+    public bool TryGetFunctionBlock(string name, out FunctionBlockData? block)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            block = null;
+            return false;
+        }
+
+        return _functionBlocks.TryGetValue(name.Trim(), out block);
     }
 
     private static string[] SplitCsvLine(string line)

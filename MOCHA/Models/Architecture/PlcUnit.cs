@@ -24,6 +24,7 @@ public sealed class PlcUnit
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
     /// <param name="modules">モジュール一覧</param>
+    /// <param name="functionBlocks">ファンクションブロック一覧</param>
     /// <param name="createdAt">作成日時</param>
     /// <param name="updatedAt">更新日時</param>
     private PlcUnit(
@@ -39,6 +40,7 @@ public sealed class PlcUnit
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
+        IReadOnlyCollection<FunctionBlock> functionBlocks,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -54,6 +56,7 @@ public sealed class PlcUnit
         CommentFile = commentFile;
         ProgramFiles = programFiles;
         Modules = modules;
+        FunctionBlocks = functionBlocks;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
     }
@@ -82,6 +85,8 @@ public sealed class PlcUnit
     public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; }
     /// <summary>モジュール一覧</summary>
     public IReadOnlyCollection<PlcUnitModule> Modules { get; }
+    /// <summary>ファンクションブロック一覧</summary>
+    public IReadOnlyCollection<FunctionBlock> FunctionBlocks { get; }
     /// <summary>作成日時</summary>
     public DateTimeOffset CreatedAt { get; }
     /// <summary>更新日時</summary>
@@ -111,6 +116,7 @@ public sealed class PlcUnit
             NormalizeFile(draft.CommentFile),
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
+            Array.Empty<FunctionBlock>(),
             timestamp,
             timestamp);
     }
@@ -146,6 +152,7 @@ public sealed class PlcUnit
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
+        IReadOnlyCollection<FunctionBlock> functionBlocks,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -162,6 +169,7 @@ public sealed class PlcUnit
             commentFile,
             programFiles ?? Array.Empty<PlcFileUpload>(),
             modules ?? Array.Empty<PlcUnitModule>(),
+            functionBlocks ?? Array.Empty<FunctionBlock>(),
             createdAt,
             updatedAt);
     }
@@ -186,6 +194,32 @@ public sealed class PlcUnit
             NormalizeFile(draft.CommentFile) ?? CommentFile,
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
+            FunctionBlocks,
+            CreatedAt,
+            DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>
+    /// ファンクションブロックを差し替え
+    /// </summary>
+    /// <param name="functionBlocks">差し替え後一覧</param>
+    /// <returns>更新後ユニット</returns>
+    public PlcUnit WithFunctionBlocks(IReadOnlyCollection<FunctionBlock> functionBlocks)
+    {
+        return new PlcUnit(
+            Id,
+            UserId,
+            AgentNumber,
+            Name,
+            Manufacturer,
+            Model,
+            Role,
+            IpAddress,
+            Port,
+            CommentFile,
+            ProgramFiles,
+            Modules,
+            functionBlocks,
             CreatedAt,
             DateTimeOffset.UtcNow);
     }

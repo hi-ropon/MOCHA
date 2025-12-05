@@ -13,6 +13,8 @@ public interface IPlcDataLoader
     /// </summary>
     /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="plcUnitId">特定ユニットID（省略可）</param>
+    /// <param name="includeFunctionBlocks">ファンクションブロックをロードするか</param>
     /// <param name="cancellationToken">キャンセル通知</param>
-    Task LoadAsync(string? userId, string? agentNumber, CancellationToken cancellationToken = default);
+    Task LoadAsync(string? userId, string? agentNumber, Guid? plcUnitId = null, bool includeFunctionBlocks = true, CancellationToken cancellationToken = default);
 }

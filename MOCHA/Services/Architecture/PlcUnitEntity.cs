@@ -31,6 +31,8 @@ internal sealed class PlcUnitEntity
     public string? ProgramFilesJson { get; set; }
     /// <summary>モジュールJSON</summary>
     public string? ModulesJson { get; set; }
+    /// <summary>ファンクションブロックJSON</summary>
+    public string? FunctionBlocksJson { get; set; }
     /// <summary>作成日時</summary>
     public DateTimeOffset CreatedAt { get; set; }
     /// <summary>更新日時</summary>

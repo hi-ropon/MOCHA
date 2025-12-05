@@ -10,7 +10,7 @@ namespace MOCHA.Agents.Infrastructure.Plc;
 public sealed class NullPlcDataLoader : IPlcDataLoader
 {
     /// <inheritdoc />
-    public Task LoadAsync(string? userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public Task LoadAsync(string? userId, string? agentNumber, Guid? plcUnitId = null, bool includeFunctionBlocks = true, CancellationToken cancellationToken = default)
     {
         return Task.CompletedTask;
     }
