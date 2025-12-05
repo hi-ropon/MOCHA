@@ -53,13 +53,14 @@ internal sealed class DrawingStoragePathBuilder : IDrawingStoragePathBuilder
         var now = _clock();
         var safeAgent = Sanitize(agentNumber);
         var safeFileName = Sanitize(fileName);
+        var resolvedRoot = ResolveRoot(_options.RootPath);
         var stampedFileName = $"{now:yyyyMMddHHmmssfff}_{safeFileName}";
         var relativePath = Path.Combine(safeAgent, stampedFileName);
-        var directoryPath = Path.Combine(_options.RootPath, safeAgent);
-        var fullPath = Path.Combine(_options.RootPath, relativePath);
+        var directoryPath = Path.Combine(resolvedRoot, safeAgent);
+        var fullPath = Path.Combine(resolvedRoot, relativePath);
 
         return new DrawingStoragePath(
-            _options.RootPath,
+            resolvedRoot,
             relativePath,
             directoryPath,
             stampedFileName,
@@ -76,5 +77,15 @@ internal sealed class DrawingStoragePathBuilder : IDrawingStoragePathBuilder
 
         var result = builder.ToString();
         return string.IsNullOrWhiteSpace(result) ? "unknown" : result;
+    }
+
+    private static string ResolveRoot(string rootPath)
+    {
+        if (Path.IsPathRooted(rootPath))
+        {
+            return rootPath;
+        }
+
+        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), rootPath));
     }
 }

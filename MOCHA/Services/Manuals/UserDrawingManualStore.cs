@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -9,6 +10,7 @@ using MOCHA.Agents.Infrastructure.Options;
 using MOCHA.Models.Drawings;
 using MOCHA.Services.Drawings;
 using Microsoft.Extensions.DependencyInjection;
+using SimMetrics.Net.Metric;
 
 namespace MOCHA.Services.Manuals;
 
@@ -20,6 +22,7 @@ internal sealed class UserDrawingManualStore : IManualStore
     private readonly FileManualStore _fileStore;
     private readonly ILogger<UserDrawingManualStore> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
+    private readonly JaroWinkler _fuzzyMetric = new();
 
     /// <summary>
     /// ファイルストアと図面リポジトリを注入して初期化
@@ -71,7 +74,7 @@ internal sealed class UserDrawingManualStore : IManualStore
     {
         if (relativePath.StartsWith("drawing:", StringComparison.OrdinalIgnoreCase))
         {
-            return await ReadDrawingAsync(relativePath, context, cancellationToken);
+            return await ReadDrawingAsync(relativePath, context, maxBytes, cancellationToken);
         }
 
         return await _fileStore.ReadAsync(agentName, relativePath, maxBytes, context, cancellationToken);
@@ -88,7 +91,8 @@ internal sealed class UserDrawingManualStore : IManualStore
         }
 
         var tokens = SplitTokens(query);
-        if (tokens.Count == 0)
+        var normalizedQuery = Normalize(query);
+        if (string.IsNullOrWhiteSpace(normalizedQuery))
         {
             return Array.Empty<ManualHit>();
         }
@@ -103,7 +107,11 @@ internal sealed class UserDrawingManualStore : IManualStore
             foreach (var drawing in drawings)
             {
                 var score = Score(drawing.FileName, tokens) + Score(drawing.Description ?? string.Empty, tokens);
-                if (score <= 0)
+                var fuzzy = FuzzyScore(drawing.FileName, tokens, normalizedQuery) +
+                            FuzzyScore(drawing.Description ?? string.Empty, tokens, normalizedQuery) +
+                            FuzzyScore(StripTimestampPrefix(drawing.FileName), tokens, normalizedQuery);
+                var total = score + fuzzy;
+                if (total <= 0)
                 {
                     continue;
                 }
@@ -111,7 +119,7 @@ internal sealed class UserDrawingManualStore : IManualStore
                 var title = string.IsNullOrWhiteSpace(drawing.Description)
                     ? drawing.FileName
                     : $"{drawing.FileName} - {drawing.Description}";
-                hits.Add(new ManualHit(title, $"drawing:{drawing.Id}", score));
+                hits.Add(new ManualHit(title, $"drawing:{drawing.Id}", total));
             }
 
             return hits;
@@ -126,6 +134,7 @@ internal sealed class UserDrawingManualStore : IManualStore
     private async Task<ManualContent?> ReadDrawingAsync(
         string relativePath,
         ManualSearchContext? context,
+        int? maxBytes,
         CancellationToken cancellationToken)
     {
         if (context is null || string.IsNullOrWhiteSpace(context.UserId) || string.IsNullOrWhiteSpace(context.AgentNumber))
@@ -140,12 +149,17 @@ internal sealed class UserDrawingManualStore : IManualStore
 
         using var scope = _scopeFactory.CreateScope();
         var repository = scope.ServiceProvider.GetRequiredService<IDrawingRepository>();
+        var catalog = scope.ServiceProvider.GetRequiredService<DrawingCatalog>();
+        var reader = scope.ServiceProvider.GetRequiredService<DrawingContentReader>();
+
         var drawing = await repository.GetAsync(id, cancellationToken);
         if (drawing is null || !string.Equals(drawing.UserId, context.UserId, StringComparison.Ordinal) ||
             !string.Equals(drawing.AgentNumber, context.AgentNumber, StringComparison.Ordinal))
         {
             return null;
         }
+
+        var file = await catalog.FindAsync(context.UserId, context.AgentNumber, id, cancellationToken);
 
         var builder = new StringBuilder();
         builder.AppendLine($"図面: {drawing.FileName}");
@@ -155,7 +169,32 @@ internal sealed class UserDrawingManualStore : IManualStore
         }
 
         builder.AppendLine($"サイズ: {drawing.FileSize} bytes");
-        builder.AppendLine("ファイル本体のプレビューはチャットからは参照できません。必要に応じて管理者に確認してください。");
+
+        if (file is not null && file.Exists)
+        {
+            var result = await reader.ReadAsync(file, maxBytes: maxBytes, query: context.Query, cancellationToken: cancellationToken);
+            if (result.Succeeded && !string.IsNullOrWhiteSpace(result.Content))
+            {
+                builder.AppendLine($"ヒット総数: {result.TotalHits}");
+                builder.AppendLine(result.Content);
+                if (result.IsTruncated && !result.Content.Contains("※読み取りを途中で打ち切りました", StringComparison.Ordinal))
+                {
+                    builder.AppendLine("※読み取りを途中で打ち切りました");
+                }
+            }
+            else if (!string.IsNullOrWhiteSpace(result.Error))
+            {
+                builder.AppendLine(result.Error);
+            }
+            else if (!string.IsNullOrWhiteSpace(result.Content))
+            {
+                builder.AppendLine(result.Content);
+            }
+        }
+        else
+        {
+            builder.AppendLine("図面ファイルが見つかりません。管理者に確認してください。");
+        }
 
         var content = builder.ToString().TrimEnd();
         return new ManualContent(relativePath, content, content.Length);
@@ -183,5 +222,40 @@ internal sealed class UserDrawingManualStore : IManualStore
         }
 
         return score;
+    }
+
+    private double FuzzyScore(string text, IReadOnlyCollection<string> tokens, string normalizedQuery)
+    {
+        if (string.IsNullOrWhiteSpace(text))
+        {
+            return 0;
+        }
+
+        var normalized = Normalize(text);
+        var candidates = new List<double>();
+        if (!string.IsNullOrWhiteSpace(normalizedQuery))
+        {
+            candidates.Add(_fuzzyMetric.GetSimilarity(normalized, normalizedQuery));
+        }
+
+        foreach (var token in tokens)
+        {
+            candidates.Add(_fuzzyMetric.GetSimilarity(normalized, token));
+        }
+
+        var best = candidates.Count == 0 ? 0 : candidates.Max();
+        return best >= 0.6 ? best : 0;
+    }
+
+    private static string StripTimestampPrefix(string text)
+    {
+        return Regex.Replace(text, @"^\d+[_-]?", string.Empty);
+    }
+
+    private static string Normalize(string? text)
+    {
+        return (text ?? string.Empty)
+            .ToLowerInvariant()
+            .Normalize(NormalizationForm.FormKC);
     }
 }

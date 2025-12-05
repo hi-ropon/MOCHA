@@ -84,6 +84,10 @@ public sealed class ManualToolset
 
         try
         {
+            if (ctx is not null)
+            {
+                ctx.LastQuery = query;
+            }
             var manualContext = ctx?.ToManualContext();
             var hits = await _manuals.SearchAsync(normalized, query, manualContext, cancellationToken);
             var payload = JsonSerializer.Serialize(hits, _serializerOptions);
@@ -116,7 +120,9 @@ public sealed class ManualToolset
         try
         {
             var manualContext = ctx?.ToManualContext();
-            var content = await _manuals.ReadAsync(normalized, relativePath, maxBytes: 800, context: manualContext, cancellationToken: cancellationToken);
+            var isDrawing = relativePath.StartsWith("drawing:", StringComparison.OrdinalIgnoreCase);
+            var limit = isDrawing ? 10_000_000 : 800;
+            var content = await _manuals.ReadAsync(normalized, relativePath, maxBytes: limit, context: manualContext, cancellationToken: cancellationToken);
             var payload = JsonSerializer.Serialize(content, _serializerOptions);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, payload, content is not null)));
             return payload;
@@ -157,12 +163,22 @@ public sealed class ManualToolset
         };
     }
 
-    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink)
+    private sealed class ScopeContext
     {
+        public ScopeContext(ChatContext chatContext, Action<AgentEvent> sink)
+        {
+            ChatContext = chatContext;
+            Sink = sink;
+        }
+
+        public ChatContext ChatContext { get; }
+        public Action<AgentEvent> Sink { get; }
+        public string? LastQuery { get; set; }
+
         public void Emit(AgentEvent ev) => Sink(ev);
 
         public ManualSearchContext ToManualContext() =>
-            new(ChatContext.UserId, ChatContext.AgentNumber);
+            new(ChatContext.UserId, ChatContext.AgentNumber, LastQuery);
     }
 
     private sealed class Scope : IDisposable

@@ -154,7 +154,7 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         const string pragmaSql = "PRAGMA table_info(Conversations);";
         var hasAgentColumn = false;
 
-        await using var connection = _db.Database.GetDbConnection();
+        var connection = _db.Database.GetDbConnection();
         var shouldClose = connection.State == System.Data.ConnectionState.Closed;
         if (shouldClose)
         {
@@ -201,7 +201,7 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         const string pragmaSql = "PRAGMA table_info(PlcUnits);";
         var hasColumn = false;
 
-        await using var connection = _db.Database.GetDbConnection();
+        var connection = _db.Database.GetDbConnection();
         var shouldClose = connection.State == System.Data.ConnectionState.Closed;
         if (shouldClose)
         {

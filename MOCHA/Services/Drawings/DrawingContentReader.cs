@@ -212,6 +212,13 @@ public sealed class DrawingContentReader
                 var byteLen = Encoding.UTF8.GetByteCount(text);
                 if (bytesRead + byteLen > maxBytes)
                 {
+                    var remaining = Math.Max(0, maxBytes - bytesRead);
+                    if (remaining > 0)
+                    {
+                        sb.AppendLine($"[p{i}]");
+                        sb.AppendLine(text.AsSpan(0, Math.Min(remaining, text.Length)).ToString());
+                        bytesRead += remaining;
+                    }
                     truncated = true;
                     break;
                 }

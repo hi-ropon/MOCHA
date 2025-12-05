@@ -12,7 +12,9 @@ public sealed class DrawingContentResult
         string? error,
         string? content,
         string? fullPath,
-        long bytesRead)
+        long bytesRead,
+        int totalHits,
+        IReadOnlyList<DrawingContentMatch> matches)
     {
         Succeeded = succeeded;
         IsPreviewOnly = isPreviewOnly;
@@ -21,6 +23,8 @@ public sealed class DrawingContentResult
         Content = content;
         FullPath = fullPath;
         BytesRead = bytesRead;
+        TotalHits = totalHits;
+        Matches = matches;
     }
 
     /// <summary>成功フラグ</summary>
@@ -37,6 +41,10 @@ public sealed class DrawingContentResult
     public string? FullPath { get; }
     /// <summary>読み取ったバイト数</summary>
     public long BytesRead { get; }
+    /// <summary>ヒット総数</summary>
+    public int TotalHits { get; }
+    /// <summary>ページ別ヒット情報</summary>
+    public IReadOnlyList<DrawingContentMatch> Matches { get; }
 
     /// <summary>
     /// 成功結果生成
@@ -45,10 +53,18 @@ public sealed class DrawingContentResult
     /// <param name="fullPath">ファイルパス</param>
     /// <param name="bytesRead">読み取ったバイト数</param>
     /// <param name="isTruncated">切り捨てフラグ</param>
+    /// <param name="totalHits">ヒット総数</param>
+    /// <param name="matches">マッチ情報</param>
     /// <returns>結果</returns>
-    public static DrawingContentResult Success(string content, string? fullPath, long bytesRead, bool isTruncated)
+    public static DrawingContentResult Success(
+        string content,
+        string? fullPath,
+        long bytesRead,
+        bool isTruncated,
+        int totalHits,
+        IReadOnlyList<DrawingContentMatch>? matches = null)
     {
-        return new DrawingContentResult(true, false, isTruncated, null, content, fullPath, bytesRead);
+        return new DrawingContentResult(true, false, isTruncated, null, content, fullPath, bytesRead, totalHits, matches ?? Array.Empty<DrawingContentMatch>());
     }
 
     /// <summary>
@@ -59,7 +75,7 @@ public sealed class DrawingContentResult
     /// <returns>結果</returns>
     public static DrawingContentResult Preview(string message, string? fullPath)
     {
-        return new DrawingContentResult(true, true, false, null, message, fullPath, 0);
+        return new DrawingContentResult(true, true, false, null, message, fullPath, 0, 0, Array.Empty<DrawingContentMatch>());
     }
 
     /// <summary>
@@ -69,6 +85,6 @@ public sealed class DrawingContentResult
     /// <returns>結果</returns>
     public static DrawingContentResult Fail(string error)
     {
-        return new DrawingContentResult(false, false, false, error, null, null, 0);
+        return new DrawingContentResult(false, false, false, error, null, null, 0, 0, Array.Empty<DrawingContentMatch>());
     }
 }

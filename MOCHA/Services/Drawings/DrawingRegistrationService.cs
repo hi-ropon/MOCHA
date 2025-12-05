@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -225,7 +226,8 @@ internal sealed class DrawingRegistrationService
 
         if (!string.IsNullOrWhiteSpace(existing.StorageRoot) && !string.IsNullOrWhiteSpace(existing.RelativePath))
         {
-            var fullPath = Path.Combine(existing.StorageRoot!, existing.RelativePath!);
+            var root = ResolveRoot(existing.StorageRoot!);
+            var fullPath = Path.Combine(root, existing.RelativePath!);
             try
             {
                 if (File.Exists(fullPath))
@@ -241,5 +243,15 @@ internal sealed class DrawingRegistrationService
 
         _logger.LogInformation("図面を削除しました: {DrawingId}", drawingId);
         return DrawingDeletionResult.Success();
+    }
+
+    private static string ResolveRoot(string rootPath)
+    {
+        if (Path.IsPathRooted(rootPath))
+        {
+            return rootPath;
+        }
+
+        return Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), rootPath));
     }
 }

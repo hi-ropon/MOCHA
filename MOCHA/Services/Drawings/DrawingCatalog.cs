@@ -103,11 +103,8 @@ public sealed class DrawingCatalog
             root = "DrawingStorage";
         }
 
-        if (Path.IsPathRooted(root))
-        {
-            return root;
-        }
-
-        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, root));
+        return Path.IsPathRooted(root)
+            ? root
+            : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), root));
     }
 }
