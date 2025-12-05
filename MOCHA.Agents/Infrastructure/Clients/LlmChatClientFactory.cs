@@ -107,7 +107,9 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
         };
 
         var client = new AzureOpenAIClient(new Uri(_options.Endpoint), new AzureKeyCredential(_options.ApiKey), clientOptions);
-        var deployment = _options.ModelOrDeployment ?? "gpt-5-mini";
+        var deployment = string.IsNullOrWhiteSpace(_options.ModelOrDeployment)
+            ? "gpt-5-mini"
+            : _options.ModelOrDeployment;
         var chatClient = client.GetChatClient(deployment);
         return chatClient.AsIChatClient();
     }

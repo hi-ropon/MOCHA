@@ -68,6 +68,44 @@ public class HomeComposerKeyboardTests
     }
 
     /// <summary>
+    /// Shift+Enter では送信しないこと
+    /// </summary>
+    [TestMethod]
+    public async Task HandleKeyDown_ShiftEnter押下_送信しない()
+    {
+        var home = new Home();
+        InitializeComponent(home);
+
+        var orchestrator = new RecordingOrchestrator();
+        var agentState = new DeviceAgentState(new StubDeviceAgentRepository(), new StubDeviceAgentAccessService());
+
+        SetProperty(home, "Orchestrator", orchestrator);
+        SetProperty(home, "AgentState", agentState);
+        SetProperty(home, "ChatRepository", new NullChatRepository());
+        SetProperty(home, "HistoryState", new ConversationHistoryState(new NullChatRepository()));
+        SetProperty(
+            home,
+            "AuthenticationStateTask",
+            Task.FromResult(
+                new AuthenticationState(
+                    new ClaimsPrincipal(
+                        new ClaimsIdentity(
+                            new[] { new Claim("oid", "user-shift"), new Claim("name", "Tester") },
+                            "test")))));
+
+        SetPrivateField(home, "_user", new UserContext("user-shift", "Tester"));
+        SetPrivateField(home, "Input", "shift newline");
+        SetSelectedAgent(agentState, "AG-01");
+
+        await InvokeHandleKeyDownAsync(home, new KeyboardEventArgs { Key = "Enter", ShiftKey = true });
+
+        var messages = GetMessages(home);
+        Assert.AreEqual(0, messages.Count, "Shift+Enter では送信しないこと");
+        Assert.AreEqual("shift newline", GetInput(home), "Shift+Enter では入力を保持すること");
+        Assert.AreEqual(0, orchestrator.Received.Count, "オーケストレーターへ送信しないこと");
+    }
+
+    /// <summary>
     /// Home.HandleKeyDown のプライベート呼び出し
     /// </summary>
     /// <param name="home">対象コンポーネント</param>

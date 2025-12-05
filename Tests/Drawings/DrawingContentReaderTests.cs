@@ -5,6 +5,11 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Drawings;
 using MOCHA.Services.Drawings;
+using UglyToad.PdfPig.Writer;
+using UglyToad.PdfPig.Writer.Fonts;
+using UglyToad.PdfPig.Core;
+using UglyToad.PdfPig.Fonts.Standard14Fonts;
+using UglyToad.PdfPig.Content;
 
 namespace MOCHA.Tests;
 
@@ -25,7 +30,7 @@ public class DrawingContentReaderTests
         {
             var reader = new DrawingContentReader();
 
-            var result = await reader.ReadAsync(file, maxBytes: 5, CancellationToken.None);
+            var result = await reader.ReadAsync(file, maxBytes: 5, cancellationToken: CancellationToken.None);
 
             Assert.IsTrue(result.Succeeded);
             Assert.IsFalse(result.IsPreviewOnly);
@@ -58,7 +63,7 @@ public class DrawingContentReaderTests
         var file = DrawingFile.Create(document, fullPath: Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"), "missing.txt"), exists: false);
         var reader = new DrawingContentReader();
 
-        var result = await reader.ReadAsync(file, maxBytes: 10, CancellationToken.None);
+        var result = await reader.ReadAsync(file, maxBytes: 10, cancellationToken: CancellationToken.None);
 
         Assert.IsFalse(result.Succeeded);
         StringAssert.Contains(result.Error ?? string.Empty, "見つかりません");
@@ -70,16 +75,47 @@ public class DrawingContentReaderTests
     [TestMethod]
     public async Task 未対応拡張子はプレビュー扱いにする()
     {
-        var (file, path) = CreateTextFile("preview.pdf", "binary", 10);
+        var (file, path) = CreateTextFile("preview.bin", "binary", 10);
         try
         {
             var reader = new DrawingContentReader();
 
-            var result = await reader.ReadAsync(file, maxBytes: 10, CancellationToken.None);
+            var result = await reader.ReadAsync(file, maxBytes: 10, cancellationToken: CancellationToken.None);
 
             Assert.IsTrue(result.Succeeded);
             Assert.IsTrue(result.IsPreviewOnly);
             StringAssert.Contains(result.Content ?? string.Empty, "プレビュー");
+        }
+        finally
+        {
+            TryDelete(path);
+        }
+    }
+
+    /// <summary>
+    /// PDFからクエリ一致ページを抽出する
+    /// </summary>
+    [TestMethod]
+    public async Task PDFからクエリ一致ページを抽出する()
+    {
+        var (file, path) = CreatePdfFile("sample.pdf", new[]
+        {
+            "RAG pitfalls and mitigations summary",
+            "Another page with many pitfall mentions pitfall",
+            "Related notes are not here"
+        });
+
+        try
+        {
+            var reader = new DrawingContentReader();
+
+            var result = await reader.ReadAsync(file, maxBytes: 5000, query: "pitfall", cancellationToken: CancellationToken.None);
+
+            Assert.IsTrue(result.Succeeded);
+            Assert.IsFalse(result.IsPreviewOnly);
+            Assert.IsTrue(result.TotalHits > 0);
+            Assert.IsTrue(result.Matches.Count > 0);
+            StringAssert.Contains(result.Content ?? string.Empty, "p");
         }
         finally
         {
@@ -100,6 +136,39 @@ public class DrawingContentReaderTests
             fileName: fileName,
             contentType: "text/plain",
             fileSize: size,
+            description: null,
+            createdAt: DateTimeOffset.UtcNow,
+            relativePath: fileName,
+            storageRoot: tempRoot);
+
+        var file = DrawingFile.Create(document, fullPath, exists: true);
+        return (file, tempRoot);
+    }
+
+    private static (DrawingFile File, string Path) CreatePdfFile(string fileName, string[] pages)
+    {
+        var tempRoot = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempRoot);
+        var fullPath = Path.Combine(tempRoot, fileName);
+
+        var builder = new PdfDocumentBuilder();
+        var font = builder.AddStandard14Font(Standard14Font.Helvetica);
+
+        foreach (var pageText in pages)
+        {
+            var page = builder.AddPage(PageSize.A4);
+            page.AddText(pageText, 12, new PdfPoint(50, 700), font);
+        }
+
+        var bytes = builder.Build();
+        File.WriteAllBytes(fullPath, bytes);
+
+        var document = DrawingDocument.Create(
+            userId: "user",
+            agentNumber: "A-01",
+            fileName: fileName,
+            contentType: "application/pdf",
+            fileSize: bytes.Length,
             description: null,
             createdAt: DateTimeOffset.UtcNow,
             relativePath: fileName,

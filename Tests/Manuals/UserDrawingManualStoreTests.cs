@@ -62,6 +62,25 @@ public class UserDrawingManualStoreTests
         StringAssert.Contains(content.Content, "2048");
     }
 
+    /// <summary>
+    /// ファジー一致で図面がヒットする
+    /// </summary>
+    [TestMethod]
+    public async Task 図面検索_ファジー一致でヒットする()
+    {
+        var repo = new FakeDrawingRepository();
+        var drawing = DrawingDocument.Create("user-1", "A-01", "20251204140357219_RAGの落とし穴.pdf", "application/pdf", 2559290, "RAGの落とし穴");
+        repo.Seed(drawing);
+
+        var store = CreateStore(repo);
+        var context = new ManualSearchContext("user-1", "A-01");
+
+        var hits = await store.SearchAsync("drawingAgent", "図面登録したRAGの落とし穴.pdf", context);
+
+        Assert.AreEqual(1, hits.Count);
+        StringAssert.StartsWith(hits[0].RelativePath, "drawing:");
+    }
+
     private static UserDrawingManualStore CreateStore(IDrawingRepository repository)
     {
         var options = Options.Create(new ManualStoreOptions
@@ -71,6 +90,9 @@ public class UserDrawingManualStoreTests
 
         var services = new ServiceCollection();
         services.AddSingleton(repository);
+        services.AddSingleton(Options.Create(new DrawingStorageOptions()));
+        services.AddSingleton<DrawingCatalog>();
+        services.AddSingleton<DrawingContentReader>();
 
         var provider = services.BuildServiceProvider();
 
