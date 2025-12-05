@@ -922,8 +922,8 @@ h1:focus {
 }
 
 .thinking-chip {
-    width: auto;
-    max-width: 320px;
+    width: fit-content;
+    max-width: clamp(360px, 60vw, 720px);
     border: 1px dashed var(--border-color);
     border-radius: 12px;
     padding: 0.45rem 0.7rem;
@@ -945,6 +945,8 @@ h1:focus {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.4rem;
+    flex-wrap: nowrap;
 }
 
 .thinking-chip .chip-title {
@@ -952,6 +954,7 @@ h1:focus {
     color: var(--text-primary);
     margin-right: 1rem;
     font-size: 0.82rem;
+    white-space: nowrap;
 }
 
 .thinking-chip .chip-count {
