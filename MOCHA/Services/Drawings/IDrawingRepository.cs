@@ -40,4 +40,11 @@ public interface IDrawingRepository
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>更新後図面</returns>
     Task<DrawingDocument> UpdateAsync(DrawingDocument document, CancellationToken cancellationToken = default);
+    /// <summary>
+    /// 図面削除
+    /// </summary>
+    /// <param name="id">図面ID</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>削除成否</returns>
+    Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 }

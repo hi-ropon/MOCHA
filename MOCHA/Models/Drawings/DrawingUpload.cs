@@ -15,6 +15,8 @@ public sealed class DrawingUpload
     public long FileSize { get; init; }
     /// <summary>説明</summary>
     public string? Description { get; init; }
+    /// <summary>ファイル内容</summary>
+    public byte[]? Content { get; init; }
 
     /// <summary>
     /// 入力値のバリデーション
@@ -37,6 +39,11 @@ public sealed class DrawingUpload
         {
             var megaBytes = Math.Round(maxFileSizeBytes / 1024d / 1024d, 1);
             return (false, $"ファイルサイズは {megaBytes}MB 以下にしてください");
+        }
+
+        if (Content is null || Content.LongLength == 0)
+        {
+            return (false, "図面ファイルを選択してください");
         }
 
         return (true, null);

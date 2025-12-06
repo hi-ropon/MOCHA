@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Infrastructure.Plc;
+using MOCHA.Agents.Domain.Plc;
 
 namespace MOCHA.Tests;
 
@@ -59,5 +60,21 @@ public class PlcDataStoreTests
         {
             File.Delete(programPath);
         }
+    }
+
+    /// <summary>
+    /// ファンクションブロックを設定し取得できることを確認
+    /// </summary>
+    [TestMethod]
+    public void ファンクションブロックを設定_取得できる()
+    {
+        var store = new PlcDataStore();
+        var fb = new FunctionBlockData("Start", "Start", "device,comment\nX0,開始", "line,instruction\n0000,LD X0");
+        store.SetFunctionBlocks(new[] { fb });
+
+        Assert.IsTrue(store.TryGetFunctionBlock("Start", out var block));
+        Assert.IsNotNull(block);
+        Assert.AreEqual("Start", block!.Name);
+        Assert.AreEqual(1, store.FunctionBlocks.Count);
     }
 }

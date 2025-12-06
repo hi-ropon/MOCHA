@@ -1,5 +1,7 @@
 using System.ClientModel;
+using System.ClientModel.Primitives;
 using System.Linq;
+using System.Net.Http;
 using System.Runtime.CompilerServices;
 using Azure;
 using Azure.AI.OpenAI;
@@ -9,6 +11,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using MOCHA.Agents.Infrastructure.Options;
 using OpenAI;
+using AzureOpenAIClientOptions = Azure.AI.OpenAI.AzureOpenAIClientOptions;
+using OpenAiClientOptions = OpenAI.OpenAIClientOptions;
 
 namespace MOCHA.Agents.Infrastructure.Clients;
 
@@ -19,16 +23,22 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
 {
     private readonly LlmOptions _options;
     private readonly ILogger<LlmChatClientFactory> _logger;
+    private readonly Func<SocketsHttpHandler> _httpMessageHandlerFactory;
 
     /// <summary>
     /// オプションとロガー注入による初期化
     /// </summary>
     /// <param name="optionsAccessor">LLM 設定</param>
     /// <param name="logger">ロガー</param>
-    public LlmChatClientFactory(IOptions<LlmOptions> optionsAccessor, ILogger<LlmChatClientFactory> logger)
+    /// <param name="httpMessageHandlerFactory">Azure OpenAI 用 HTTP ハンドラファクトリー</param>
+    public LlmChatClientFactory(
+        IOptions<LlmOptions> optionsAccessor,
+        ILogger<LlmChatClientFactory> logger,
+        Func<SocketsHttpHandler>? httpMessageHandlerFactory = null)
     {
         _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
         _logger = logger;
+        _httpMessageHandlerFactory = httpMessageHandlerFactory ?? CreateProxyDisabledHandler;
     }
 
     /// <summary>
@@ -56,7 +66,7 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
             return new LocalEchoChatClient();
         }
 
-        var clientOptions = new OpenAIClientOptions();
+        var clientOptions = new OpenAiClientOptions();
         if (!string.IsNullOrWhiteSpace(_options.Endpoint))
         {
             clientOptions.Endpoint = new Uri(_options.Endpoint);
@@ -86,8 +96,20 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
             return new LocalEchoChatClient();
         }
 
-        var client = new AzureOpenAIClient(new Uri(_options.Endpoint), new AzureKeyCredential(_options.ApiKey));
-        var deployment = _options.ModelOrDeployment ?? "gpt-4o-mini";
+        var handler = _httpMessageHandlerFactory.Invoke();
+        handler.UseProxy = false;
+        handler.Proxy = null;
+
+        var httpClient = new HttpClient(handler, disposeHandler: true);
+        var clientOptions = new AzureOpenAIClientOptions
+        {
+            Transport = new HttpClientPipelineTransport(httpClient, true, loggerFactory: null)
+        };
+
+        var client = new AzureOpenAIClient(new Uri(_options.Endpoint), new AzureKeyCredential(_options.ApiKey), clientOptions);
+        var deployment = string.IsNullOrWhiteSpace(_options.ModelOrDeployment)
+            ? "gpt-5-mini"
+            : _options.ModelOrDeployment;
         var chatClient = client.GetChatClient(deployment);
         return chatClient.AsIChatClient();
     }
@@ -150,5 +172,18 @@ public sealed class LlmChatClientFactory : ILlmChatClientFactory
             cancellationToken.ThrowIfCancellationRequested();
             yield return new ChatResponseUpdate(ChatRole.Assistant, content);
         }
+    }
+
+    /// <summary>
+    /// プロキシ無効化済みの HTTP ハンドラ生成
+    /// </summary>
+    /// <returns>生成したハンドラ</returns>
+    private static SocketsHttpHandler CreateProxyDisabledHandler()
+    {
+        return new SocketsHttpHandler
+        {
+            UseProxy = false,
+            Proxy = null
+        };
     }
 }

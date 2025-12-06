@@ -21,6 +21,8 @@
     <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="4.1.0" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.1.0" />
     <PackageReference Include="NLog" Version="6.0.6" />
+    <PackageReference Include="PdfPig" Version="0.1.12" />
+    <PackageReference Include="SimMetrics.Net" Version="1.0.5" />
   </ItemGroup>
 
   <ItemGroup>

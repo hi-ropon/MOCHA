@@ -34,7 +34,11 @@ public sealed class FileManualStore : IManualStore
     /// <param name="query">検索クエリ</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>検索ヒット</returns>
-    public async Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ManualHit>> SearchAsync(
+        string agentName,
+        string query,
+        ManualSearchContext? context = null,
+        CancellationToken cancellationToken = default)
     {
         var root = ResolveAgentRoot(agentName);
         if (root is null || !Directory.Exists(root))
@@ -98,7 +102,12 @@ public sealed class FileManualStore : IManualStore
     /// <param name="maxBytes">読み取り上限バイト数</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>読み取ったマニュアル</returns>
-    public async Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+    public async Task<ManualContent?> ReadAsync(
+        string agentName,
+        string relativePath,
+        int? maxBytes = null,
+        ManualSearchContext? context = null,
+        CancellationToken cancellationToken = default)
     {
         var root = ResolveAgentRoot(agentName);
         if (root is null || !Directory.Exists(root))

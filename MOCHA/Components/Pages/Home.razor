@@ -8,6 +8,7 @@
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components
 @using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.JSInterop
 @using Microsoft.Extensions.Options
 @using MOCHA.Agents.Infrastructure.Options
 @using MOCHA.Models.Chat
@@ -25,6 +26,7 @@
 @inject MOCHA.Services.Feedback.IFeedbackService FeedbackService
 @inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
 @inject ILogger<Home> Logger
+@inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>M.O.C.H.A.</PageTitle>
@@ -103,7 +105,8 @@
 
             <div class="composer">
                 <div class="composer-inner">
-                    <textarea class="chat-input" placeholder="メッセージを入力 (Ctrl+Enter で送信)"
+                    <textarea class="chat-input" placeholder="メッセージを入力 (Enter または Ctrl+Enter で送信)"
+                              @ref="ComposerInput"
                               @bind="Input"
                               @bind:event="oninput"
                               @onkeydown="HandleKeyDown"
@@ -131,7 +134,7 @@
                     <div class="activity-title">アクティビティ</div>
                     <div class="activity-sub">@GetActivitySummary()</div>
                 </div>
-                <button class="icon-btn tertiary" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
+                <button class="icon-btn tertiary activity-close" @onclick="CloseActivityPanel" aria-label="閉じる">✕</button>
             </div>
             <div class="activity-body">
                 @RenderActivityList()
@@ -153,6 +156,7 @@
     private string? _activeAgentNumber;
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
+    private ElementReference ComposerInput;
     private IDisposable? _llmOptionsSubscription;
     private UserContext? _user;
     private string? _loadedConversationId;
@@ -161,6 +165,7 @@
     private readonly Dictionary<string, StringBuilder> _assistantStreamBuffers = new();
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
+    private int? _composerHandlerId;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
     private readonly Dictionary<int, FeedbackRating> FeedbackRatings = new();
     private readonly HashSet<int> FeedbackSubmitting = new();
@@ -196,6 +201,31 @@
 
         _llmOptionsSubscription = LlmOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         AgentState.Changed += OnAgentStateChanged;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RegisterComposerHandlerAsync();
+        }
+    }
+
+    private async Task RegisterComposerHandlerAsync()
+    {
+        if (_composerHandlerId.HasValue || JS is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _composerHandlerId = await JS.InvokeAsync<int>("mochaComposer.attachEnterHandler", ComposerInput);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "Enterキー送信ハンドラの初期化に失敗しました");
+        }
     }
 
     protected override async Task OnParametersSetAsync()
@@ -359,10 +389,17 @@
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
-        if (e.CtrlKey && e.Key == "Enter")
+        if (e.Key != "Enter")
         {
-            await SendAsync();
+            return;
         }
+
+        if (e.ShiftKey)
+        {
+            return;
+        }
+
+        await SendAsync();
     }
 
     private void OnAgentStateChanged()
@@ -836,6 +873,11 @@
     {
         _llmOptionsSubscription?.Dispose();
         _cts?.Dispose();
+        if (_composerHandlerId.HasValue && JS is not null)
+        {
+            _ = JS.InvokeVoidAsync("mochaComposer.detachEnterHandler", _composerHandlerId.Value);
+        }
+
         AgentState.Changed -= OnAgentStateChanged;
     }
 

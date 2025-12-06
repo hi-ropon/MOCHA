@@ -16,6 +16,7 @@ public sealed class PlcUnit
     /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="name">ユニット名</param>
+    /// <param name="manufacturer">メーカー</param>
     /// <param name="model">機種</param>
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
@@ -23,6 +24,7 @@ public sealed class PlcUnit
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
     /// <param name="modules">モジュール一覧</param>
+    /// <param name="functionBlocks">ファンクションブロック一覧</param>
     /// <param name="createdAt">作成日時</param>
     /// <param name="updatedAt">更新日時</param>
     private PlcUnit(
@@ -30,6 +32,7 @@ public sealed class PlcUnit
         string userId,
         string agentNumber,
         string name,
+        string manufacturer,
         string? model,
         string? role,
         string? ipAddress,
@@ -37,6 +40,7 @@ public sealed class PlcUnit
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
+        IReadOnlyCollection<FunctionBlock> functionBlocks,
         DateTimeOffset createdAt,
         DateTimeOffset updatedAt)
     {
@@ -44,6 +48,7 @@ public sealed class PlcUnit
         UserId = userId;
         AgentNumber = agentNumber;
         Name = name;
+        Manufacturer = manufacturer;
         Model = model;
         Role = role;
         IpAddress = ipAddress;
@@ -51,6 +56,7 @@ public sealed class PlcUnit
         CommentFile = commentFile;
         ProgramFiles = programFiles;
         Modules = modules;
+        FunctionBlocks = functionBlocks;
         CreatedAt = createdAt;
         UpdatedAt = updatedAt;
     }
@@ -63,6 +69,8 @@ public sealed class PlcUnit
     public string AgentNumber { get; }
     /// <summary>ユニット名</summary>
     public string Name { get; }
+    /// <summary>メーカー</summary>
+    public string Manufacturer { get; }
     /// <summary>機種</summary>
     public string? Model { get; }
     /// <summary>役割</summary>
@@ -77,6 +85,8 @@ public sealed class PlcUnit
     public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; }
     /// <summary>モジュール一覧</summary>
     public IReadOnlyCollection<PlcUnitModule> Modules { get; }
+    /// <summary>ファンクションブロック一覧</summary>
+    public IReadOnlyCollection<FunctionBlock> FunctionBlocks { get; }
     /// <summary>作成日時</summary>
     public DateTimeOffset CreatedAt { get; }
     /// <summary>更新日時</summary>
@@ -98,6 +108,7 @@ public sealed class PlcUnit
             userId,
             agentNumber,
             draft.Name.Trim(),
+            NormalizeRequired(draft.Manufacturer),
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
@@ -105,8 +116,62 @@ public sealed class PlcUnit
             NormalizeFile(draft.CommentFile),
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
+            Array.Empty<FunctionBlock>(),
             timestamp,
             timestamp);
+    }
+
+    /// <summary>
+    /// 永続化情報からユニットを復元
+    /// </summary>
+    /// <param name="id">ユニットID</param>
+    /// <param name="userId">ユーザーID</param>
+    /// <param name="agentNumber">エージェント番号</param>
+    /// <param name="name">ユニット名</param>
+    /// <param name="manufacturer">メーカー</param>
+    /// <param name="model">機種</param>
+    /// <param name="role">役割</param>
+    /// <param name="ipAddress">IPアドレス</param>
+    /// <param name="port">ポート番号</param>
+    /// <param name="commentFile">コメントファイル</param>
+    /// <param name="programFiles">プログラムファイル</param>
+    /// <param name="modules">モジュール</param>
+    /// <param name="createdAt">作成日時</param>
+    /// <param name="updatedAt">更新日時</param>
+    /// <returns>復元したユニット</returns>
+    public static PlcUnit Restore(
+        Guid id,
+        string userId,
+        string agentNumber,
+        string name,
+        string manufacturer,
+        string? model,
+        string? role,
+        string? ipAddress,
+        int? port,
+        PlcFileUpload? commentFile,
+        IReadOnlyCollection<PlcFileUpload> programFiles,
+        IReadOnlyCollection<PlcUnitModule> modules,
+        IReadOnlyCollection<FunctionBlock> functionBlocks,
+        DateTimeOffset createdAt,
+        DateTimeOffset updatedAt)
+    {
+        return new PlcUnit(
+            id,
+            userId,
+            agentNumber,
+            name,
+            NormalizeRequired(manufacturer),
+            model,
+            role,
+            ipAddress,
+            port,
+            commentFile,
+            programFiles ?? Array.Empty<PlcFileUpload>(),
+            modules ?? Array.Empty<PlcUnitModule>(),
+            functionBlocks ?? Array.Empty<FunctionBlock>(),
+            createdAt,
+            updatedAt);
     }
 
     /// <summary>
@@ -121,6 +186,7 @@ public sealed class PlcUnit
             UserId,
             AgentNumber,
             draft.Name.Trim(),
+            NormalizeRequired(draft.Manufacturer),
             NormalizeNullable(draft.Model),
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
@@ -128,6 +194,32 @@ public sealed class PlcUnit
             NormalizeFile(draft.CommentFile) ?? CommentFile,
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
+            FunctionBlocks,
+            CreatedAt,
+            DateTimeOffset.UtcNow);
+    }
+
+    /// <summary>
+    /// ファンクションブロックを差し替え
+    /// </summary>
+    /// <param name="functionBlocks">差し替え後一覧</param>
+    /// <returns>更新後ユニット</returns>
+    public PlcUnit WithFunctionBlocks(IReadOnlyCollection<FunctionBlock> functionBlocks)
+    {
+        return new PlcUnit(
+            Id,
+            UserId,
+            AgentNumber,
+            Name,
+            Manufacturer,
+            Model,
+            Role,
+            IpAddress,
+            Port,
+            CommentFile,
+            ProgramFiles,
+            Modules,
+            functionBlocks,
             CreatedAt,
             DateTimeOffset.UtcNow);
     }
@@ -140,6 +232,11 @@ public sealed class PlcUnit
     private static string? NormalizeNullable(string? value)
     {
         return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+    }
+
+    private static string NormalizeRequired(string value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
     }
 
     private static PlcFileUpload? NormalizeFile(PlcFileUpload? file)
@@ -155,7 +252,10 @@ public sealed class PlcUnit
             FileName = file.FileName.Trim(),
             ContentType = file.ContentType,
             FileSize = file.FileSize,
-            DisplayName = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName.Trim() : file.DisplayName.Trim()
+            DisplayName = string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName.Trim() : file.DisplayName.Trim(),
+            RelativePath = string.IsNullOrWhiteSpace(file.RelativePath) ? null : file.RelativePath.Trim(),
+            StorageRoot = string.IsNullOrWhiteSpace(file.StorageRoot) ? null : file.StorageRoot.Trim(),
+            Content = null
         };
     }
 

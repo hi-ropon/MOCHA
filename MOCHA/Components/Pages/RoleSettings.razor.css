@@ -8,6 +8,7 @@
     max-height: calc(100vh - 48px);
     overflow: auto;
     color: var(--text-primary);
+    font-family: 'M PLUS Rounded 1c', 'Segoe UI Rounded', 'Hiragino Sans Rounded', 'Yu Gothic UI', 'Noto Sans JP', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
 }
 
 .page-title {

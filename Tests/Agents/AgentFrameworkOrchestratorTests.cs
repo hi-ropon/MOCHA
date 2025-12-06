@@ -48,7 +48,9 @@ public class AgentFrameworkOrchestratorTests
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
+        var plcLoader = new NullPlcDataLoader();
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -57,6 +59,7 @@ public class AgentFrameworkOrchestratorTests
 
         IAgentOrchestrator orchestrator = new AgentFrameworkOrchestrator(
             factory,
+            instructionBuilder,
             tools,
             options,
             NullLogger<AgentFrameworkOrchestrator>.Instance);
@@ -100,7 +103,9 @@ public class AgentFrameworkOrchestratorTests
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, NullLogger<OrganizerToolset>.Instance);
+        var plcLoader = new NullPlcDataLoader();
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -109,6 +114,7 @@ public class AgentFrameworkOrchestratorTests
 
         IAgentOrchestrator orchestrator = new AgentFrameworkOrchestrator(
             factory,
+            instructionBuilder,
             tools,
             options,
             NullLogger<AgentFrameworkOrchestrator>.Instance);
@@ -258,7 +264,7 @@ public class AgentFrameworkOrchestratorTests
         /// <summary>
         /// マニュアル読取
         /// </summary>
-        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, CancellationToken cancellationToken = default)
+        public Task<ManualContent?> ReadAsync(string agentName, string relativePath, int? maxBytes = null, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<ManualContent?>(new ManualContent(relativePath, "dummy", 5));
         }
@@ -266,7 +272,7 @@ public class AgentFrameworkOrchestratorTests
         /// <summary>
         /// マニュアル検索
         /// </summary>
-        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<ManualHit>> SearchAsync(string agentName, string query, ManualSearchContext? context = null, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<ManualHit> hits = new List<ManualHit>
             {

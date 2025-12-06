@@ -1,9 +1,12 @@
 using System.Threading;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 using MOCHA.Services.Chat;
 using MOCHA.Services.Auth;
 using MOCHA.Services.Agents;
 using MOCHA.Services.Feedback;
+using MOCHA.Services.Drawings;
+using MOCHA.Services.Architecture;
 
 namespace MOCHA.Data;
 
@@ -24,6 +27,12 @@ internal interface IChatDbContext
     DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions { get; }
     /// <summary>フィードバックエンティティのセット</summary>
     DbSet<FeedbackEntity> Feedbacks { get; }
+    /// <summary>図面エンティティのセット</summary>
+    DbSet<DrawingDocumentEntity> Drawings { get; }
+    /// <summary>PLCユニットエンティティのセット</summary>
+    DbSet<PlcUnitEntity> PlcUnits { get; }
+    /// <summary>トラッキング操作へのアクセス</summary>
+    ChangeTracker ChangeTracker { get; }
     /// <summary>データベース操作用ファサード</summary>
     Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade Database { get; }
     /// <summary>

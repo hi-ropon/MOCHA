@@ -21,7 +21,14 @@ public record ChatMessage(ChatRole Role, string Content);
 /// <summary>
 /// 会話IDと複数のメッセージをまとめたターン
 /// </summary>
-public record ChatTurn(string? ConversationId, IReadOnlyList<ChatMessage> Messages);
+public record ChatTurn(string? ConversationId, IReadOnlyList<ChatMessage> Messages)
+{
+    /// <summary>装置エージェント番号</summary>
+    public string? AgentNumber { get; init; }
+
+    /// <summary>ユーザーID</summary>
+    public string? UserId { get; init; }
+}
 
 /// <summary>
 /// Agent からのアクション要求

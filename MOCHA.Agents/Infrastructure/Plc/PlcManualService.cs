@@ -23,7 +23,7 @@ public sealed class PlcManualService
 
     public async Task<string> SearchAsync(string query, CancellationToken cancellationToken = default)
     {
-        var hits = await _manualStore.SearchAsync("plcAgent", query, cancellationToken);
+        var hits = await _manualStore.SearchAsync("plcAgent", query, null, cancellationToken);
         if (hits.Count == 0)
         {
             return $"マニュアル候補が見つかりませんでした: {query}";
@@ -46,7 +46,7 @@ public sealed class PlcManualService
 
     public async Task<string> GetCommandOverviewAsync(CancellationToken cancellationToken = default)
     {
-        var hits = await _manualStore.SearchAsync("plcAgent", "命令一覧", cancellationToken);
+        var hits = await _manualStore.SearchAsync("plcAgent", "命令一覧", null, cancellationToken);
         var top = hits.FirstOrDefault();
         if (top is null)
         {

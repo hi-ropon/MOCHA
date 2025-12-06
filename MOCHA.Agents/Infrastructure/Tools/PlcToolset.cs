@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -33,9 +34,20 @@ public sealed class PlcToolset
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
 
-    /// <summary>提供するツール一覧</summary>
+    /// <summary>
+    /// 提供するツール一覧
+    /// </summary>
     public IReadOnlyList<AITool> All { get; }
 
+    /// <summary>
+    /// 依存関係の注入による初期化
+    /// </summary>
+    /// <param name="store">PLCデータストア</param>
+    /// <param name="gateway">PLCゲートウェイクライアント</param>
+    /// <param name="programAnalyzer">プログラム解析器</param>
+    /// <param name="reasoner">デバイス推論器</param>
+    /// <param name="manuals">PLCマニュアルサービス</param>
+    /// <param name="logger">ロガー</param>
     public PlcToolset(
         IPlcDataStore store,
         IPlcGatewayClient gateway,
@@ -91,19 +103,78 @@ public sealed class PlcToolset
 
             AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(GetCommandOverviewAsync),
                 name: "get_command_overview",
-                description: "命令一覧の概要を取得します。")
+                description: "命令一覧の概要を取得します。"),
+
+            AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(ListFunctionBlocksAsync),
+                name: "list_function_blocks",
+                description: "登録済みファンクションブロックの一覧を返します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(AnalyzeFunctionBlockAsync),
+                name: "analyze_function_block",
+                description: "指定ファンクションブロックのラベルとプログラムを要約します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchFunctionBlocksAsync),
+                name: "search_function_blocks",
+                description: "キーワードでファンクションブロックを検索します。")
         };
+    }
+
+    /// <summary>
+    /// データロード後のコンテキストヒントを構築
+    /// </summary>
+    /// <param name="optionsJson">ゲートウェイオプション</param>
+    /// <returns>ヒント文字列</returns>
+    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("登録済みPLCデータ概要");
+        sb.AppendLine($"- プログラムファイル: {_store.Programs.Count}");
+        sb.AppendLine($"- ファンクションブロック: {_store.FunctionBlocks.Count} ({(enableFunctionBlocks ? "enabled" : "disabled")})");
+
+        if (_store.FunctionBlocks.Count > 0)
+        {
+            var names = string.Join(", ", _store.FunctionBlocks.Take(5).Select(f => f.Name));
+            sb.AppendLine($"  例: {names}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(plcUnitId) || !string.IsNullOrWhiteSpace(plcUnitName))
+        {
+            sb.AppendLine($"対象ユニット: {plcUnitName ?? "(unknown)"} ({plcUnitId ?? "n/a"})");
+        }
+
+        if (!string.IsNullOrWhiteSpace(gatewayOptionsJson))
+        {
+            sb.AppendLine($"ゲートウェイオプション: {gatewayOptionsJson}");
+        }
+
+        if (!string.IsNullOrWhiteSpace(note))
+        {
+            sb.AppendLine($"補足: {note}");
+        }
+
+        return sb.ToString().Trim();
     }
 
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
+    /// <param name="conversationId">会話ID</param>
+    /// <param name="sink">イベント受け口</param>
+    /// <returns>スコープハンドル</returns>
     public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
     {
         _context.Value = new ScopeContext(conversationId, sink);
         return new Scope(this);
     }
 
+    /// <summary>
+    /// プログラム行取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="context">前後行数</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>プログラム行 JSON</returns>
     private Task<string> GetProgramLinesAsync(string dev, int address, int context, CancellationToken cancellationToken)
     {
         var call = new ToolCall("program_lines", JsonSerializer.Serialize(new { dev, address, context }, _serializerOptions));
@@ -124,6 +195,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 関連デバイス取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>関連デバイス一覧</returns>
     private Task<string> GetRelatedDevicesAsync(string dev, int address, CancellationToken cancellationToken)
     {
         var call = new ToolCall("related_devices", JsonSerializer.Serialize(new { dev, address }, _serializerOptions));
@@ -144,6 +222,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// コメント取得
+    /// </summary>
+    /// <param name="dev">デバイス種別</param>
+    /// <param name="address">アドレス</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>コメント文字列</returns>
     private Task<string> GetCommentAsync(string dev, int address, CancellationToken cancellationToken)
     {
         var call = new ToolCall("get_comment", JsonSerializer.Serialize(new { dev, address }, _serializerOptions));
@@ -163,6 +248,213 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// ファンクションブロック一覧取得
+    /// </summary>
+    private Task<string> ListFunctionBlocksAsync(CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("list_function_blocks", "{}");
+        EmitRequested(call);
+
+        try
+        {
+            var blocks = _store.FunctionBlocks
+                .Select(b => new
+                {
+                    b.Name,
+                    b.SafeName,
+                    HasLabel = !string.IsNullOrWhiteSpace(b.LabelContent),
+                    HasProgram = !string.IsNullOrWhiteSpace(b.ProgramContent),
+                    b.CreatedAt,
+                    b.UpdatedAt
+                })
+                .ToList();
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                count = blocks.Count,
+                functionBlocks = blocks
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "list_function_blocks 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// ファンクションブロック解析
+    /// </summary>
+    private Task<string> AnalyzeFunctionBlockAsync(string name, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("analyze_function_block", JsonSerializer.Serialize(new { name }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            if (!_store.TryGetFunctionBlock(name, out var block) || block is null)
+            {
+                const string notFound = "ファンクションブロックが見つかりません";
+                EmitCompleted(call, notFound, false, notFound);
+                return Task.FromResult(notFound);
+            }
+
+            var labels = ParseLabels(block.LabelContent);
+            var program = ParseProgram(block.ProgramContent);
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                name = block.Name,
+                labels,
+                program
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "analyze_function_block 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// ファンクションブロック検索
+    /// </summary>
+    private Task<string> SearchFunctionBlocksAsync(string keyword, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("search_function_blocks", JsonSerializer.Serialize(new { keyword }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            var matches = _store.FunctionBlocks
+                .Where(b => (!string.IsNullOrWhiteSpace(b.Name) && b.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(b.LabelContent) && b.LabelContent.Contains(keyword, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrWhiteSpace(b.ProgramContent) && b.ProgramContent.Contains(keyword, StringComparison.OrdinalIgnoreCase)))
+                .Select(b => new { b.Name, b.SafeName, b.CreatedAt, b.UpdatedAt })
+                .ToList();
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                keyword,
+                matchCount = matches.Count,
+                results = matches
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "search_function_blocks 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    private static IReadOnlyCollection<Dictionary<string, string>> ParseLabels(string content)
+    {
+        var rows = ParseCsv(content);
+        if (rows.Count <= 1)
+        {
+            return Array.Empty<Dictionary<string, string>>();
+        }
+
+        var list = new List<Dictionary<string, string>>();
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count < 2 || row.All(string.IsNullOrWhiteSpace))
+            {
+                continue;
+            }
+
+            list.Add(new Dictionary<string, string>
+            {
+                ["name"] = row.ElementAtOrDefault(0)?.Trim() ?? string.Empty,
+                ["type"] = row.ElementAtOrDefault(1)?.Trim() ?? string.Empty,
+                ["description"] = row.ElementAtOrDefault(2)?.Trim() ?? string.Empty
+            });
+
+            if (list.Count >= 10)
+            {
+                break;
+            }
+        }
+
+        return list;
+    }
+
+    private static object ParseProgram(string content)
+    {
+        var rows = ParseCsv(content);
+        if (rows.Count <= 1)
+        {
+            return new { lineCount = 0 };
+        }
+
+        var instructions = new List<object>();
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count < 2 || row.All(string.IsNullOrWhiteSpace))
+            {
+                continue;
+            }
+
+            instructions.Add(new
+            {
+                line = row[0]?.Trim(),
+                instruction = string.Join(" ", row.Skip(1).Where(v => !string.IsNullOrWhiteSpace(v)).Select(v => v.Trim()))
+            });
+
+            if (instructions.Count >= 20)
+            {
+                break;
+            }
+        }
+
+        return new
+        {
+            lineCount = rows.Count - 1,
+            instructions
+        };
+    }
+
+    private static List<List<string>> ParseCsv(string content)
+    {
+        var result = new List<List<string>>();
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return result;
+        }
+
+        var delimiter = content.Contains('\t') ? '\t' : ',';
+        using var reader = new System.IO.StringReader(content);
+        string? line;
+        while ((line = reader.ReadLine()) is not null)
+        {
+            var parts = line.Split(delimiter);
+            result.Add(parts.ToList());
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// 単一デバイス推論
+    /// </summary>
+    /// <param name="query">質問文</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>推論結果</returns>
     private Task<string> InferDeviceAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("reasoning_device", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -172,6 +464,12 @@ public sealed class PlcToolset
         return Task.FromResult(result);
     }
 
+    /// <summary>
+    /// 複数デバイス推論
+    /// </summary>
+    /// <param name="query">質問文</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>推論結果</returns>
     private Task<string> InferDevicesAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("reasoning_multiple_devices", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -181,6 +479,16 @@ public sealed class PlcToolset
         return Task.FromResult(result);
     }
 
+    /// <summary>
+    /// 単一デバイス読み取り
+    /// </summary>
+    /// <param name="spec">デバイス指定</param>
+    /// <param name="ip">IPアドレス</param>
+    /// <param name="port">ポート</param>
+    /// <param name="timeoutSeconds">タイムアウト秒</param>
+    /// <param name="baseUrl">ゲートウェイURL</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
     private async Task<string> ReadValuesAsync(string spec, string ip, int port, int timeoutSeconds, string? baseUrl, CancellationToken cancellationToken)
     {
         var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
@@ -204,6 +512,13 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 複数デバイス読み取り
+    /// </summary>
+    /// <param name="specs">デバイス指定一覧</param>
+    /// <param name="baseUrl">ゲートウェイURL</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>読み取り結果</returns>
     private async Task<string> ReadMultipleValuesAsync(IEnumerable<string> specs, string? baseUrl, CancellationToken cancellationToken)
     {
         var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs, baseUrl }, _serializerOptions));
@@ -226,6 +541,12 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// マニュアル検索
+    /// </summary>
+    /// <param name="query">検索語</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索結果</returns>
     private async Task<string> SearchManualAsync(string query, CancellationToken cancellationToken)
     {
         var call = new ToolCall("search_manual", JsonSerializer.Serialize(new { query }, _serializerOptions));
@@ -244,6 +565,12 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 命令検索
+    /// </summary>
+    /// <param name="instruction">命令名</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>検索結果</returns>
     private async Task<string> SearchInstructionAsync(string instruction, CancellationToken cancellationToken)
     {
         var call = new ToolCall("search_instruction", JsonSerializer.Serialize(new { instruction }, _serializerOptions));
@@ -262,6 +589,11 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// 命令一覧概要取得
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>概要文字列</returns>
     private async Task<string> GetCommandOverviewAsync(CancellationToken cancellationToken)
     {
         var call = new ToolCall("get_command_overview", JsonSerializer.Serialize(new { }, _serializerOptions));
@@ -280,6 +612,10 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// ツール開始イベント送出
+    /// </summary>
+    /// <param name="call">ツール呼び出し</param>
     private void EmitRequested(ToolCall call)
     {
         var ctx = _context.Value;
@@ -287,6 +623,13 @@ public sealed class PlcToolset
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
     }
 
+    /// <summary>
+    /// ツール完了イベント送出
+    /// </summary>
+    /// <param name="call">ツール呼び出し</param>
+    /// <param name="result">結果</param>
+    /// <param name="success">成功フラグ</param>
+    /// <param name="error">エラーメッセージ</param>
     private void EmitCompleted(ToolCall call, string result, bool success, string? error = null)
     {
         var ctx = _context.Value;

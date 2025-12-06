@@ -58,12 +58,12 @@ public sealed class ManualToolset
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
-    /// <param name="conversationId">会話ID</param>
+    /// <param name="chatContext">チャットコンテキスト</param>
     /// <param name="sink">イベント受け取りコールバック</param>
     /// <returns>スコープ破棄用ハンドル</returns>
-    public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
+    public IDisposable UseContext(ChatContext chatContext, Action<AgentEvent> sink)
     {
-        _context.Value = new ScopeContext(conversationId, sink);
+        _context.Value = new ScopeContext(chatContext, sink);
         return new Scope(this);
     }
 
@@ -79,20 +79,25 @@ public sealed class ManualToolset
         var ctx = _context.Value;
         var normalized = NormalizeAgentName(agentName);
         var call = new ToolCall("find_manuals", JsonSerializer.Serialize(new { agentName = normalized, query }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         try
         {
-            var hits = await _manuals.SearchAsync(normalized, query, cancellationToken);
+            if (ctx is not null)
+            {
+                ctx.LastQuery = query;
+            }
+            var manualContext = ctx?.ToManualContext();
+            var hits = await _manuals.SearchAsync(normalized, query, manualContext, cancellationToken);
             var payload = JsonSerializer.Serialize(hits, _serializerOptions);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, payload, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, payload, true)));
             return payload;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "find_manuals 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return JsonSerializer.Serialize(new { error = ex.Message }, _serializerOptions);
         }
     }
@@ -109,20 +114,23 @@ public sealed class ManualToolset
         var ctx = _context.Value;
         var normalized = NormalizeAgentName(agentName);
         var call = new ToolCall("read_manual", JsonSerializer.Serialize(new { agentName = normalized, relativePath }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         try
         {
-            var content = await _manuals.ReadAsync(normalized, relativePath, maxBytes: 800, cancellationToken: cancellationToken);
+            var manualContext = ctx?.ToManualContext();
+            var isDrawing = relativePath.StartsWith("drawing:", StringComparison.OrdinalIgnoreCase);
+            var limit = isDrawing ? 10_000_000 : 800;
+            var content = await _manuals.ReadAsync(normalized, relativePath, maxBytes: limit, context: manualContext, cancellationToken: cancellationToken);
             var payload = JsonSerializer.Serialize(content, _serializerOptions);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, payload, content is not null)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, payload, content is not null)));
             return payload;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "read_manual 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return JsonSerializer.Serialize(new { error = ex.Message }, _serializerOptions);
         }
     }
@@ -155,9 +163,22 @@ public sealed class ManualToolset
         };
     }
 
-    private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
+    private sealed class ScopeContext
     {
+        public ScopeContext(ChatContext chatContext, Action<AgentEvent> sink)
+        {
+            ChatContext = chatContext;
+            Sink = sink;
+        }
+
+        public ChatContext ChatContext { get; }
+        public Action<AgentEvent> Sink { get; }
+        public string? LastQuery { get; set; }
+
         public void Emit(AgentEvent ev) => Sink(ev);
+
+        public ManualSearchContext ToManualContext() =>
+            new(ChatContext.UserId, ChatContext.AgentNumber, LastQuery);
     }
 
     private sealed class Scope : IDisposable

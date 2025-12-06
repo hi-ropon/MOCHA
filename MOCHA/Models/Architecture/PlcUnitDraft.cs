@@ -10,8 +10,12 @@ namespace MOCHA.Models.Architecture;
 /// </summary>
 public sealed class PlcUnitDraft
 {
+    /// <summary>サポートするメーカー一覧</summary>
+    public static readonly IReadOnlyList<string> SupportedManufacturers = new[] { "三菱電機", "KEYENCE" };
     /// <summary>ユニット名</summary>
     public string Name { get; init; } = string.Empty;
+    /// <summary>メーカー</summary>
+    public string Manufacturer { get; init; } = string.Empty;
     /// <summary>機種</summary>
     public string? Model { get; init; }
     /// <summary>役割</summary>
@@ -39,6 +43,16 @@ public sealed class PlcUnitDraft
             return (false, "PLC名は必須です");
         }
 
+        if (string.IsNullOrWhiteSpace(Manufacturer))
+        {
+            return (false, "メーカーを選択してください");
+        }
+
+        if (!SupportedManufacturers.Contains(Manufacturer.Trim(), StringComparer.Ordinal))
+        {
+            return (false, "メーカーは「三菱電機」「KEYENCE」から選択してください");
+        }
+
         if (Port is not null && (Port <= 0 || Port > 65535))
         {
             return (false, "ポート番号は1-65535で入力してください");
@@ -51,7 +65,18 @@ public sealed class PlcUnitDraft
 
         if (CommentFile is not null)
         {
-            var validation = CommentFile.Validate(maxFileSizeBytes);
+            var normalizedComment = new PlcFileUpload
+            {
+                Id = CommentFile.Id,
+                FileName = CommentFile.FileName,
+                ContentType = CommentFile.ContentType,
+                FileSize = GetSize(CommentFile),
+                DisplayName = CommentFile.DisplayName,
+                RelativePath = CommentFile.RelativePath,
+                StorageRoot = CommentFile.StorageRoot
+            };
+
+            var validation = normalizedComment.Validate(maxFileSizeBytes);
             if (!validation.IsValid)
             {
                 return validation;
@@ -66,7 +91,18 @@ public sealed class PlcUnitDraft
         var programFiles = ProgramFiles ?? Array.Empty<PlcFileUpload>();
         foreach (var programFile in programFiles)
         {
-            var validation = programFile.Validate(maxFileSizeBytes);
+            var normalizedProgram = new PlcFileUpload
+            {
+                Id = programFile.Id,
+                FileName = programFile.FileName,
+                ContentType = programFile.ContentType,
+                FileSize = GetSize(programFile),
+                DisplayName = programFile.DisplayName,
+                RelativePath = programFile.RelativePath,
+                StorageRoot = programFile.StorageRoot
+            };
+
+            var validation = normalizedProgram.Validate(maxFileSizeBytes);
             if (!validation.IsValid)
             {
                 return validation;
@@ -84,5 +120,10 @@ public sealed class PlcUnitDraft
     private static bool IsCsvFile(string fileName)
     {
         return string.Equals(Path.GetExtension(fileName), ".csv", System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static long GetSize(PlcFileUpload file)
+    {
+        return file.Content?.LongLength ?? file.FileSize;
     }
 }

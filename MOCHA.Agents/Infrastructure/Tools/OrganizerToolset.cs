@@ -23,6 +23,7 @@ public sealed class OrganizerToolset
     private readonly ManualAgentTool _manualAgentTool;
     private readonly PlcAgentTool _plcAgentTool;
     private readonly PlcToolset _plcToolset;
+    private readonly IPlcDataLoader _plcDataLoader;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -41,12 +42,14 @@ public sealed class OrganizerToolset
     /// <param name="manualAgentTool">マニュアルエージェントツール</param>
     /// <param name="plcAgentTool">PLC エージェントツール</param>
     /// <param name="plcToolset">PLC 専用ツールセット</param>
+    /// <param name="plcDataLoader">PLC データローダー</param>
     /// <param name="logger">ロガー</param>
     public OrganizerToolset(
         ManualToolset manualTools,
         ManualAgentTool manualAgentTool,
         PlcAgentTool plcAgentTool,
         PlcToolset plcToolset,
+        IPlcDataLoader plcDataLoader,
         ILogger<OrganizerToolset> logger)
     {
         _logger = logger;
@@ -54,6 +57,7 @@ public sealed class OrganizerToolset
         _manualAgentTool = manualAgentTool;
         _plcAgentTool = plcAgentTool;
         _plcToolset = plcToolset;
+        _plcDataLoader = plcDataLoader;
         _plcGatewayTool = AIFunctionFactory.Create(
             new Func<string?, CancellationToken, Task<string>>(RunPlcGatewayAsync),
             name: "read_plc_gateway",
@@ -74,22 +78,27 @@ public sealed class OrganizerToolset
             AIFunctionFactory.Create(
                 new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
                 name: "invoke_plc_agent",
-                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。")
+                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。"),
+
+            AIFunctionFactory.Create(
+                new Func<string, CancellationToken, Task<string>>(InvokeDrawingAgentAsync),
+                name: "invoke_drawing_agent",
+                description: "登録済み図面を検索・要約します。図面に関する質問で利用します。")
         };
     }
 
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
-    /// <param name="conversationId">会話ID</param>
+    /// <param name="chatContext">チャットコンテキスト</param>
     /// <param name="sink">イベント受け取りコールバック</param>
     /// <returns>スコープ破棄用ハンドル</returns>
-    public IDisposable UseContext(string conversationId, Action<AgentEvent> sink)
+    public IDisposable UseContext(ChatContext chatContext, Action<AgentEvent> sink)
     {
-        _context.Value = new ScopeContext(conversationId, sink);
-        var manualScope = _manualTools.UseContext(conversationId, sink);
-        var agentScope = _manualAgentTool.UseContext(conversationId, sink);
-        var plcScope = _plcToolset.UseContext(conversationId, sink);
+        _context.Value = new ScopeContext(chatContext, sink);
+        var manualScope = _manualTools.UseContext(chatContext, sink);
+        var agentScope = _manualAgentTool.UseContext(chatContext.ConversationId, sink);
+        var plcScope = _plcToolset.UseContext(chatContext.ConversationId, sink);
         return new Scope(this, manualScope, agentScope, plcScope);
     }
 
@@ -103,8 +112,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_iai_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
     }
@@ -119,8 +128,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_oriental_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
     }
@@ -136,8 +145,8 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_plc_agent", JsonSerializer.Serialize(new { question, options = optionsJson }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         return RunPlcAsync(call, question, optionsJson, cancellationToken);
     }
@@ -155,18 +164,54 @@ public sealed class OrganizerToolset
         var ctx = _context.Value;
         try
         {
+            var parsedOptions = ParsePlcOptions(optionsJson);
+            var unitId = parsedOptions.PlcUnitId is not null && Guid.TryParse(parsedOptions.PlcUnitId, out var guid) ? guid : (Guid?)null;
+            await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
             var extraTools = new[] { _plcGatewayTool };
-            var contextHint = BuildPlcContextHint(optionsJson);
+            var contextHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note);
             var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "invoke_plc_agent 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Agent 実行エラー: {ex.Message}";
         }
+    }
+
+    private static PlcAgentOptions ParsePlcOptions(string? optionsJson)
+    {
+        if (string.IsNullOrWhiteSpace(optionsJson))
+        {
+            return new PlcAgentOptions();
+        }
+
+        try
+        {
+            return JsonSerializer.Deserialize<PlcAgentOptions>(optionsJson, new JsonSerializerOptions(JsonSerializerDefaults.Web)) ?? new PlcAgentOptions();
+        }
+        catch
+        {
+            return new PlcAgentOptions { GatewayOptionsJson = optionsJson };
+        }
+    }
+
+    /// <summary>
+    /// 図面エージェント呼び出しツール実行
+    /// </summary>
+    /// <param name="question">問い合わせ内容</param>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    /// <returns>実行結果</returns>
+    private Task<string> InvokeDrawingAgentAsync(string question, CancellationToken cancellationToken)
+    {
+        var ctx = _context.Value;
+        var call = new ToolCall("invoke_drawing_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
+
+        return RunManualAgentAsync(call, "drawingAgent", question, cancellationToken);
     }
 
     /// <summary>
@@ -183,13 +228,13 @@ public sealed class OrganizerToolset
         try
         {
             var result = await _manualAgentTool.RunAsync(agentName, question, cancellationToken: cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "{Tool} 実行に失敗しました。", call.Name);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"{call.Name} 実行エラー: {ex.Message}";
         }
     }
@@ -204,39 +249,24 @@ public sealed class OrganizerToolset
     {
         var ctx = _context.Value;
         var call = new ToolCall("read_plc_gateway", JsonSerializer.Serialize(new { options = optionsJson }, _serializerOptions));
-        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ConversationId, call));
-        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
+        ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
         try
         {
             var result = await _plcAgentTool.RunGatewayAsync(optionsJson, cancellationToken);
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, true)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "read_plc_gateway 実行に失敗しました。");
-            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
+            ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, ex.Message, false, ex.Message)));
             return $"PLC Gateway 実行エラー: {ex.Message}";
         }
     }
 
-    /// <summary>
-    /// PLC エージェントへのコンテキストヒント生成
-    /// </summary>
-    /// <param name="optionsJson">ゲートウェイオプション</param>
-    /// <returns>システムメッセージ</returns>
-    private static string? BuildPlcContextHint(string? optionsJson)
-    {
-        if (string.IsNullOrWhiteSpace(optionsJson))
-        {
-            return "ゲートウェイ読み取りが必要なら read_plc_gateway を呼び出して devices/IP/port を指定してください。";
-        }
-
-        return $"ゲートウェイ読み取りに使う optionsJson: {optionsJson}";
-    }
-
-    private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
+    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink)
     {
         public void Emit(AgentEvent ev) => Sink(ev);
     }

@@ -212,15 +212,25 @@
     border-radius: 10px;
     padding: 10px 12px;
     background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
     gap: 12px;
     color: var(--text-primary);
+}
+
+.drawing-file {
+    flex: 1 1 auto;
+    min-width: 240px;
 }
 
 .drawing-file-name {
     font-weight: 600;
     color: var(--text-primary);
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .drawing-meta {
@@ -241,14 +251,36 @@
 }
 
 .drawing-actions {
-    display: grid;
-    justify-items: end;
-    gap: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    flex-wrap: nowrap;
+    flex: 0 0 auto;
 }
 
 .drawing-updated {
     color: var(--text-muted);
     font-size: 12px;
+}
+
+.drawing-action-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.drawing-actions .agent-delete-btn {
+    width: auto;
+    min-width: 88px;
+    height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--panel-bg);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .drawing-edit-btn {
@@ -486,8 +518,8 @@
 }
 
 .session-item {
-    padding: 12px 16px;
-    margin-bottom: 8px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
     background: var(--panel-bg);
     border-radius: 8px;
     cursor: pointer;
@@ -497,6 +529,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+}
+
+.session-item:last-child {
+    margin-bottom: 0;
 }
 
 .session-item:hover {
@@ -512,13 +548,13 @@
 
 .history-title {
     color: var(--text-primary);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 700;
 }
 
 .history-time {
     color: var(--text-muted);
-    font-size: 0.8rem;
+    font-size: 0.75rem;
 }
 
 .history-empty {
@@ -687,6 +723,12 @@
     font-weight: 700;
 }
 
+.required-mark {
+    color: #d12b2b;
+    margin-left: 4px;
+    font-weight: 700;
+}
+
 .drawing-modal-subtitle {
     color: var(--text-muted);
     font-size: 0.9rem;
@@ -732,25 +774,40 @@
     border-radius: 12px;
     padding: 16px;
     display: grid;
-    place-items: center;
-    background: rgba(255, 255, 255, 0.02);
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.06));
+    min-height: 96px;
 }
 
-.drawing-dropzone input[type="file"] {
-    position: absolute;
-    inset: 0;
-    opacity: 0;
-    cursor: pointer;
+.drawing-drop-text {
+    display: grid;
+    gap: 6px;
+    min-width: 220px;
 }
 
-.drawing-drop-label {
+.drawing-drop-icon {
+    box-shadow: 0 10px 30px rgba(79, 70, 229, 0.25);
+    flex-shrink: 0;
+}
+
+.drawing-drop-pill {
+    background: var(--panel-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    padding: 8px 14px;
+    font-size: 12px;
+    color: var(--text-primary);
     text-align: center;
-    pointer-events: none;
+    min-width: 200px;
+}
+
+.drawing-file-input {
+    display: none;
 }
 
 .drop-primary {
-    font-weight: 600;
-    margin-bottom: 4px;
+    font-weight: 700;
+    font-size: 15px;
 }
 
 .drop-secondary {
@@ -975,6 +1032,18 @@ input[type="file"].plc-file-input {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+    justify-content: flex-end;
+}
+
+.plc-actions .agent-delete-btn {
+    width: auto;
+    min-width: 88px;
+    height: 36px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: var(--panel-bg);
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .plc-program-group {

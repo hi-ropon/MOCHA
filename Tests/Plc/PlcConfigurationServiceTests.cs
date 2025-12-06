@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.IO;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Architecture;
 using MOCHA.Services.Architecture;
@@ -25,6 +27,7 @@ public class PlcConfigurationServiceTests
         var draft = new PlcUnitDraft
         {
             Name = "PLC-1",
+            Manufacturer = "三菱電機",
             Model = "Q03UDV",
             Role = "制御",
             Modules = new List<PlcModuleDraft>
@@ -37,6 +40,7 @@ public class PlcConfigurationServiceTests
         var second = await service.AddAsync("user-1", "A-01", new PlcUnitDraft
         {
             Name = "PLC-2",
+            Manufacturer = "KEYENCE",
             Model = "Q03UDV",
             Role = "制御",
             Modules = new List<PlcModuleDraft>
@@ -65,10 +69,11 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
-                CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024 },
+                Manufacturer = "三菱電機",
+                CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024, Content = new byte[1024] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
-                    new() { FileName = "program_v1.csv", FileSize = 2048 }
+                    new() { FileName = "program_v1.csv", FileSize = 2048, Content = new byte[2048] }
                 }
             });
         Assert.IsTrue(initial.Succeeded);
@@ -81,10 +86,11 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-3",
-                CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072 },
+                Manufacturer = "三菱電機",
+                CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072, Content = new byte[3072] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
-                    new() { FileName = "program_v2.csv", FileSize = 4096 }
+                    new() { FileName = "program_v2.csv", FileSize = 4096, Content = new byte[4096] }
                 }
             });
 
@@ -106,7 +112,8 @@ public class PlcConfigurationServiceTests
             "C-03",
             new PlcUnitDraft
             {
-                Name = "PLC-4"
+                Name = "PLC-4",
+                Manufacturer = "KEYENCE"
             });
         Assert.IsTrue(added.Succeeded);
 
@@ -130,6 +137,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-5",
+                Manufacturer = "三菱電機",
                 IpAddress = "192.168.0.20",
                 Port = 5000
             });
@@ -152,16 +160,61 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-7",
+                Manufacturer = "KEYENCE",
                 ProgramFiles = new List<PlcFileUpload>
                 {
-                    new() { FileName = "logic_a.csv", FileSize = 1024, DisplayName = "ロジックA" },
-                    new() { FileName = "logic_b.csv", FileSize = 2048 }
+                    new() { FileName = "logic_a.csv", FileSize = 1024, DisplayName = "ロジックA", Content = new byte[1024] },
+                    new() { FileName = "logic_b.csv", FileSize = 2048, Content = new byte[2048] }
                 }
             });
 
         Assert.IsTrue(result.Succeeded);
         Assert.AreEqual(2, result.Unit!.ProgramFiles.Count);
         Assert.AreEqual("ロジックA", result.Unit.ProgramFiles.First().DisplayName);
+    }
+
+    /// <summary>
+    /// プログラムファイルが保存される確認
+    /// </summary>
+    [TestMethod]
+    public async Task プログラムファイルが保存される()
+    {
+        var root = Path.Combine(Path.GetTempPath(), $"mocha-plc-save-{Guid.NewGuid():N}");
+        var options = Options.Create(new PlcStorageOptions { RootPath = root });
+        var service = new PlcConfigurationService(
+            new InMemoryPlcUnitRepository(),
+            new PlcFileStoragePathBuilder(options),
+            NullLogger<PlcConfigurationService>.Instance);
+
+        try
+        {
+            var result = await service.AddAsync(
+                "user-7",
+                "G-07",
+                new PlcUnitDraft
+                {
+                    Name = "PLC-8",
+                    Manufacturer = "三菱電機",
+                    ProgramFiles = new List<PlcFileUpload>
+                    {
+                        new() { FileName = "logic.csv", FileSize = 3, Content = new byte[] { 1, 2, 3 } }
+                    }
+                });
+
+            Assert.IsTrue(result.Succeeded);
+
+            var expectedDir = Directory.EnumerateDirectories(root, "G-07", SearchOption.AllDirectories).FirstOrDefault();
+            Assert.IsNotNull(expectedDir);
+            var files = Directory.GetFiles(expectedDir, "*.csv", SearchOption.AllDirectories);
+            Assert.AreEqual(1, files.Length);
+        }
+        finally
+        {
+            if (Directory.Exists(root))
+            {
+                Directory.Delete(root, true);
+            }
+        }
     }
 
     /// <summary>
@@ -177,6 +230,7 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-6",
+                Manufacturer = "KEYENCE",
                 CommentFile = new PlcFileUpload { FileName = "memo.txt", FileSize = 512 },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -189,11 +243,37 @@ public class PlcConfigurationServiceTests
     }
 
     /// <summary>
+    /// メーカー未選択の場合は保存しない確認
+    /// </summary>
+    [TestMethod]
+    public async Task メーカー未選択なら保存に失敗する()
+    {
+        var service = CreateService();
+        var result = await service.AddAsync(
+            "user-8",
+            "H-08",
+            new PlcUnitDraft
+            {
+                Name = "PLC-9"
+            });
+
+        Assert.IsFalse(result.Succeeded);
+        StringAssert.Contains(result.Error!, "メーカー");
+    }
+
+    /// <summary>
     /// テスト用サービス生成
     /// </summary>
     /// <returns>構成サービス</returns>
     private static PlcConfigurationService CreateService()
     {
-        return new PlcConfigurationService(new InMemoryPlcUnitRepository(), NullLogger<PlcConfigurationService>.Instance);
+        var options = Options.Create(new PlcStorageOptions
+        {
+            RootPath = Path.Combine(Path.GetTempPath(), $"mocha-plc-{Guid.NewGuid():N}")
+        });
+        return new PlcConfigurationService(
+            new InMemoryPlcUnitRepository(),
+            new PlcFileStoragePathBuilder(options),
+            NullLogger<PlcConfigurationService>.Instance);
     }
 }

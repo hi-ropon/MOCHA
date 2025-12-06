@@ -1,3 +1,4 @@
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Agents.Infrastructure.Orchestration;
 
@@ -18,10 +19,14 @@ public class OrganizerInstructionsTests
         var text = OrganizerInstructions.Default;
 
         StringAssert.Contains(text, "Organizer は振り分けのみを担当");
+        StringAssert.Contains(text, "アーキテクチャ設定");
+        StringAssert.Contains(text, "図面情報");
         StringAssert.Contains(text, "find_manuals");
         StringAssert.Contains(text, "read_manual");
         StringAssert.Contains(text, "invoke_plc_agent");
         StringAssert.Contains(text, "invoke_iai_agent");
         StringAssert.Contains(text, "invoke_oriental_agent");
+        StringAssert.Contains(text, "invoke_drawing_agent");
+        Assert.IsFalse(text.Contains("{{", StringComparison.Ordinal));
     }
 }

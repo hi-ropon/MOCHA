@@ -23,6 +23,11 @@ public interface IPlcDataStore
     void SetPrograms(IEnumerable<ProgramFile> programs);
 
     /// <summary>
+    /// ファンクションブロックを設定
+    /// </summary>
+    void SetFunctionBlocks(IEnumerable<FunctionBlockData> blocks);
+
+    /// <summary>
     /// コメント取得
     /// </summary>
     bool TryGetComment(string device, out string? comment);
@@ -31,4 +36,14 @@ public interface IPlcDataStore
     /// プログラムコレクション
     /// </summary>
     IReadOnlyDictionary<string, IReadOnlyList<string>> Programs { get; }
+
+    /// <summary>
+    /// ファンクションブロック一覧
+    /// </summary>
+    IReadOnlyCollection<FunctionBlockData> FunctionBlocks { get; }
+
+    /// <summary>
+    /// ファンクションブロック取得
+    /// </summary>
+    bool TryGetFunctionBlock(string name, out FunctionBlockData? block);
 }

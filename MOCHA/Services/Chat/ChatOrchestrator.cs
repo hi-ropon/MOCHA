@@ -67,7 +67,11 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         var turn = new ChatTurn(convId, new List<ChatMessage>
         {
             new(ChatRole.User, text)
-        });
+        })
+        {
+            AgentNumber = agentNumber,
+            UserId = user.UserId
+        };
 
         var stream = await _agentChatClient.SendAsync(turn, cancellationToken);
         var assistantBuffer = new StringBuilder();
