@@ -13,6 +13,7 @@
 @using MOCHA.Models.Drawings
 @using MOCHA.Models.Architecture
 @using MOCHA.Services.Architecture
+@using Microsoft.AspNetCore.Components.Web
 @inject NavigationManager NavigationManager
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
@@ -20,6 +21,7 @@
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
+@inject PcConfigurationService PcConfigurationService
 @inject FunctionBlockService FunctionBlockService
 @inject IJSRuntime JsRuntime
 @inherits LayoutComponentBase
@@ -217,77 +219,62 @@
                             <div class="drawing-header">
                                 <div>
                                     <div class="agent-settings-section-title">アーキテクチャ設定</div>
+                                    <div class="agent-settings-subtitle">PCとPLCの構成をまとめて管理</div>
                                 </div>
-                                <button type="button"
-                                        class="new-chat-btn save-agent-btn drawing-open-btn"
-                                        @onclick="OpenPlcModalForCreate"
-                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
-                                    PLCユニットを追加
-                                </button>
+                                <div class="architecture-actions">
+                                    <button type="button"
+                                            class="new-chat-btn save-agent-btn drawing-open-btn"
+                                            @onclick="OpenPcModalForCreate"
+                                            disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                        PCを追加
+                                    </button>
+                                    <button type="button"
+                                            class="new-chat-btn save-agent-btn drawing-open-btn"
+                                            @onclick="OpenPlcModalForCreate"
+                                            disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                        PLCユニットを追加
+                                    </button>
+                                </div>
                             </div>
 
                             @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
                             {
                                 <div class="drawing-empty">装置エージェントを選択してください</div>
                             }
-                            else if (_plcUnits.Any())
+                            else
                             {
-                                <div class="plc-list">
-                                    @foreach (var plc in _plcUnits)
+                                <div class="plc-list pc-list">
+                                    @if (_pcSettings.Any())
                                     {
-                                        <div class="plc-card">
-                                            <div class="plc-title-row">
-                                                <div>
-                                                    <div class="plc-name">@plc.Name</div>
-                                                    <div class="plc-meta">メーカー: @(!string.IsNullOrWhiteSpace(plc.Manufacturer) ? plc.Manufacturer : "未設定")</div>
-                                                    <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
+                                        @foreach (var pc in _pcSettings)
+                                        {
+                                            <div class="plc-card pc-card">
+                                                <div class="plc-title-row">
+                                                    <div>
+                                                        <div class="plc-name">@pc.Os</div>
+                                                        <div class="plc-meta">役割: @(!string.IsNullOrWhiteSpace(pc.Role) ? pc.Role : "未設定")</div>
+                                                    </div>
+                                                    <div class="plc-actions">
+                                                        <button type="button"
+                                                                class="agent-delete-btn drawing-edit-btn"
+                                                                @onclick="() => OpenPcModalForEdit(pc)">
+                                                            編集
+                                                        </button>
+                                                        <button type="button"
+                                                                class="agent-delete-btn danger-btn"
+                                                                @onclick="() => DeletePcSettingAsync(pc)">
+                                                            削除
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div class="plc-actions">
-                                                    <button type="button"
-                                                            class="agent-delete-btn drawing-edit-btn"
-                                                            @onclick="() => OpenPlcModalForEdit(plc)">
-                                                        編集
-                                                    </button>
-                                                    <button type="button"
-                                                            class="agent-delete-btn danger-btn"
-                                                            @onclick="() => DeletePlcUnitAsync(plc)">
-                                                        削除
-                                                    </button>
-                                                </div>
-                                            </div>
-                                            <div class="plc-row">
-                                                <span class="plc-label">役割:</span>
-                                                <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
-                                            </div>
-                                            <div class="plc-row endpoint-row">
-                                                <div class="endpoint-cell">
-                                                    <div class="plc-label">IPアドレス</div>
-                                                    <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</div>
-                                                </div>
-                                                <div class="endpoint-cell">
-                                                    <div class="plc-label">ポート</div>
-                                                    <div class="plc-value">@FormatPort(plc.Port)</div>
-                                                </div>
-                                            </div>
-                                            <div class="plc-row files-row">
-                                                <div>
-                                                    <div class="plc-label">コメントファイル</div>
-                                                    <div class="plc-value">@DisplayFileName(plc.CommentFile?.FileName)</div>
-                                                </div>
-                                                <div>
-                                                    <div class="plc-label">プログラムファイル</div>
-                                                    <div class="plc-program-list">
-                                                        @if (plc.ProgramFiles?.Any() ?? false)
+                                                <div class="plc-row modules-row">
+                                                    <div class="plc-label">リポジトリ</div>
+                                                    <div class="plc-modules">
+                                                        @if (pc.RepositoryUrls?.Any() ?? false)
                                                         {
-                                                            var programNames = plc.ProgramFiles!.ToList();
-                                                            var take = programNames.Take(2).ToList();
-                                                            foreach (var file in take)
+                                                            @foreach (var url in pc.RepositoryUrls)
                                                             {
-                                                                <span class="plc-chip">@DisplayFileName(file.FileName, file.DisplayName)</span>
-                                                            }
-                                                            if (programNames.Count > 2)
-                                                            {
-                                                                <span class="plc-chip muted">+@((programNames.Count - 2)) 件</span>
+                                                                <span class="plc-chip repo-chip">@url</span>
                                                             }
                                                         }
                                                         else
@@ -297,29 +284,105 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="plc-row modules-row">
-                                                <div class="plc-label">ユニット</div>
-                                                <div class="plc-modules">
-                                                    @if (plc.Modules.Any())
-                                                    {
-                                                    @foreach (var unitItem in plc.Modules)
-                                                    {
-                                                        <span class="plc-chip">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</span>
-                                                    }
-                                                    }
-                                                    else
-                                                    {
-                                                        <span class="plc-value">未設定</span>
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <div class="drawing-empty">PC設定がありません</div>
                                     }
                                 </div>
-                            }
-                            else
-                            {
-                                <div class="drawing-empty">PLCユニットがありません</div>
+
+                                @if (_plcUnits.Any())
+                                {
+                                    <div class="plc-list">
+                                        @foreach (var plc in _plcUnits)
+                                        {
+                                            <div class="plc-card">
+                                                <div class="plc-title-row">
+                                                    <div>
+                                                        <div class="plc-name">@plc.Name</div>
+                                                        <div class="plc-meta">メーカー: @(!string.IsNullOrWhiteSpace(plc.Manufacturer) ? plc.Manufacturer : "未設定")</div>
+                                                        <div class="plc-meta">@(!string.IsNullOrWhiteSpace(plc.Model) ? plc.Model : "未設定")</div>
+                                                    </div>
+                                                    <div class="plc-actions">
+                                                        <button type="button"
+                                                                class="agent-delete-btn drawing-edit-btn"
+                                                                @onclick="() => OpenPlcModalForEdit(plc)">
+                                                            編集
+                                                        </button>
+                                                        <button type="button"
+                                                                class="agent-delete-btn danger-btn"
+                                                                @onclick="() => DeletePlcUnitAsync(plc)">
+                                                            削除
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="plc-row">
+                                                    <span class="plc-label">役割:</span>
+                                                    <span class="plc-value">@(!string.IsNullOrWhiteSpace(plc.Role) ? plc.Role : "未設定")</span>
+                                                </div>
+                                                <div class="plc-row endpoint-row">
+                                                    <div class="endpoint-cell">
+                                                        <div class="plc-label">IPアドレス</div>
+                                                        <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.IpAddress) ? plc.IpAddress : "未設定")</div>
+                                                    </div>
+                                                    <div class="endpoint-cell">
+                                                        <div class="plc-label">ポート</div>
+                                                        <div class="plc-value">@FormatPort(plc.Port)</div>
+                                                    </div>
+                                                </div>
+                                                <div class="plc-row files-row">
+                                                    <div>
+                                                        <div class="plc-label">コメントファイル</div>
+                                                        <div class="plc-value">@DisplayFileName(plc.CommentFile?.FileName)</div>
+                                                    </div>
+                                                    <div>
+                                                        <div class="plc-label">プログラムファイル</div>
+                                                        <div class="plc-program-list">
+                                                            @if (plc.ProgramFiles?.Any() ?? false)
+                                                            {
+                                                                var programNames = plc.ProgramFiles!.ToList();
+                                                                var take = programNames.Take(2).ToList();
+                                                                foreach (var file in take)
+                                                                {
+                                                                    <span class="plc-chip">@DisplayFileName(file.FileName, file.DisplayName)</span>
+                                                                }
+                                                                if (programNames.Count > 2)
+                                                                {
+                                                                    <span class="plc-chip muted">+@((programNames.Count - 2)) 件</span>
+                                                                }
+                                                            }
+                                                            else
+                                                            {
+                                                                <span class="plc-value">未設定</span>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="plc-row modules-row">
+                                                    <div class="plc-label">ユニット</div>
+                                                    <div class="plc-modules">
+                                                        @if (plc.Modules.Any())
+                                                        {
+                                                        @foreach (var unitItem in plc.Modules)
+                                                        {
+                                                            <span class="plc-chip">@unitItem.Name @if(!string.IsNullOrWhiteSpace(unitItem.Specification)){<text>（@unitItem.Specification）</text>}</span>
+                                                        }
+                                                        }
+                                                        else
+                                                        {
+                                                            <span class="plc-value">未設定</span>
+                                                        }
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        }
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="drawing-empty">PLCユニットがありません</div>
+                                }
                             }
                         </div>
 
@@ -483,6 +546,77 @@
                         disabled="@( !CanSaveDrawing)"
                         @onclick="SaveDrawingAsync">
                     @(_editingDrawingId.HasValue ? "保存" : "登録")
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
+@if (_pcModalOpen)
+{
+    <div class="drawing-modal-overlay" @onclick="ClosePcModal">
+        <div class="pc-modal-shell" @onclick:stopPropagation="true">
+            <div class="drawing-modal-header">
+                <div>
+                    <div class="drawing-modal-title">@(_editingPcId.HasValue ? "PC設定を編集" : "PC設定を登録")</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @SettingsSelectedAgentNumber</div>
+                </div>
+                <button type="button" class="drawing-close" @onclick="ClosePcModal" aria-label="閉じる">×</button>
+            </div>
+
+            <div class="drawing-modal-body">
+                <div class="field">
+                    <label>OS<span class="required-mark" aria-label="必須">*</span></label>
+                    <input class="agent-input" @bind="_pcOs" placeholder="例: Windows 11 / Ubuntu" />
+                </div>
+                <div class="field">
+                    <label>役割</label>
+                    <input class="agent-input" @bind="_pcRole" placeholder="例: HMI / CI サーバー" />
+                </div>
+                <div class="field">
+                    <label>リポジトリURL</label>
+                    <div class="repo-input-row">
+                        <input class="agent-input"
+                               @bind="_repoInput"
+                               placeholder="https://example.com/repo.git"
+                               @onkeydown="HandleRepoKeyDown" />
+                        <button type="button"
+                                class="plc-module-action-btn drawing-edit-btn"
+                                @onclick="AddRepositoryUrl">
+                            追加
+                        </button>
+                    </div>
+                    <div class="repo-chip-list">
+                        @if (_repoUrls.Count == 0)
+                        {
+                            <span class="plc-value">未設定</span>
+                        }
+                        else
+                        {
+                            @foreach (var url in _repoUrls)
+                            {
+                                <span class="plc-chip repo-chip">
+                                    @url
+                                    <button type="button" class="repo-remove-btn" @onclick="() => RemoveRepositoryUrl(url)">×</button>
+                                </span>
+                            }
+                        }
+                    </div>
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(_pcError))
+                {
+                    <div class="drawing-error">@_pcError</div>
+                }
+            </div>
+
+            <div class="drawing-modal-actions">
+                <button type="button" class="agent-delete-btn cancel-btn" @onclick="ClosePcModal">キャンセル</button>
+                <button type="button"
+                        class="new-chat-btn save-agent-btn drawing-save-btn"
+                        disabled="@( !CanSavePc)"
+                        @onclick="SavePcAsync">
+                    @(_editingPcId.HasValue ? "保存" : "登録")
                 </button>
             </div>
         </div>
@@ -919,6 +1053,15 @@
     private bool _drawingSaving;
     private const long _drawingMaxFileSizeBytes = 10 * 1024 * 1024;
     private const long _plcMaxFileSizeBytes = 10 * 1024 * 1024;
+    private IReadOnlyList<PcSetting> _pcSettings = Array.Empty<PcSetting>();
+    private bool _pcModalOpen;
+    private Guid? _editingPcId;
+    private string _pcOs = string.Empty;
+    private string _pcRole = string.Empty;
+    private string _repoInput = string.Empty;
+    private List<string> _repoUrls = new();
+    private string? _pcError;
+    private bool _pcSaving;
     private IReadOnlyList<PlcUnit> _plcUnits = Array.Empty<PlcUnit>();
     private bool _plcModalOpen;
     private Guid? _editingPlcId;
@@ -1066,6 +1209,7 @@
     private async Task LoadSettingsDataAsync()
     {
         await LoadDrawingsAsync();
+        await LoadPcSettingsAsync();
         await LoadPlcUnitsAsync();
     }
 
@@ -1206,6 +1350,17 @@
         }
 
         _drawings = await DrawingService.ListAsync(_userId, SettingsSelectedAgentNumber);
+    }
+
+    private async Task LoadPcSettingsAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _pcSettings = Array.Empty<PcSetting>();
+            return;
+        }
+
+        _pcSettings = await PcConfigurationService.ListAsync(_userId, SettingsSelectedAgentNumber);
     }
 
     private async Task LoadPlcUnitsAsync()
@@ -1404,6 +1559,170 @@
 
         await LoadDrawingsAsync();
     }
+
+    private async Task OpenPcModalForCreate()
+    {
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
+            return;
+        }
+
+        _editingPcId = null;
+        _pcOs = string.Empty;
+        _pcRole = string.Empty;
+        _repoInput = string.Empty;
+        _repoUrls.Clear();
+        _pcError = null;
+        _pcModalOpen = true;
+    }
+
+    private async Task OpenPcModalForEdit(PcSetting pc)
+    {
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            await JsRuntime.InvokeVoidAsync("alert", "装置エージェントを選択してください");
+            return;
+        }
+
+        _editingPcId = pc.Id;
+        _pcOs = pc.Os;
+        _pcRole = pc.Role ?? string.Empty;
+        _repoInput = string.Empty;
+        _repoUrls = pc.RepositoryUrls?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? new List<string>();
+        _pcError = null;
+        _pcModalOpen = true;
+    }
+
+    private void ClosePcModal()
+    {
+        _pcModalOpen = false;
+        _editingPcId = null;
+        _pcOs = string.Empty;
+        _pcRole = string.Empty;
+        _repoInput = string.Empty;
+        _repoUrls.Clear();
+        _pcError = null;
+    }
+
+    private void AddRepositoryUrl()
+    {
+        _pcError = null;
+        var url = _repoInput?.Trim();
+        if (string.IsNullOrWhiteSpace(url))
+        {
+            return;
+        }
+
+        if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            _pcError = "リポジトリURLは http/https の絶対URLで入力してください";
+            return;
+        }
+
+        if (_repoUrls.Any(u => string.Equals(u, url, StringComparison.OrdinalIgnoreCase)))
+        {
+            _repoInput = string.Empty;
+            return;
+        }
+
+        _repoUrls.Add(url);
+        _repoInput = string.Empty;
+    }
+
+    private void HandleRepoKeyDown(KeyboardEventArgs args)
+    {
+        if (string.Equals(args.Key, "Enter", StringComparison.OrdinalIgnoreCase))
+        {
+            AddRepositoryUrl();
+        }
+    }
+
+    private void RemoveRepositoryUrl(string url)
+    {
+        _repoUrls.RemoveAll(u => string.Equals(u, url, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private async Task SavePcAsync()
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        _pcError = null;
+
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _pcError = "装置エージェントを選択してください";
+            return;
+        }
+
+        _pcSaving = true;
+        try
+        {
+            var draft = new PcSettingDraft
+            {
+                Os = _pcOs,
+                Role = _pcRole,
+                RepositoryUrls = _repoUrls.ToList()
+            };
+
+            PcSettingResult result;
+            if (_editingPcId.HasValue)
+            {
+                result = await PcConfigurationService.UpdateAsync(_userId, SettingsSelectedAgentNumber, _editingPcId.Value, draft);
+            }
+            else
+            {
+                result = await PcConfigurationService.AddAsync(_userId, SettingsSelectedAgentNumber, draft);
+            }
+
+            if (!result.Succeeded)
+            {
+                _pcError = result.Error;
+                return;
+            }
+
+            await LoadPcSettingsAsync();
+            ClosePcModal();
+        }
+        finally
+        {
+            _pcSaving = false;
+        }
+    }
+
+    private async Task DeletePcSettingAsync(PcSetting pc)
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        var confirmed = await JsRuntime.InvokeAsync<bool>(
+            "confirm",
+            $"PC設定「{pc.Os}」を削除しますか？");
+
+        if (!confirmed)
+        {
+            return;
+        }
+
+        var deleted = await PcConfigurationService.DeleteAsync(_userId, SettingsSelectedAgentNumber, pc.Id);
+        if (!deleted)
+        {
+            _pcError = "PC設定の削除に失敗しました";
+            return;
+        }
+
+        await LoadPcSettingsAsync();
+    }
+
+    private bool CanSavePc => !_pcSaving
+                              && !string.IsNullOrWhiteSpace(_pcOs)
+                              && !string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber);
 
     private async Task OpenPlcModalForCreate()
     {

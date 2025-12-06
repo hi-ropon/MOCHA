@@ -176,6 +176,14 @@
     gap: 12px;
 }
 
+.architecture-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    align-items: center;
+}
+
 .drawing-subtitle {
     color: var(--text-muted);
     font-size: 12px;
@@ -307,6 +315,10 @@
     gap: 10px;
 }
 
+.pc-list {
+    margin-bottom: 12px;
+}
+
 .plc-card {
     border: 1px solid var(--border-color);
     border-radius: 12px;
@@ -378,6 +390,10 @@
     border: 1px solid var(--border-color);
     font-size: 12px;
     color: var(--text-primary);
+}
+
+.pc-card {
+    border-style: dashed;
 }
 
 .danger-btn {
@@ -754,6 +770,16 @@
     padding-right: 4px;
 }
 
+.pc-modal-shell {
+    width: min(560px, 96vw);
+    background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 18px 20px 16px;
+    color: var(--text-primary);
+    box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+}
+
 .plc-modal-shell {
     width: min(720px, 96vw);
     background: linear-gradient(135deg, var(--panel-bg), var(--panel-strong-bg));
@@ -995,6 +1021,16 @@ input[type="file"].plc-file-input {
     gap: 8px;
 }
 
+.repo-input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.repo-input-row .agent-input {
+    flex: 1;
+}
+
 .plc-module-row {
     display: flex;
     justify-content: space-between;
@@ -1101,6 +1137,32 @@ input[type="file"].plc-file-input {
 .plc-chip.muted {
     background: var(--panel-bg);
     color: var(--text-muted);
+}
+
+.repo-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.repo-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.repo-remove-btn {
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 700;
+    padding: 0;
+}
+
+.repo-remove-btn:hover {
+    color: var(--danger);
 }
 
 .drawing-error {

@@ -29,6 +29,8 @@ internal interface IChatDbContext
     DbSet<FeedbackEntity> Feedbacks { get; }
     /// <summary>図面エンティティのセット</summary>
     DbSet<DrawingDocumentEntity> Drawings { get; }
+    /// <summary>PC設定エンティティのセット</summary>
+    DbSet<PcSettingEntity> PcSettings { get; }
     /// <summary>PLCユニットエンティティのセット</summary>
     DbSet<PlcUnitEntity> PlcUnits { get; }
     /// <summary>トラッキング操作へのアクセス</summary>

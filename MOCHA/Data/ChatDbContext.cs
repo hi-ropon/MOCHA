@@ -29,6 +29,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<DevUserEntity> DevUsers => Set<DevUserEntity>();
     public DbSet<FeedbackEntity> Feedbacks => Set<FeedbackEntity>();
     public DbSet<DrawingDocumentEntity> Drawings => Set<DrawingDocumentEntity>();
+    public DbSet<PcSettingEntity> PcSettings => Set<PcSettingEntity>();
     public DbSet<PlcUnitEntity> PlcUnits => Set<PlcUnitEntity>();
 
     /// <summary>
@@ -118,6 +119,17 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Description).HasMaxLength(1000);
             builder.Property(x => x.RelativePath).HasMaxLength(500);
             builder.Property(x => x.StorageRoot).HasMaxLength(300);
+            builder.HasIndex(x => new { x.UserId, x.AgentNumber, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<PcSettingEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.UserId).HasMaxLength(200);
+            builder.Property(x => x.AgentNumber).HasMaxLength(100);
+            builder.Property(x => x.Os).HasMaxLength(200);
+            builder.Property(x => x.Role).HasMaxLength(200);
+            builder.Property(x => x.RepositoryUrlsJson).HasColumnType("TEXT");
             builder.HasIndex(x => new { x.UserId, x.AgentNumber, x.CreatedAt });
         });
 

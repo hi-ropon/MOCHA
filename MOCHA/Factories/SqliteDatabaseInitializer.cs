@@ -121,6 +121,18 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             );
             CREATE INDEX IF NOT EXISTS IX_Drawings_UserId_AgentNumber_CreatedAt ON Drawings(UserId, AgentNumber, CreatedAt);
 
+            CREATE TABLE IF NOT EXISTS PcSettings(
+                Id TEXT NOT NULL CONSTRAINT PK_PcSettings PRIMARY KEY,
+                UserId TEXT NOT NULL,
+                AgentNumber TEXT NOT NULL,
+                Os TEXT NOT NULL,
+                Role TEXT NULL,
+                RepositoryUrlsJson TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_PcSettings_UserId_AgentNumber_CreatedAt ON PcSettings(UserId, AgentNumber, CreatedAt);
+
             CREATE TABLE IF NOT EXISTS PlcUnits(
                 Id TEXT NOT NULL CONSTRAINT PK_PlcUnits PRIMARY KEY,
                 UserId TEXT NOT NULL,

@@ -110,6 +110,8 @@ builder.Services.AddScoped<IDrawingRepository, DrawingRepository>();
 builder.Services.AddScoped<DrawingCatalog>();
 builder.Services.AddScoped<DrawingContentReader>();
 builder.Services.AddScoped<DrawingRegistrationService>();
+builder.Services.AddScoped<IPcSettingRepository, PcSettingRepository>();
+builder.Services.AddScoped<PcConfigurationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();
 builder.Services.AddScoped<FunctionBlockApiClient>();
