@@ -204,6 +204,22 @@
     cursor: not-allowed;
 }
 
+.agent-delete-btn {
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background: var(--panel-bg);
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    white-space: nowrap;
+}
+
 .drawing-permission {
     color: var(--text-muted);
     font-size: 12px;
@@ -288,6 +304,7 @@
     border-radius: 10px;
     background: var(--panel-bg);
     font-weight: 600;
+    font-size: 12px;
     white-space: nowrap;
 }
 
@@ -1163,6 +1180,32 @@ input[type="file"].plc-file-input {
 
 .repo-remove-btn:hover {
     color: var(--danger);
+}
+
+.unit-device-list {
+    display: grid;
+    gap: 10px;
+}
+
+.unit-device-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+    align-items: end;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 10px;
+    background: var(--panel-bg);
+}
+
+.unit-device-row .field {
+    margin: 0;
+}
+
+.unit-device-remove {
+    height: 36px;
+    min-width: 88px;
+    justify-self: start;
 }
 
 .drawing-error {
