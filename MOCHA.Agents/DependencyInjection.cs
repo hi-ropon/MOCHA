@@ -1,7 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain.Plc;
+using MOCHA.Agents.Domain;
 using MOCHA.Agents.Infrastructure.Agents;
 using MOCHA.Agents.Infrastructure.Clients;
 using MOCHA.Agents.Infrastructure.Manuals;
@@ -27,6 +29,7 @@ public static class DependencyInjection
     {
         services.Configure<LlmOptions>(configuration.GetSection("Llm"));
         services.Configure<ManualStoreOptions>(configuration.GetSection("Manuals"));
+        services.Configure<AgentDelegationOptions>(configuration.GetSection("AgentDelegation"));
         services.AddSingleton<ILlmChatClientFactory, LlmChatClientFactory>();
         services.AddSingleton<IManualStore, FileManualStore>();
         services.AddScoped<ManualToolset>();
@@ -39,6 +42,11 @@ public static class DependencyInjection
         services.AddSingleton<PlcManualService>();
         services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>();
         services.AddSingleton<PlcToolset>();
+        services.AddSingleton<AgentDelegationPolicy>(sp =>
+        {
+            var options = sp.GetRequiredService<IOptions<AgentDelegationOptions>>().Value ?? new AgentDelegationOptions();
+            return new AgentDelegationPolicy(options);
+        });
         services.AddScoped<OrganizerToolset>();
         services.AddScoped<OrganizerInstructionBuilder>();
         services.AddScoped<IOrganizerContextProvider, NullOrganizerContextProvider>();
