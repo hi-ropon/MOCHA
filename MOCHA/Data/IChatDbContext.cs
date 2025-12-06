@@ -29,8 +29,12 @@ internal interface IChatDbContext
     DbSet<FeedbackEntity> Feedbacks { get; }
     /// <summary>図面エンティティのセット</summary>
     DbSet<DrawingDocumentEntity> Drawings { get; }
+    /// <summary>PC設定エンティティのセット</summary>
+    DbSet<PcSettingEntity> PcSettings { get; }
     /// <summary>PLCユニットエンティティのセット</summary>
     DbSet<PlcUnitEntity> PlcUnits { get; }
+    /// <summary>装置ユニット構成エンティティのセット</summary>
+    DbSet<UnitConfigurationEntity> UnitConfigurations { get; }
     /// <summary>トラッキング操作へのアクセス</summary>
     ChangeTracker ChangeTracker { get; }
     /// <summary>データベース操作用ファサード</summary>

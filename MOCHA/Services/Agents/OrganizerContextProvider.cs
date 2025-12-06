@@ -22,6 +22,9 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private const int _maxUnits = 3;
     private const int _maxModules = 4;
     private const int _maxFunctionBlocks = 4;
+    private const int _maxPcSettings = 3;
+    private const int _maxRepositoryUrls = 3;
+    private readonly IPcSettingRepository _pcSettingRepository;
     private readonly IPlcUnitRepository _plcUnitRepository;
     private readonly DrawingCatalog _drawingCatalog;
     private readonly ILogger<OrganizerContextProvider> _logger;
@@ -30,10 +33,12 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     /// 依存注入による初期化
     /// </summary>
     public OrganizerContextProvider(
+        IPcSettingRepository pcSettingRepository,
         IPlcUnitRepository plcUnitRepository,
         DrawingCatalog drawingCatalog,
         ILogger<OrganizerContextProvider> logger)
     {
+        _pcSettingRepository = pcSettingRepository ?? throw new ArgumentNullException(nameof(pcSettingRepository));
         _plcUnitRepository = plcUnitRepository ?? throw new ArgumentNullException(nameof(plcUnitRepository));
         _drawingCatalog = drawingCatalog ?? throw new ArgumentNullException(nameof(drawingCatalog));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -62,19 +67,40 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
 
     private async Task<string> BuildArchitectureAsync(string userId, string agentNumber, CancellationToken cancellationToken)
     {
+        var sb = new StringBuilder();
+
+        var pcSettings = await _pcSettingRepository.ListAsync(userId, agentNumber, cancellationToken);
+        if (pcSettings.Count > 0)
+        {
+            var orderedPc = pcSettings
+                .OrderBy(p => p.Os, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(p => p.CreatedAt)
+                .ToList();
+
+            foreach (var pc in orderedPc.Take(_maxPcSettings))
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                sb.AppendLine(FormatPcLine(pc));
+            }
+
+            if (orderedPc.Count > _maxPcSettings)
+            {
+                sb.AppendLine($"…他{orderedPc.Count - _maxPcSettings}台のPC設定");
+            }
+        }
+
         var units = await _plcUnitRepository.ListAsync(userId, agentNumber, cancellationToken);
         if (units.Count == 0)
         {
-            return string.Empty;
+            return sb.ToString().TrimEnd();
         }
 
-        var sb = new StringBuilder();
-        var ordered = units
+        var orderedPlc = units
             .OrderBy(u => u.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(u => u.CreatedAt)
             .ToList();
 
-        foreach (var unit in ordered.Take(_maxUnits))
+        foreach (var unit in orderedPlc.Take(_maxUnits))
         {
             cancellationToken.ThrowIfCancellationRequested();
             var header = FormatUnitHeader(unit);
@@ -109,9 +135,9 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
             }
         }
 
-        if (ordered.Count > _maxUnits)
+        if (orderedPlc.Count > _maxUnits)
         {
-            sb.AppendLine($"…他{ordered.Count - _maxUnits}ユニット");
+            sb.AppendLine($"…他{orderedPlc.Count - _maxUnits}ユニット");
         }
 
         return sb.ToString().TrimEnd();
@@ -148,6 +174,24 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         var ip = string.IsNullOrWhiteSpace(unit.IpAddress) ? "-" : unit.IpAddress;
         var port = unit.Port?.ToString(CultureInfo.InvariantCulture) ?? "-";
         return $"- ユニット: {unit.Name} ({manufacturer}{model}) role={role} ip={ip} port={port}";
+    }
+
+    private string FormatPcLine(PcSetting pc)
+    {
+        var role = string.IsNullOrWhiteSpace(pc.Role) ? "役割未設定" : pc.Role;
+        var repos = pc.RepositoryUrls?.Where(r => !string.IsNullOrWhiteSpace(r)).ToList() ?? new List<string>();
+        var repoDisplay = "repos:-";
+        if (repos.Count > 0)
+        {
+            var take = repos.Take(_maxRepositoryUrls).ToList();
+            repoDisplay = $"repos:{string.Join(", ", take)}";
+            if (repos.Count > take.Count)
+            {
+                repoDisplay += $" …他{repos.Count - take.Count}件";
+            }
+        }
+
+        return $"- PC: {pc.Os} role={role} {repoDisplay}";
     }
 
     private static List<string> CollectFiles(PlcUnit unit)

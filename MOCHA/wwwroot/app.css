@@ -1013,9 +1013,7 @@ h1:focus {
     border: 1px solid var(--border-color);
     background: var(--panel-bg);
     color: var(--text-primary);
-    height: 48px;
     min-height: 48px;
-    max-height: 120px;
     resize: none;
     overflow-y: auto;
     line-height: 1.4;
