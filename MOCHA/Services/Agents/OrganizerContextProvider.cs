@@ -22,7 +22,6 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private const int _maxUnits = 3;
     private const int _maxModules = 4;
     private const int _maxFunctionBlocks = 4;
-    private const int _maxDrawings = 5;
     private readonly IPlcUnitRepository _plcUnitRepository;
     private readonly DrawingCatalog _drawingCatalog;
     private readonly ILogger<OrganizerContextProvider> _logger;
@@ -132,15 +131,10 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
             .ToList();
 
         var sb = new StringBuilder();
-        foreach (var file in ordered.Take(_maxDrawings))
+        foreach (var file in ordered)
         {
             cancellationToken.ThrowIfCancellationRequested();
             sb.AppendLine(FormatDrawingLine(file));
-        }
-
-        if (ordered.Count > _maxDrawings)
-        {
-            sb.AppendLine($"…他{ordered.Count - _maxDrawings}図面");
         }
 
         return sb.ToString().TrimEnd();
