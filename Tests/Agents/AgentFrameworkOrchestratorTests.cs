@@ -50,6 +50,7 @@ public class AgentFrameworkOrchestratorTests
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -58,6 +59,7 @@ public class AgentFrameworkOrchestratorTests
 
         IAgentOrchestrator orchestrator = new AgentFrameworkOrchestrator(
             factory,
+            instructionBuilder,
             tools,
             options,
             NullLogger<AgentFrameworkOrchestrator>.Instance);
@@ -103,6 +105,7 @@ public class AgentFrameworkOrchestratorTests
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {
             Provider = ProviderKind.OpenAI,
@@ -111,6 +114,7 @@ public class AgentFrameworkOrchestratorTests
 
         IAgentOrchestrator orchestrator = new AgentFrameworkOrchestrator(
             factory,
+            instructionBuilder,
             tools,
             options,
             NullLogger<AgentFrameworkOrchestrator>.Instance);

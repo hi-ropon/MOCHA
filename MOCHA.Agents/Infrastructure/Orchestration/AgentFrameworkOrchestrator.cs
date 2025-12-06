@@ -21,36 +21,33 @@ namespace MOCHA.Agents.Infrastructure.Orchestration;
 /// </summary>
 public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
 {
-    private readonly ChatClientAgent _agent;
+    private readonly ILlmChatClientFactory _chatClientFactory;
     private readonly OrganizerToolset _tools;
+    private readonly OrganizerInstructionBuilder _instructionBuilder;
     private readonly LlmOptions _options;
     private readonly ILogger<AgentFrameworkOrchestrator> _logger;
-    private readonly ConcurrentDictionary<string, AgentThread> _threads = new();
+    private readonly ConcurrentDictionary<string, ConversationState> _threads = new();
 
     /// <summary>
     /// 必要なサービス注入による初期化
     /// </summary>
     /// <param name="chatClientFactory">チャットクライアントファクトリー</param>
+    /// <param name="instructionBuilder">Organizer プロンプトビルダー</param>
     /// <param name="tools">ツールセット</param>
     /// <param name="optionsAccessor">LLM オプション</param>
     /// <param name="logger">ロガー</param>
     public AgentFrameworkOrchestrator(
         ILlmChatClientFactory chatClientFactory,
+        OrganizerInstructionBuilder instructionBuilder,
         OrganizerToolset tools,
         IOptions<LlmOptions> optionsAccessor,
         ILogger<AgentFrameworkOrchestrator> logger)
     {
         _options = optionsAccessor.Value ?? throw new ArgumentNullException(nameof(optionsAccessor));
-        this._logger = logger;
+        _logger = logger;
         _tools = tools;
-
-        var chatClient = chatClientFactory.Create();
-        _agent = new ChatClientAgent(
-            chatClient,
-            name: _options.AgentName ?? "mocha-agent",
-            description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
-            instructions: _options.Instructions ?? OrganizerInstructions.Default,
-            tools: tools.All.ToList());
+        _instructionBuilder = instructionBuilder ?? throw new ArgumentNullException(nameof(instructionBuilder));
+        _chatClientFactory = chatClientFactory ?? throw new ArgumentNullException(nameof(chatClientFactory));
     }
 
     /// <summary>
@@ -85,7 +82,8 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         ChatContext context,
         [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var thread = _threads.GetOrAdd(conversationId, _ => _agent.GetNewThread());
+        var agent = await CreateAgentAsync(context, cancellationToken);
+        var thread = _threads.GetOrAdd(conversationId, _ => new ConversationState(agent.Client, agent.Agent.GetNewThread()));
         var messages = new List<ChatMessage>(context.History.Select(MapMessage))
         {
             new ChatMessage(MapRole(userTurn.Role), userTurn.Content)
@@ -108,9 +106,9 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         {
             try
             {
-                var updates = _agent.RunStreamingAsync(
+                var updates = agent.Agent.RunStreamingAsync(
                     messages,
-                    thread,
+                    thread.Thread,
                     new AgentRunOptions(),
                     cancellationToken);
 
@@ -211,4 +209,35 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         return raw;
     }
 
+    private async Task<AgentHandle> CreateAgentAsync(ChatContext context, CancellationToken cancellationToken)
+    {
+        var baseTemplate = _options.Instructions ?? OrganizerInstructions.Template;
+        var instructions = await _instructionBuilder.BuildAsync(baseTemplate, context.UserId, context.AgentNumber, cancellationToken);
+
+        if (_threads.TryGetValue(context.ConversationId, out var existing))
+        {
+            var agentWithContext = new ChatClientAgent(
+                existing.Client,
+                name: _options.AgentName ?? "mocha-agent",
+                description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
+                instructions: instructions,
+                tools: _tools.All.ToList());
+
+            return new AgentHandle(existing.Client, agentWithContext);
+        }
+
+        var chatClient = _chatClientFactory.Create();
+        var agent = new ChatClientAgent(
+            chatClient,
+            name: _options.AgentName ?? "mocha-agent",
+            description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
+            instructions: instructions,
+            tools: _tools.All.ToList());
+
+        return new AgentHandle(chatClient, agent);
+    }
+
+    private sealed record ConversationState(IChatClient Client, AgentThread Thread);
+
+    private sealed record AgentHandle(IChatClient Client, ChatClientAgent Agent);
 }

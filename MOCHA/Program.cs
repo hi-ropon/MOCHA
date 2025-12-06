@@ -128,6 +128,7 @@ builder.Services.Configure<PlcStorageOptions>(builder.Configuration.GetSection("
 builder.Services.AddScoped<RoleBootstrapper>();
 builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
 builder.Services.AddMochaAgents(builder.Configuration);
+builder.Services.AddScoped<IOrganizerContextProvider, OrganizerContextProvider>();
 builder.Services.AddScoped<IAgentChatClient, AgentOrchestratorChatClient>();
 builder.Services.AddSingleton<IManualStore, UserDrawingManualStore>();
 builder.Services.AddScoped<IPlcDataLoader, PlcAgentDataLoader>();

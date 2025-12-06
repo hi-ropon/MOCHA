@@ -40,6 +40,8 @@ public static class DependencyInjection
         services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>();
         services.AddSingleton<PlcToolset>();
         services.AddScoped<OrganizerToolset>();
+        services.AddScoped<OrganizerInstructionBuilder>();
+        services.AddScoped<IOrganizerContextProvider, NullOrganizerContextProvider>();
         services.AddScoped<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 
         services.AddSingleton<ITaskAgent, PlcTaskAgent>();
