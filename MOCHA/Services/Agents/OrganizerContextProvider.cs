@@ -22,7 +22,6 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private const int _maxUnits = 3;
     private const int _maxModules = 4;
     private const int _maxFunctionBlocks = 4;
-    private const int _maxProgramFiles = 2;
     private const int _maxDrawings = 5;
     private readonly IPlcUnitRepository _plcUnitRepository;
     private readonly DrawingCatalog _drawingCatalog;
@@ -165,15 +164,11 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
             files.Add($"コメント:{NormalizeFileName(unit.CommentFile)}");
         }
 
-        var programs = unit.ProgramFiles?.Take(_maxProgramFiles).ToList() ?? new List<PlcFileUpload>();
+        var programs = unit.ProgramFiles?.ToList() ?? new List<PlcFileUpload>();
         if (programs.Count > 0)
         {
             var programNames = string.Join(", ", programs.Select(p => NormalizeFileName(p)));
             files.Add($"プログラム:{programNames}");
-            if ((unit.ProgramFiles?.Count ?? 0) > programs.Count)
-            {
-                files.Add($"…他{(unit.ProgramFiles!.Count - programs.Count)}件");
-            }
         }
 
         return files;
