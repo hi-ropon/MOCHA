@@ -114,6 +114,8 @@ builder.Services.AddScoped<IPcSettingRepository, PcSettingRepository>();
 builder.Services.AddScoped<PcConfigurationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();
+builder.Services.AddScoped<IUnitConfigurationRepository, UnitConfigurationRepository>();
+builder.Services.AddScoped<UnitConfigurationService>();
 builder.Services.AddScoped<FunctionBlockApiClient>();
 builder.Services.AddScoped<FunctionBlockService>();
 builder.Services.AddSingleton<IDrawingStoragePathBuilder, DrawingStoragePathBuilder>();

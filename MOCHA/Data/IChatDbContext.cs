@@ -33,6 +33,8 @@ internal interface IChatDbContext
     DbSet<PcSettingEntity> PcSettings { get; }
     /// <summary>PLCユニットエンティティのセット</summary>
     DbSet<PlcUnitEntity> PlcUnits { get; }
+    /// <summary>装置ユニット構成エンティティのセット</summary>
+    DbSet<UnitConfigurationEntity> UnitConfigurations { get; }
     /// <summary>トラッキング操作へのアクセス</summary>
     ChangeTracker ChangeTracker { get; }
     /// <summary>データベース操作用ファサード</summary>
