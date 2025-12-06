@@ -110,6 +110,7 @@
                               @bind="Input"
                               @bind:event="oninput"
                               @onkeydown="HandleKeyDown"
+                              aria-multiline="true"
                               rows="1"></textarea>
                     <div class="input-actions">
                         <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
@@ -147,6 +148,8 @@
     [CascadingParameter] public Task<AuthenticationState> AuthenticationStateTask { get; set; } = default!;
     [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
+    private const int ComposerMaxLines = 6;
+
     private readonly List<ChatMessage> Messages = new();
     private readonly List<TurnActivity> TurnActivities = new();
     private string Input = string.Empty;
@@ -166,6 +169,7 @@
     private bool ShowActivityPanel;
     private int? SelectedTurnNumber;
     private int? _composerHandlerId;
+    private int? _composerAutoResizeHandlerId;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
     private readonly Dictionary<int, FeedbackRating> FeedbackRatings = new();
     private readonly HashSet<int> FeedbackSubmitting = new();
@@ -205,26 +209,56 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        await RegisterComposerHandlersAsync();
+        await ResizeComposerAsync();
+    }
+
+    private async Task RegisterComposerHandlersAsync()
+    {
+        if (JS is null)
         {
-            await RegisterComposerHandlerAsync();
+            return;
+        }
+
+        if (!_composerHandlerId.HasValue)
+        {
+            try
+            {
+                _composerHandlerId = await JS.InvokeAsync<int>("mochaComposer.attachEnterHandler", ComposerInput);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "Enterキー送信ハンドラの初期化に失敗しました");
+            }
+        }
+
+        if (!_composerAutoResizeHandlerId.HasValue)
+        {
+            try
+            {
+                _composerAutoResizeHandlerId = await JS.InvokeAsync<int>("mochaComposer.attachAutoResize", ComposerInput, ComposerMaxLines);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "自動リサイズの初期化に失敗しました");
+            }
         }
     }
 
-    private async Task RegisterComposerHandlerAsync()
+    private async Task ResizeComposerAsync()
     {
-        if (_composerHandlerId.HasValue || JS is null)
+        if (JS is null)
         {
             return;
         }
 
         try
         {
-            _composerHandlerId = await JS.InvokeAsync<int>("mochaComposer.attachEnterHandler", ComposerInput);
+            await JS.InvokeVoidAsync("mochaComposer.resize", ComposerInput, ComposerMaxLines);
         }
         catch (Exception ex)
         {
-            Logger.LogWarning(ex, "Enterキー送信ハンドラの初期化に失敗しました");
+            Logger.LogWarning(ex, "自動リサイズの再計算に失敗しました");
         }
     }
 
@@ -876,6 +910,10 @@
         if (_composerHandlerId.HasValue && JS is not null)
         {
             _ = JS.InvokeVoidAsync("mochaComposer.detachEnterHandler", _composerHandlerId.Value);
+        }
+        if (_composerAutoResizeHandlerId.HasValue && JS is not null)
+        {
+            _ = JS.InvokeVoidAsync("mochaComposer.detachAutoResize", _composerAutoResizeHandlerId.Value);
         }
 
         AgentState.Changed -= OnAgentStateChanged;
