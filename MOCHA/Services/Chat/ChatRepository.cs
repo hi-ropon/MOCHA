@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Chat;
@@ -104,7 +106,10 @@ internal sealed class ChatRepository : IChatRepository
         var conversation = await db.Conversations
             .FirstOrDefaultAsync(x => x.Id == conversationId && x.UserObjectId == userObjectId, cancellationToken);
 
-        var preview = message.Content.Length > 30 ? message.Content[..30] + "…" : message.Content;
+        var previewSource = string.IsNullOrWhiteSpace(message.Content) && message.Attachments?.Any() == true
+            ? $"画像 {message.Attachments.Count} 件"
+            : message.Content;
+        var preview = previewSource.Length > 30 ? previewSource[..30] + "…" : previewSource;
 
         if (conversation is null)
         {
@@ -127,16 +132,38 @@ internal sealed class ChatRepository : IChatRepository
             conversation.UpdatedAt = DateTimeOffset.UtcNow;
         }
 
-        db.Messages.Add(new ChatMessageEntity
+        var messageEntity = new ChatMessageEntity
         {
             ConversationId = conversationId,
             UserObjectId = userObjectId,
             Role = message.Role.ToString(),
             Content = message.Content,
             CreatedAt = DateTimeOffset.UtcNow
-        });
+        };
+
+        db.Messages.Add(messageEntity);
 
         await db.SaveChangesAsync(cancellationToken);
+
+        if (message.Attachments?.Count > 0)
+        {
+            var attachmentEntities = message.Attachments.Select(a => new ChatAttachmentEntity
+            {
+                Id = a.Id,
+                MessageId = messageEntity.Id,
+                ConversationId = conversationId,
+                UserObjectId = userObjectId,
+                FileName = a.FileName,
+                ContentType = a.ContentType,
+                Size = a.Size,
+                ThumbSmallBase64 = a.SmallBase64,
+                ThumbMediumBase64 = a.MediumBase64,
+                CreatedAt = a.CreatedAt
+            }).ToList();
+
+            db.Attachments.AddRange(attachmentEntities);
+            await db.SaveChangesAsync(cancellationToken);
+        }
     }
 
     /// <summary>
@@ -166,15 +193,52 @@ internal sealed class ChatRepository : IChatRepository
         var list = await messagesQuery
             .Select(x => new
             {
+                x.Id,
                 x.Role,
                 x.Content,
                 x.CreatedAt
             })
             .ToListAsync(cancellationToken);
 
+        var messageIds = list.Select(x => x.Id).ToList();
+        var attachments = await db.Attachments
+            .Where(a => messageIds.Contains(a.MessageId))
+            .Select(a => new
+            {
+                a.MessageId,
+                a.Id,
+                a.FileName,
+                a.ContentType,
+                a.Size,
+                a.ThumbSmallBase64,
+                a.ThumbMediumBase64,
+                a.CreatedAt
+            })
+            .ToListAsync(cancellationToken);
+
+        var grouped = attachments
+            .GroupBy(a => a.MessageId)
+            .ToDictionary(
+                g => g.Key,
+                g => (IReadOnlyList<ImageAttachment>)g
+                    .OrderBy(x => x.CreatedAt)
+                    .Select(x => new ImageAttachment(
+                        x.Id,
+                        x.FileName,
+                        x.ContentType,
+                        x.Size,
+                        x.ThumbSmallBase64,
+                        x.ThumbMediumBase64,
+                        x.CreatedAt))
+                    .ToList());
+
         return list
             .OrderBy(x => x.CreatedAt)
-            .Select(x => new ChatMessage(ParseRole(x.Role), x.Content))
+            .Select(x =>
+            {
+                var hasAttachments = grouped.TryGetValue(x.Id, out var items);
+                return new ChatMessage(ParseRole(x.Role), x.Content, hasAttachments ? items : Array.Empty<ImageAttachment>());
+            })
             .ToList();
     }
 

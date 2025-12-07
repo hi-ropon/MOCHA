@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace MOCHA.Models.Chat;
@@ -14,9 +15,35 @@ public enum ChatRole
 }
 
 /// <summary>
-/// 役割と本文を持つ単一メッセージ
+/// チャット添付画像
 /// </summary>
-public record ChatMessage(ChatRole Role, string Content);
+/// <param name="Id">添付ID</param>
+/// <param name="FileName">ファイル名</param>
+/// <param name="ContentType">コンテンツタイプ</param>
+/// <param name="Size">バイトサイズ</param>
+/// <param name="SmallBase64">小サイズプレビュー(Base64)</param>
+/// <param name="MediumBase64">中サイズプレビュー(Base64)</param>
+/// <param name="CreatedAt">作成日時</param>
+public record ImageAttachment(
+    string Id,
+    string FileName,
+    string ContentType,
+    long Size,
+    string SmallBase64,
+    string MediumBase64,
+    DateTimeOffset CreatedAt);
+
+/// <summary>
+/// 役割と本文と添付を持つ単一メッセージ
+/// </summary>
+public record ChatMessage(ChatRole Role, string Content, IReadOnlyList<ImageAttachment>? Attachments = null)
+{
+    public IReadOnlyList<ImageAttachment> Attachments { get; init; } = Attachments ?? Array.Empty<ImageAttachment>();
+
+    public ChatMessage(ChatRole role, string content) : this(role, content, null)
+    {
+    }
+}
 
 /// <summary>
 /// 会話IDと複数のメッセージをまとめたターン

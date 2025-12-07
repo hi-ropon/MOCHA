@@ -23,6 +23,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
 
     public DbSet<ChatConversationEntity> Conversations => Set<ChatConversationEntity>();
     public DbSet<ChatMessageEntity> Messages => Set<ChatMessageEntity>();
+    public DbSet<ChatAttachmentEntity> Attachments => Set<ChatAttachmentEntity>();
     public DbSet<UserRoleEntity> UserRoles => Set<UserRoleEntity>();
     public DbSet<DeviceAgentEntity> DeviceAgents => Set<DeviceAgentEntity>();
     public DbSet<DeviceAgentPermissionEntity> DeviceAgentPermissions => Set<DeviceAgentPermissionEntity>();
@@ -63,6 +64,20 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.UserObjectId).HasMaxLength(200);
             builder.HasIndex(x => x.ConversationId);
             builder.HasIndex(x => new { x.UserObjectId, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<ChatAttachmentEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.FileName).HasMaxLength(260);
+            builder.Property(x => x.ContentType).HasMaxLength(100);
+            builder.Property(x => x.UserObjectId).HasMaxLength(200);
+            builder.Property(x => x.ConversationId).HasMaxLength(200);
+            builder.HasIndex(x => x.MessageId);
+            builder.HasOne(x => x.Message)
+                .WithMany(x => x.Attachments)
+                .HasForeignKey(x => x.MessageId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         modelBuilder.Entity<FeedbackEntity>(builder =>

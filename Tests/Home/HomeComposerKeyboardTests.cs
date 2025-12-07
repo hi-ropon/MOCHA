@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Components.RenderTree;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.JSInterop;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Components.Pages;
 using MOCHA.Models.Agents;
@@ -205,7 +206,7 @@ public class HomeComposerKeyboardTests
         /// <summary>
         /// 受信記録
         /// </summary>
-        public List<(UserContext user, string? conversationId, string text, string? agentNumber)> Received { get; } = new();
+        public List<(UserContext user, string? conversationId, string text, string? agentNumber, IReadOnlyList<ImageAttachment>? attachments)> Received { get; } = new();
 
         /// <summary>
         /// ユーザー発話処理
@@ -221,9 +222,10 @@ public class HomeComposerKeyboardTests
             string? conversationId,
             string text,
             string? agentNumber,
+            IReadOnlyList<ImageAttachment>? attachments = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
-            Received.Add((user, conversationId, text, agentNumber));
+            Received.Add((user, conversationId, text, agentNumber, attachments));
             yield return ChatStreamEvent.Completed(conversationId ?? Guid.NewGuid().ToString("N"));
             await Task.CompletedTask;
         }
@@ -340,9 +342,16 @@ public class HomeComposerKeyboardTests
         /// <summary>
         /// テストレンダラー初期化
         /// </summary>
-        public TestRenderer() : base(new ServiceCollection().BuildServiceProvider(), NullLoggerFactory.Instance)
+        public TestRenderer() : base(BuildServices(), NullLoggerFactory.Instance)
         {
             Dispatcher = new InlineDispatcher();
+        }
+
+        private static IServiceProvider BuildServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IJSRuntime, RecordingJsRuntime>();
+            return services.BuildServiceProvider();
         }
 
         /// <summary>
@@ -371,6 +380,26 @@ public class HomeComposerKeyboardTests
         /// </summary>
         /// <param name="exception">例外</param>
         protected override void HandleException(Exception exception) => throw exception;
+
+        /// <summary>
+        /// JS 呼び出しを記録するテスト用ランタイム
+        /// </summary>
+        private sealed class RecordingJsRuntime : IJSRuntime
+        {
+            public List<string> Invoked { get; } = new();
+
+            public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+            {
+                Invoked.Add(identifier);
+                return ValueTask.FromResult(default(TValue)!);
+            }
+
+            public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args)
+            {
+                Invoked.Add(identifier);
+                return ValueTask.FromResult(default(TValue)!);
+            }
+        }
 
         /// <summary>
         /// 同期実行ディスパッチャ

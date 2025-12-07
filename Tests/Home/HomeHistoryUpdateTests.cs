@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.RenderTree;
+using Microsoft.JSInterop;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -177,6 +178,7 @@ public class HomeHistoryUpdateTests
             string? conversationId,
             string text,
             string? agentNumber,
+            IReadOnlyList<ImageAttachment>? attachments = null,
             [EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
             yield return ChatStreamEvent.FromMessage(new ChatMessage(ChatRole.Assistant, "ack"));
@@ -443,9 +445,16 @@ public class HomeHistoryUpdateTests
         /// <summary>
         /// テストレンダラー初期化
         /// </summary>
-        public TestRenderer() : base(new ServiceCollection().BuildServiceProvider(), NullLoggerFactory.Instance)
+        public TestRenderer() : base(BuildServices(), NullLoggerFactory.Instance)
         {
             Dispatcher = new InlineDispatcher();
+        }
+
+        private static IServiceProvider BuildServices()
+        {
+            var services = new ServiceCollection();
+            services.AddSingleton<IJSRuntime, RecordingJsRuntime>();
+            return services.BuildServiceProvider();
         }
 
         /// <summary>
@@ -471,6 +480,26 @@ public class HomeHistoryUpdateTests
         /// 例外ハンドリング（再スロー）
         /// </summary>
         protected override void HandleException(Exception exception) => throw exception;
+
+        /// <summary>
+        /// JS 呼び出しを記録するテスト用ランタイム
+        /// </summary>
+        private sealed class RecordingJsRuntime : IJSRuntime
+        {
+            public List<string> Invoked { get; } = new();
+
+            public ValueTask<TValue> InvokeAsync<TValue>(string identifier, object?[]? args)
+            {
+                Invoked.Add(identifier);
+                return ValueTask.FromResult(default(TValue)!);
+            }
+
+            public ValueTask<TValue> InvokeAsync<TValue>(string identifier, CancellationToken cancellationToken, object?[]? args)
+            {
+                Invoked.Add(identifier);
+                return ValueTask.FromResult(default(TValue)!);
+            }
+        }
 
         /// <summary>
         /// インライン実行用ディスパッチャ

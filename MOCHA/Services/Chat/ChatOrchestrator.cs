@@ -47,6 +47,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     /// <param name="conversationId">既存の会話ID（未指定なら新規）</param>
     /// <param name="text">発話内容</param>
     /// <param name="agentNumber">装置エージェント番号</param>
+    /// <param name="attachments">画像添付</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>発生するチャットイベントの列</returns>
     public async IAsyncEnumerable<ChatStreamEvent> HandleUserMessageAsync(
@@ -54,19 +55,22 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         string? conversationId,
         string text,
         string? agentNumber,
+        IReadOnlyList<ImageAttachment>? attachments = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var convId = string.IsNullOrWhiteSpace(conversationId)
             ? Guid.NewGuid().ToString("N")
             : conversationId;
 
+        var attachmentList = attachments ?? Array.Empty<ImageAttachment>();
+
         await _history.UpsertAsync(user.UserId, convId, text, agentNumber, cancellationToken, preserveExistingTitle: true);
-        await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text), agentNumber, cancellationToken);
+        await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text, attachmentList), agentNumber, cancellationToken);
         _ = _chatTitleService.RequestAsync(user, convId, text, agentNumber, cancellationToken);
 
         var turn = new ChatTurn(convId, new List<ChatMessage>
         {
-            new(ChatRole.User, text)
+            new(ChatRole.User, text, attachmentList)
         })
         {
             AgentNumber = agentNumber,

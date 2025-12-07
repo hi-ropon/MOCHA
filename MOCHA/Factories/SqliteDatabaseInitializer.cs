@@ -60,6 +60,21 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
             CREATE INDEX IF NOT EXISTS IX_Messages_ConversationId ON Messages(ConversationId);
             CREATE INDEX IF NOT EXISTS IX_Messages_UserObjectId_CreatedAt ON Messages(UserObjectId, CreatedAt);
 
+            CREATE TABLE IF NOT EXISTS Attachments(
+                Id TEXT NOT NULL CONSTRAINT PK_Attachments PRIMARY KEY,
+                MessageId INTEGER NOT NULL,
+                ConversationId TEXT NOT NULL,
+                UserObjectId TEXT NOT NULL,
+                FileName TEXT NOT NULL,
+                ContentType TEXT NOT NULL,
+                Size INTEGER NOT NULL,
+                ThumbSmallBase64 TEXT NOT NULL,
+                ThumbMediumBase64 TEXT NOT NULL,
+                CreatedAt TEXT NOT NULL,
+                CONSTRAINT FK_Attachments_Messages_MessageId FOREIGN KEY (MessageId) REFERENCES Messages (Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_Attachments_MessageId ON Attachments(MessageId);
+
             CREATE TABLE IF NOT EXISTS UserRoles(
                 Id INTEGER NOT NULL CONSTRAINT PK_UserRoles PRIMARY KEY AUTOINCREMENT,
                 UserId TEXT NOT NULL,

@@ -19,6 +19,8 @@ internal interface IChatDbContext
     DbSet<ChatConversationEntity> Conversations { get; }
     /// <summary>メッセージエンティティのセット</summary>
     DbSet<ChatMessageEntity> Messages { get; }
+    /// <summary>添付エンティティのセット</summary>
+    DbSet<ChatAttachmentEntity> Attachments { get; }
     /// <summary>ユーザーロールエンティティのセット</summary>
     DbSet<UserRoleEntity> UserRoles { get; }
     /// <summary>装置エージェントエンティティのセット</summary>

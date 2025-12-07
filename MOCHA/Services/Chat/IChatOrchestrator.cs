@@ -14,6 +14,7 @@ public interface IChatOrchestrator
     /// <param name="conversationId">既存会話ID（未指定の場合は新規）</param>
     /// <param name="text">発話内容</param>
     /// <param name="agentNumber">装置エージェント番号</param>
+    /// <param name="attachments">画像添付</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>チャットイベントのストリーム</returns>
     IAsyncEnumerable<ChatStreamEvent> HandleUserMessageAsync(
@@ -21,5 +22,6 @@ public interface IChatOrchestrator
         string? conversationId,
         string text,
         string? agentNumber,
+        IReadOnlyList<ImageAttachment>? attachments = null,
         CancellationToken cancellationToken = default);
 }

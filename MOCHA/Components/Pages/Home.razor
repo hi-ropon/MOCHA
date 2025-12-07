@@ -7,6 +7,7 @@
 @using System.Text.Encodings.Web
 @using System.Text.Json
 @using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Authorization
 @using Microsoft.JSInterop
 @using Microsoft.Extensions.Options
@@ -22,6 +23,7 @@
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
+@inject MOCHA.Services.Chat.IChatAttachmentService AttachmentService
 @inject IOptionsMonitor<LlmOptions> LlmOptions
 @inject MOCHA.Services.Feedback.IFeedbackService FeedbackService
 @inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
@@ -62,6 +64,17 @@
                             else
                             {
                                 @message.Content
+                            }
+                            @if (message.Attachments?.Any() == true && message.Role == ChatRole.User)
+                            {
+                                <div class="attachment-inline">
+                                    @foreach (var attachment in message.Attachments)
+                                    {
+                                        <button class="attachment-thumb" @onclick="() => OpenLightbox(attachment)" aria-label="画像を拡大">
+                                            <img src="@attachment.MediumBase64" alt="@attachment.FileName" />
+                                        </button>
+                                    }
+                                </div>
                             }
                         </div>
                     </div>
@@ -104,21 +117,44 @@
             </div>
 
             <div class="composer">
+                @if (ComposerAttachments.Any())
+                {
+                    <div class="composer-attachments">
+                        @foreach (var attachment in ComposerAttachments)
+                        {
+                            <div class="attachment-chip">
+                                <img src="@attachment.SmallBase64" alt="@attachment.FileName" />
+                                <div class="attachment-meta">
+                                    <div class="name">@attachment.FileName</div>
+                                    <div class="size">@FormatSize(attachment.Size)</div>
+                                </div>
+                                <button class="icon-btn tertiary" @onclick="() => RemoveAttachmentAsync(attachment.Id)" aria-label="添付を削除">✕</button>
+                            </div>
+                        }
+                    </div>
+                }
+
                 <div class="composer-inner">
-                    <textarea class="chat-input" placeholder="メッセージを入力 (Enter または Ctrl+Enter で送信)"
-                              @ref="ComposerInput"
-                              @bind="Input"
-                              @bind:event="oninput"
-                              @onkeydown="HandleKeyDown"
-                              aria-multiline="true"
-                              rows="1"></textarea>
-                    <div class="input-actions">
-                        <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
-                            &#9632;
-                        </button>
-                        <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
-                            &#10148;
-                        </button>
+                    <div class="input-shell">
+                        <label class="icon-btn secondary attach-btn" title="画像を追加">
+                            ＋
+                            <InputFile OnChange="HandleFileSelected" multiple accept="image/png,image/jpeg" class="file-input" />
+                        </label>
+                        <textarea class="chat-input" placeholder="メッセージを入力 (Enter または Ctrl+Enter で送信)"
+                                  @ref="ComposerInput"
+                                  @bind="Input"
+                                  @bind:event="oninput"
+                                  @onkeydown="HandleKeyDown"
+                                  aria-multiline="true"
+                                  rows="1"></textarea>
+                        <div class="input-actions inline">
+                            <button class="icon-btn secondary" @onclick="CancelStream" disabled="@StopDisabled" title="停止">
+                                &#9632;
+                            </button>
+                            <button class="icon-btn primary" @onclick="SendAsync" disabled="@SendDisabled" title="送信">
+                                &#10148;
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -142,6 +178,20 @@
             </div>
         </aside>
     </div>
+
+    @if (LightboxAttachment is not null)
+    {
+        <div class="lightbox" @onclick="CloseLightbox">
+            <div class="lightbox-content" @onclick:stopPropagation="true">
+                <button class="icon-btn tertiary lightbox-close" @onclick="CloseLightbox" aria-label="閉じる">✕</button>
+                <img src="@LightboxAttachment.MediumBase64" alt="@LightboxAttachment.FileName" />
+                <div class="lightbox-meta">
+                    <div class="name">@LightboxAttachment.FileName</div>
+                    <div class="size">@FormatSize(LightboxAttachment.Size)</div>
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @code {
@@ -149,18 +199,23 @@
     [SupplyParameterFromQuery(Name = "c")] public string? ConversationIdParam { get; set; }
 
     private const int ComposerMaxLines = 6;
+    private const long AttachmentMaxBytes = 10 * 1024 * 1024;
+    private const int AttachmentMaxCount = 5;
 
     private readonly List<ChatMessage> Messages = new();
     private readonly List<TurnActivity> TurnActivities = new();
+    private readonly List<ImageAttachment> ComposerAttachments = new();
     private string Input = string.Empty;
     private string? Status;
     private bool IsSending;
+    private bool IsUploadingAttachment;
     private string? ConversationId;
     private string? _activeAgentNumber;
     private CancellationTokenSource? _cts;
     private ElementReference MessageList;
     private ElementReference ComposerInput;
     private IDisposable? _llmOptionsSubscription;
+    private DotNetObjectReference<Home>? _dotNetRef;
     private UserContext? _user;
     private string? _loadedConversationId;
     private ChatMessage? _latestAssistant;
@@ -170,14 +225,19 @@
     private int? SelectedTurnNumber;
     private int? _composerHandlerId;
     private int? _composerAutoResizeHandlerId;
+    private int? _composerPasteHandlerId;
     private bool HasActivity => TurnActivities.Any(t => t.Items.Any() || t.IsLive) || IsSending;
     private readonly Dictionary<int, FeedbackRating> FeedbackRatings = new();
     private readonly HashSet<int> FeedbackSubmitting = new();
     private int? FeedbackCommentTarget;
     private string FeedbackCommentInput = string.Empty;
     private static readonly TimeSpan ActivityPulseWindow = TimeSpan.FromSeconds(1.5);
+    private ImageAttachment? LightboxAttachment;
 
-    private bool SendDisabled => IsSending || string.IsNullOrWhiteSpace(Input) || !HasAgentSelected;
+    private bool SendDisabled => IsSending
+        || IsUploadingAttachment
+        || !HasAgentSelected
+        || (string.IsNullOrWhiteSpace(Input) && !ComposerAttachments.Any());
     private bool StopDisabled => !IsSending;
     private bool HasAgentSelected => !string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
 
@@ -243,6 +303,19 @@
                 Logger.LogWarning(ex, "自動リサイズの初期化に失敗しました");
             }
         }
+
+        if (!_composerPasteHandlerId.HasValue)
+        {
+            try
+            {
+                _dotNetRef ??= DotNetObjectReference.Create(this);
+                _composerPasteHandlerId = await JS.InvokeAsync<int>("mochaComposer.attachPasteHandler", ComposerInput, _dotNetRef);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning(ex, "ペーストハンドラの初期化に失敗しました");
+            }
+        }
     }
 
     private async Task ResizeComposerAsync()
@@ -260,6 +333,147 @@
         {
             Logger.LogWarning(ex, "自動リサイズの再計算に失敗しました");
         }
+    }
+
+    private async Task HandleFileSelected(InputFileChangeEventArgs e)
+    {
+        if (AttachmentService is null)
+        {
+            return;
+        }
+
+        var files = e.GetMultipleFiles();
+        foreach (var file in files)
+        {
+            if (ComposerAttachments.Count >= AttachmentMaxCount)
+            {
+                Status = $"画像は最大{AttachmentMaxCount}枚までです";
+                break;
+            }
+
+            if (file.Size > AttachmentMaxBytes)
+            {
+                Status = "画像サイズが上限を超えています（最大10MB）";
+                continue;
+            }
+
+            IsUploadingAttachment = true;
+            try
+            {
+                var attachment = await AttachmentService.UploadAsync(file);
+                ComposerAttachments.Add(attachment);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex, "添付の追加に失敗しました");
+                Status = ex.Message;
+            }
+            finally
+            {
+                IsUploadingAttachment = false;
+            }
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task OnImagePastedAsync(string fileName, string contentType, string dataUrl)
+    {
+        if (AttachmentService is null)
+        {
+            return;
+        }
+
+        if (ComposerAttachments.Count >= AttachmentMaxCount)
+        {
+            Status = $"画像は最大{AttachmentMaxCount}枚までです";
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        try
+        {
+            var (bytes, actualContentType) = DecodeDataUrl(dataUrl, contentType);
+            IsUploadingAttachment = true;
+            var safeName = string.IsNullOrWhiteSpace(fileName) ? "pasted-image.png" : fileName;
+            var attachment = await AttachmentService.UploadAsync(safeName, actualContentType, bytes);
+            ComposerAttachments.Add(attachment);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogError(ex, "ペースト画像の追加に失敗しました");
+            Status = ex.Message;
+        }
+        finally
+        {
+            IsUploadingAttachment = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private static (byte[] Data, string ContentType) DecodeDataUrl(string dataUrl, string hintedContentType)
+    {
+        if (string.IsNullOrWhiteSpace(dataUrl))
+        {
+            throw new InvalidOperationException("画像が取得できませんでした");
+        }
+
+        var commaIndex = dataUrl.IndexOf(',');
+        if (commaIndex < 0)
+        {
+            throw new InvalidOperationException("不正な画像データです");
+        }
+
+        var header = dataUrl[..commaIndex];
+        var actualContentType = hintedContentType;
+        if (header.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+        {
+            var end = header.IndexOf(';');
+            if (end > 5)
+            {
+                actualContentType = header[5..end];
+            }
+        }
+        actualContentType = string.IsNullOrWhiteSpace(actualContentType) ? "image/png" : actualContentType;
+
+        var base64 = dataUrl[(commaIndex + 1)..];
+        return (Convert.FromBase64String(base64), actualContentType);
+    }
+
+    private async Task RemoveAttachmentAsync(string attachmentId)
+    {
+        if (AttachmentService is null)
+        {
+            return;
+        }
+
+        var target = ComposerAttachments.FirstOrDefault(a => a.Id == attachmentId);
+        if (target is null)
+        {
+            return;
+        }
+
+        ComposerAttachments.Remove(target);
+        await AttachmentService.DeleteAsync(attachmentId);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private static string FormatSize(long bytes)
+    {
+        const double kb = 1024d;
+        const double mb = kb * 1024d;
+        if (bytes >= mb)
+        {
+            return $"{bytes / mb:0.0} MB";
+        }
+
+        if (bytes >= kb)
+        {
+            return $"{bytes / kb:0.0} KB";
+        }
+
+        return $"{bytes} B";
     }
 
     protected override async Task OnParametersSetAsync()
@@ -285,7 +499,7 @@
 
     private async Task SendAsync()
     {
-        if (string.IsNullOrWhiteSpace(Input))
+        if (string.IsNullOrWhiteSpace(Input) && !ComposerAttachments.Any())
         {
             return;
         }
@@ -301,7 +515,9 @@
         _cts = new CancellationTokenSource();
 
         var text = Input.Trim();
+        var attachmentsToSend = ComposerAttachments.ToList();
         Input = string.Empty;
+        ComposerAttachments.Clear();
         IsSending = true;
         Status = null;
 
@@ -321,7 +537,7 @@
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
 
-        var userMessage = new ChatMessage(ChatRole.User, text);
+        var userMessage = new ChatMessage(ChatRole.User, text, attachmentsToSend);
         Messages.Add(userMessage);
         StartNewTurn(TurnActivities.Count);
         _latestAssistant = null;
@@ -331,7 +547,7 @@
 
         try
         {
-            await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, _cts.Token))
+            await foreach (var ev in Orchestrator.HandleUserMessageAsync(user, ConversationId, text, agentNumber, attachmentsToSend, _cts.Token))
             {
                 var isStale = !string.Equals(ConversationId, sendingConversationId, StringComparison.Ordinal);
 
@@ -467,6 +683,16 @@
         _streamingAssistantIndex = null;
     }
 
+    private void OpenLightbox(ImageAttachment attachment)
+    {
+        LightboxAttachment = attachment;
+    }
+
+    private void CloseLightbox()
+    {
+        LightboxAttachment = null;
+    }
+
     private void SeedInitialMessage()
     {
         Messages.Add(new ChatMessage(ChatRole.Assistant, "こんにちは、何をお手伝いしましょうか？"));
@@ -480,6 +706,7 @@
         TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
+        ComposerAttachments.Clear();
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
@@ -488,6 +715,7 @@
         FeedbackSubmitting.Clear();
         FeedbackCommentTarget = null;
         FeedbackCommentInput = string.Empty;
+        LightboxAttachment = null;
         SeedInitialMessage();
     }
 
@@ -499,10 +727,12 @@
         TurnActivities.Clear();
         Status = null;
         Input = string.Empty;
+        ComposerAttachments.Clear();
         ShowActivityPanel = false;
         SelectedTurnNumber = null;
         _latestAssistant = null;
         _streamingAssistantIndex = null;
+        LightboxAttachment = null;
 
         var user = _user ?? await ResolveUserAsync();
         var historyMessages = await ChatRepository.GetMessagesAsync(user.UserId, conversationId, AgentState.SelectedAgentNumber);
@@ -915,8 +1145,13 @@
         {
             _ = JS.InvokeVoidAsync("mochaComposer.detachAutoResize", _composerAutoResizeHandlerId.Value);
         }
+        if (_composerPasteHandlerId.HasValue && JS is not null)
+        {
+            _ = JS.InvokeVoidAsync("mochaComposer.detachPasteHandler", _composerPasteHandlerId.Value);
+        }
 
         AgentState.Changed -= OnAgentStateChanged;
+        _dotNetRef?.Dispose();
     }
 
     private void AppendAssistantChunk(string content)

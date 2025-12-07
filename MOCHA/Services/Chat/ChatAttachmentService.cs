@@ -1,0 +1,105 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.Extensions.Logging;
+using MOCHA.Models.Chat;
+
+namespace MOCHA.Services.Chat;
+
+/// <summary>
+/// 画像添付の簡易アップロードサービス（Base64 生成のみ）
+/// </summary>
+internal sealed class ChatAttachmentService : IChatAttachmentService
+{
+    private const long MaxSizeBytes = 10 * 1024 * 1024;
+    private const int ReadBufferSize = 81920;
+    private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "image/png",
+        "image/jpeg"
+    };
+
+    private readonly ILogger<ChatAttachmentService> _logger;
+
+    /// <summary>
+    /// ロガー注入による初期化
+    /// </summary>
+    /// <param name="logger">ロガー</param>
+    public ChatAttachmentService(ILogger<ChatAttachmentService> logger)
+    {
+        _logger = logger;
+    }
+
+    /// <inheritdoc />
+    public async Task<ImageAttachment> UploadAsync(IBrowserFile file, CancellationToken cancellationToken = default)
+    {
+        if (file is null)
+        {
+            throw new ArgumentNullException(nameof(file));
+        }
+
+        if (!AllowedTypes.Contains(file.ContentType))
+        {
+            throw new InvalidOperationException("対応していない形式の画像です");
+        }
+
+        if (file.Size > MaxSizeBytes)
+        {
+            throw new InvalidOperationException("画像サイズが上限を超えています（最大10MB）");
+        }
+
+        await using var stream = file.OpenReadStream(MaxSizeBytes, cancellationToken);
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory, ReadBufferSize, cancellationToken);
+        var bytes = memory.ToArray();
+        return await UploadAsync(file.Name, file.ContentType, bytes, cancellationToken);
+    }
+
+    /// <inheritdoc />
+    public Task<ImageAttachment> UploadAsync(string fileName, string contentType, byte[] data, CancellationToken cancellationToken = default)
+    {
+        if (!AllowedTypes.Contains(contentType))
+        {
+            throw new InvalidOperationException("対応していない形式の画像です");
+        }
+
+        if (data is null || data.Length == 0)
+        {
+            throw new InvalidOperationException("画像が空です");
+        }
+
+        if (data.LongLength > MaxSizeBytes)
+        {
+            throw new InvalidOperationException("画像サイズが上限を超えています（最大10MB）");
+        }
+
+        var base64 = Convert.ToBase64String(data);
+        var dataUrl = $"data:{contentType};base64,{base64}";
+        var attachment = new ImageAttachment(
+            Guid.NewGuid().ToString("N"),
+            fileName,
+            contentType,
+            data.LongLength,
+            dataUrl,
+            dataUrl,
+            DateTimeOffset.UtcNow);
+
+        _logger.LogDebug("画像を一時保存しました: {FileName} ({Size} bytes)", fileName, data.LongLength);
+        return Task.FromResult(attachment);
+    }
+
+    /// <inheritdoc />
+    public Task DeleteAsync(string attachmentId, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(attachmentId))
+        {
+            return Task.CompletedTask;
+        }
+
+        _logger.LogDebug("画像を破棄しました: {AttachmentId}", attachmentId);
+        return Task.CompletedTask;
+    }
+}
