@@ -49,7 +49,8 @@ public class AgentFrameworkOrchestratorTests
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
         var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {
@@ -104,7 +105,8 @@ public class AgentFrameworkOrchestratorTests
         var plcManual = new PlcManualService(manualStore);
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
-        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
+        var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
         var instructionBuilder = new OrganizerInstructionBuilder(new NullOrganizerContextProvider());
         var options = Options.Create(new LlmOptions
         {

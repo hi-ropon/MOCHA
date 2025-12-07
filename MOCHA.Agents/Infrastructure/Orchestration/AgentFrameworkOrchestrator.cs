@@ -86,7 +86,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         var thread = _threads.GetOrAdd(conversationId, _ => new ConversationState(agent.Client, agent.Agent.GetNewThread()));
         var messages = new List<ChatMessage>(context.History.Select(MapMessage))
         {
-            new ChatMessage(MapRole(userTurn.Role), userTurn.Content)
+            MapMessage(userTurn)
         };
 
         var channel = Channel.CreateUnbounded<AgentEvent>(new UnboundedChannelOptions
@@ -148,8 +148,30 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
     /// </summary>
     /// <param name="turn">変換元ターン</param>
     /// <returns>チャットメッセージ</returns>
-    private static ChatMessage MapMessage(ChatTurn turn) =>
-        new(MapRole(turn.Role), turn.Content);
+    private static ChatMessage MapMessage(ChatTurn turn)
+    {
+        var contents = new List<AIContent>();
+
+        if (!string.IsNullOrWhiteSpace(turn.Content))
+        {
+            contents.Add(new TextContent(turn.Content));
+        }
+
+        if (turn.Attachments is { Count: > 0 })
+        {
+            foreach (var attachment in turn.Attachments)
+            {
+                contents.Add(new DataContent(attachment.Data, attachment.ContentType)
+                {
+                    Name = attachment.FileName
+                });
+            }
+        }
+
+        return contents.Count == 0
+            ? new ChatMessage(MapRole(turn.Role), string.Empty)
+            : new ChatMessage(MapRole(turn.Role), contents);
+    }
 
     /// <summary>
     /// ドメインロールからチャットロールへの変換

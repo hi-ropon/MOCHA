@@ -993,6 +993,53 @@ h1:focus {
     box-shadow: none;
 }
 
+.composer-attachments {
+    padding: 0  var(--chat-h-padding) 0.3rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.attachment-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    background: var(--panel-bg);
+    box-shadow: var(--soft-shadow);
+}
+
+.attachment-chip img {
+    width: 38px;
+    height: 38px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.attachment-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.05rem;
+    min-width: 0;
+}
+
+.attachment-meta .name {
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    max-width: 160px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.attachment-meta .size {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
 .composer-inner {
     display: flex;
     align-items: flex-end;
@@ -1004,19 +1051,36 @@ h1:focus {
     box-shadow: none;
 }
 
-.chat-input {
+.input-shell {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     flex: 1;
-    width: 100%;
-    padding: 0.55rem 0.75rem;
-    scrollbar-gutter: stable;
+    padding: 0.5rem 0.35rem;
     border-radius: 12px;
     border: 1px solid var(--border-color);
     background: var(--panel-bg);
+    min-height: 40px;
+}
+
+.input-shell:focus-within {
+    border-color: var(--accent);
+    box-shadow: var(--soft-shadow);
+}
+
+.chat-input {
+    flex: 1;
+    width: 100%;
+    padding: 0.1rem 0.35rem;
+    scrollbar-gutter: stable;
+    border-radius: 10px;
+    border: none;
+    background: transparent;
     color: var(--text-primary);
-    min-height: 48px;
+    min-height: 26px;
     resize: none;
     overflow-y: auto;
-    line-height: 1.4;
+    line-height: 1.2;
 }
 
 .chat-input::-webkit-scrollbar {
@@ -1040,7 +1104,42 @@ h1:focus {
 
 .chat-input:focus {
     outline: none;
-    border-color: var(--accent);
+}
+
+.attach-btn {
+    position: relative;
+    overflow: hidden;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    font-size: 16px;
+    padding: 0;
+    color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.file-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.attach-btn:hover {
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    box-shadow: var(--soft-shadow);
+    background: var(--panel-bg);
+}
+
+.attach-btn:not(:hover) {
+    border: none;
+    box-shadow: none;
 }
 
 .input-actions {
@@ -1049,14 +1148,18 @@ h1:focus {
     align-items: center;
 }
 
+.input-actions.inline {
+    margin-left: auto;
+}
+
 .icon-btn {
-    width: 48px;
-    height: 48px;
-    border-radius: 10px;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
     border: 1px solid var(--border-color);
     background: var(--panel-soft);
     color: var(--text-primary);
-    font-size: 18px;
+    font-size: 16px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -1088,6 +1191,80 @@ h1:focus {
 .icon-btn.tertiary {
     background: var(--panel-soft);
     border-style: dashed;
+}
+
+.attachment-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.45rem;
+}
+
+.attachment-thumb {
+    border: none;
+    padding: 0;
+    background: transparent;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--soft-shadow);
+    cursor: pointer;
+    transition: transform 0.12s ease;
+}
+
+.attachment-thumb:hover {
+    transform: translateY(-1px);
+}
+
+.attachment-thumb img {
+    display: block;
+    width: 220px;
+    max-width: 100%;
+    height: auto;
+}
+
+.lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+    padding: 1rem;
+}
+
+.lightbox-content {
+    position: relative;
+    background: var(--panel-bg);
+    border-radius: 14px;
+    padding: 1rem;
+    box-shadow: var(--glass-shadow);
+    max-width: 90vw;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.lightbox-content img {
+    max-width: 80vw;
+    max-height: 70vh;
+    border-radius: 12px;
+    object-fit: contain;
+}
+
+.lightbox-close {
+    position: absolute;
+    top: 0.35rem;
+    right: 0.35rem;
+}
+
+.lightbox-meta {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+    word-break: break-all;
 }
 
 .activity-panel {

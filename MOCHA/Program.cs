@@ -93,12 +93,17 @@ builder.Services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbCon
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents()
+    .AddHubOptions(options =>
+    {
+        options.MaximumReceiveMessageSize = 5 * 1024 * 1024;
+    })
     .AddMicrosoftIdentityConsentHandler();
 
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatTitleGenerator, ClientChatTitleGenerator>();
 builder.Services.AddScoped<IChatTitleService, ChatTitleService>();
 builder.Services.AddScoped<IChatOrchestrator, ChatOrchestrator>();
+builder.Services.AddScoped<IChatAttachmentService, ChatAttachmentService>();
 builder.Services.AddScoped<ConversationHistoryState>();
 builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddScoped<IFeedbackService, FeedbackService>();
@@ -114,6 +119,8 @@ builder.Services.AddScoped<IPcSettingRepository, PcSettingRepository>();
 builder.Services.AddScoped<PcConfigurationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();
+builder.Services.AddScoped<IGatewaySettingRepository, GatewaySettingRepository>();
+builder.Services.AddScoped<GatewayConfigurationService>();
 builder.Services.AddScoped<IUnitConfigurationRepository, UnitConfigurationRepository>();
 builder.Services.AddScoped<UnitConfigurationService>();
 builder.Services.AddScoped<FunctionBlockApiClient>();

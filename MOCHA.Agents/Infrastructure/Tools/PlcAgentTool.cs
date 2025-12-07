@@ -114,7 +114,9 @@ public sealed class PlcAgentTool
             using var http = new HttpClient
             {
                 BaseAddress = new Uri(baseUrl),
-                Timeout = options.Timeout ?? TimeSpan.FromSeconds(10)
+                Timeout = options.TimeoutSeconds is > 0
+                    ? TimeSpan.FromSeconds(options.TimeoutSeconds.Value)
+                    : TimeSpan.FromSeconds(10)
             };
 
             // バッチ読み取り: devices の配列をそのまま投げる
@@ -124,10 +126,12 @@ public sealed class PlcAgentTool
                 {
                     devices = options.Devices,
                     ip = options.Ip,
-                    port = options.Port
+                    port = options.Port,
+                    plc_host = options.PlcHost
                 };
 
-                var response = await http.PostAsJsonAsync("api/batch_read", payload, cancellationToken);
+                _logger.LogInformation("PLC Gateway バッチ読み取りリクエスト: POST api/batch_read payload={Payload}", JsonSerializer.Serialize(payload));
+                var response = await http.PostAsJsonAsync("api/batch_read", payload, _serializerOptions, cancellationToken);
                 response.EnsureSuccessStatusCode();
 
                 var body = await response.Content.ReadFromJsonAsync<BatchReadResponse>(cancellationToken: cancellationToken);
@@ -145,16 +149,30 @@ public sealed class PlcAgentTool
 
             // 単一読み取り
             var (device, addr, length) = ParseDevice(options.Devices.First());
-            var singlePayload = new
+            var path = $"api/read/{device}/{Uri.EscapeDataString(addr)}/{length}";
+            var query = new List<string>();
+            if (!string.IsNullOrWhiteSpace(options.PlcHost))
             {
-                device,
-                addr,
-                length,
-                ip = options.Ip,
-                port = options.Port
-            };
+                query.Add($"plc_host={Uri.EscapeDataString(options.PlcHost)}");
+            }
 
-            var singleResponse = await http.PostAsJsonAsync("api/read", singlePayload, cancellationToken);
+            if (!string.IsNullOrWhiteSpace(options.Ip))
+            {
+                query.Add($"ip={Uri.EscapeDataString(options.Ip)}");
+            }
+
+            if (options.Port is not null)
+            {
+                query.Add($"port={options.Port.Value}");
+            }
+
+            if (query.Count > 0)
+            {
+                path += $"?{string.Join("&", query)}";
+            }
+
+            _logger.LogInformation("PLC Gateway 単体読み取りリクエスト: GET {Path}", path);
+            var singleResponse = await http.GetAsync(path, cancellationToken);
             singleResponse.EnsureSuccessStatusCode();
 
             var singleBody = await singleResponse.Content.ReadFromJsonAsync<ReadResponse>(cancellationToken: cancellationToken);
@@ -178,37 +196,48 @@ public sealed class PlcAgentTool
 
     /// <summary>
     /// デバイス指定の解析
-    /// </summary>
-    /// <param name="spec">デバイス指定文字列</param>
-    /// <returns>デバイス・アドレス・長さ</returns>
-    private static (string Device, int Address, int Length) ParseDevice(string spec)
-    {
-        var span = spec.AsSpan();
-        var colon = span.IndexOf(':');
-        var length = 1;
-        if (colon >= 0 && int.TryParse(span[(colon + 1)..], out var parsedLength))
+        /// </summary>
+        /// <param name="spec">デバイス指定文字列</param>
+        /// <returns>デバイス・アドレス・長さ</returns>
+        private static (string Device, string Address, int Length) ParseDevice(string spec)
         {
-            length = parsedLength;
-            span = span[..colon];
+            var span = spec.AsSpan().Trim();
+            var colon = span.IndexOf(':');
+            var length = 1;
+            if (colon >= 0 && int.TryParse(span[(colon + 1)..], out var parsedLength) && parsedLength > 0)
+            {
+                length = parsedLength;
+                span = span[..colon];
+            }
+
+            var core = span.ToString();
+            if (string.IsNullOrWhiteSpace(core))
+            {
+                return ("D", "0", length);
+            }
+
+            var device = _devicePrefixes.FirstOrDefault(prefix => core.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                         ?? core[0].ToString().ToUpperInvariant();
+            var address = core.Length > device.Length ? core.Substring(device.Length) : "0";
+            if (string.IsNullOrWhiteSpace(address))
+            {
+                address = "0";
+            }
+
+            return (device.ToUpperInvariant(), address, length);
         }
 
-        if (span.Length < 2)
-        {
-            return ("D", 0, length);
-        }
-
-        var device = span[..1].ToString();
-        return int.TryParse(span[1..], out var address)
-            ? (device, address, length)
-            : (device, 0, length);
-    }
+        private static readonly string[] _devicePrefixes = { "ZR", "D", "W", "R", "X", "Y", "M" };
 
     private sealed record PlcAgentOptions
     {
         public string? BaseUrl { get; init; }
         public string? Ip { get; init; }
         public int? Port { get; init; }
-        public TimeSpan? Timeout { get; init; }
+        [JsonPropertyName("plc_host")]
+        public string? PlcHost { get; init; }
+        [JsonPropertyName("timeout")]
+        public double? TimeoutSeconds { get; init; }
         public IReadOnlyList<string> Devices { get; init; } = Array.Empty<string>();
     }
 

@@ -48,7 +48,8 @@ public class ManualToolsetTests
         var plcManual = new PlcManualService(new DummyManualStore());
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
-        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, NullLogger<OrganizerToolset>.Instance);
+        var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
+        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
 
         Assert.AreEqual(4, organizerToolset.All.Count);
     }

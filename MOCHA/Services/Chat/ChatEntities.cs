@@ -66,4 +66,70 @@ internal sealed class ChatMessageEntity
     /// 親会話へのナビゲーションプロパティ
     /// </summary>
     public ChatConversationEntity? Conversation { get; set; }
+
+    /// <summary>
+    /// 添付一覧
+    /// </summary>
+    public List<ChatAttachmentEntity> Attachments { get; set; } = new();
+}
+
+/// <summary>
+/// メッセージに紐づく画像添付エンティティ
+/// </summary>
+internal sealed class ChatAttachmentEntity
+{
+    /// <summary>
+    /// 添付ID（主キー）
+    /// </summary>
+    public string Id { get; set; } = default!;
+
+    /// <summary>
+    /// 親メッセージID
+    /// </summary>
+    public int MessageId { get; set; }
+
+    /// <summary>
+    /// 会話ID
+    /// </summary>
+    public string ConversationId { get; set; } = default!;
+
+    /// <summary>
+    /// 所有ユーザーID
+    /// </summary>
+    public string UserObjectId { get; set; } = default!;
+
+    /// <summary>
+    /// ファイル名
+    /// </summary>
+    public string FileName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// コンテンツタイプ
+    /// </summary>
+    public string ContentType { get; set; } = string.Empty;
+
+    /// <summary>
+    /// バイトサイズ
+    /// </summary>
+    public long Size { get; set; }
+
+    /// <summary>
+    /// 小サイズプレビュー Base64
+    /// </summary>
+    public string ThumbSmallBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 中サイズプレビュー Base64
+    /// </summary>
+    public string ThumbMediumBase64 { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 作成日時
+    /// </summary>
+    public DateTimeOffset CreatedAt { get; set; }
+
+    /// <summary>
+    /// 親メッセージへのナビゲーション
+    /// </summary>
+    public ChatMessageEntity? Message { get; set; }
 }

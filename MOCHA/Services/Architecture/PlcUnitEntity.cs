@@ -25,6 +25,10 @@ internal sealed class PlcUnitEntity
     public string? IpAddress { get; set; }
     /// <summary>ポート番号</summary>
     public int? Port { get; set; }
+    /// <summary>ゲートウェイIP</summary>
+    public string? GatewayHost { get; set; }
+    /// <summary>ゲートウェイポート</summary>
+    public int? GatewayPort { get; set; }
     /// <summary>コメントファイルJSON</summary>
     public string? CommentFileJson { get; set; }
     /// <summary>プログラムファイルJSON</summary>

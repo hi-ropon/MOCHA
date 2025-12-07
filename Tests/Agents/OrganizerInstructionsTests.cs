@@ -27,6 +27,8 @@ public class OrganizerInstructionsTests
         StringAssert.Contains(text, "invoke_iai_agent");
         StringAssert.Contains(text, "invoke_oriental_agent");
         StringAssert.Contains(text, "invoke_drawing_agent");
+        StringAssert.Contains(text, "ラダー図出力ルール");
+        StringAssert.Contains(text, "```ladder");
         Assert.IsFalse(text.Contains("{{", StringComparison.Ordinal));
     }
 }

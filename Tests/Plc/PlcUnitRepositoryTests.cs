@@ -31,6 +31,8 @@ public class PlcUnitRepositoryTests
             {
                 Name = "PLC-1",
                 Manufacturer = "三菱電機",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 CommentFile = new PlcFileUpload { FileName = "comment.csv", FileSize = 1024 },
                 ProgramFiles = new[]
                 {
@@ -69,6 +71,8 @@ public class PlcUnitRepositoryTests
             {
                 Name = "PLC-2",
                 Manufacturer = "KEYENCE",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 CommentFile = new PlcFileUpload { FileName = "comment.csv", FileSize = 512 }
             });
         var saved = await harness.Repository.AddAsync(original);
@@ -79,6 +83,8 @@ public class PlcUnitRepositoryTests
             Manufacturer = "三菱電機",
             IpAddress = "192.168.0.10",
             Port = 5000,
+            GatewayHost = "192.168.0.20",
+            GatewayPort = 9000,
             ProgramFiles = new[]
             {
                 new PlcFileUpload { FileName = "prog.csv", FileSize = 1024 }
@@ -105,7 +111,7 @@ public class PlcUnitRepositoryTests
     public async Task 削除すると取得できない()
     {
         await using var harness = await CreateRepositoryAsync();
-        var unit = PlcUnit.Create("user-3", "C-03", new PlcUnitDraft { Name = "PLC-3", Manufacturer = "KEYENCE" });
+        var unit = PlcUnit.Create("user-3", "C-03", new PlcUnitDraft { Name = "PLC-3", Manufacturer = "KEYENCE", GatewayHost = "127.0.0.1", GatewayPort = 8000 });
         var saved = await harness.Repository.AddAsync(unit);
 
         var deleted = await harness.Repository.DeleteAsync(saved.Id);

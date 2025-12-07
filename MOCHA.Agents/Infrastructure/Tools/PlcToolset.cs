@@ -497,7 +497,13 @@ public sealed class PlcToolset
         try
         {
             var result = await _gateway.ReadAsync(
-                new DeviceReadRequest(spec, ip, port, TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10), baseUrl),
+                new DeviceReadRequest(
+                    spec,
+                    string.IsNullOrWhiteSpace(ip) ? null : ip,
+                    port <= 0 ? null : port,
+                    PlcHost: null,
+                    Timeout: TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10),
+                    BaseUrl: baseUrl),
                 cancellationToken);
 
             var payload = JsonSerializer.Serialize(result, _serializerOptions);

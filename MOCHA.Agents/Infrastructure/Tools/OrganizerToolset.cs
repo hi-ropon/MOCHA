@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -24,12 +25,17 @@ public sealed class OrganizerToolset
     private readonly PlcAgentTool _plcAgentTool;
     private readonly PlcToolset _plcToolset;
     private readonly IPlcDataLoader _plcDataLoader;
+    private readonly AgentDelegationPolicy _delegationPolicy;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
         DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
     };
+    private readonly AITool _invokeIaiTool;
+    private readonly AITool _invokeOrientalTool;
+    private readonly AITool _invokePlcTool;
+    private readonly AITool _invokeDrawingTool;
     private readonly AITool _plcGatewayTool;
 
     /// <summary>提供するツール一覧</summary>
@@ -43,6 +49,7 @@ public sealed class OrganizerToolset
     /// <param name="plcAgentTool">PLC エージェントツール</param>
     /// <param name="plcToolset">PLC 専用ツールセット</param>
     /// <param name="plcDataLoader">PLC データローダー</param>
+    /// <param name="delegationPolicy">委譲ポリシー</param>
     /// <param name="logger">ロガー</param>
     public OrganizerToolset(
         ManualToolset manualTools,
@@ -50,6 +57,7 @@ public sealed class OrganizerToolset
         PlcAgentTool plcAgentTool,
         PlcToolset plcToolset,
         IPlcDataLoader plcDataLoader,
+        AgentDelegationPolicy delegationPolicy,
         ILogger<OrganizerToolset> logger)
     {
         _logger = logger;
@@ -58,33 +66,111 @@ public sealed class OrganizerToolset
         _plcAgentTool = plcAgentTool;
         _plcToolset = plcToolset;
         _plcDataLoader = plcDataLoader;
+        _delegationPolicy = delegationPolicy;
+        _invokeIaiTool = AIFunctionFactory.Create(
+            new Func<string, CancellationToken, Task<string>>(InvokeIaiAgentAsync),
+            name: "invoke_iai_agent",
+            description: "IAI 関連のマニュアルを検索し要約を返します。");
+
+        _invokeOrientalTool = AIFunctionFactory.Create(
+            new Func<string, CancellationToken, Task<string>>(InvokeOrientalAgentAsync),
+            name: "invoke_oriental_agent",
+            description: "Oriental Motor 関連のマニュアルを検索し要約を返します。");
+
+        _invokePlcTool = AIFunctionFactory.Create(
+            new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
+            name: "invoke_plc_agent",
+            description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。");
+
+        _invokeDrawingTool = AIFunctionFactory.Create(
+            new Func<string, CancellationToken, Task<string>>(InvokeDrawingAgentAsync),
+            name: "invoke_drawing_agent",
+            description: "登録済み図面を検索・要約します。図面に関する質問で利用します。");
         _plcGatewayTool = AIFunctionFactory.Create(
             new Func<string?, CancellationToken, Task<string>>(RunPlcGatewayAsync),
             name: "read_plc_gateway",
             description: "PLC Gateway からデバイスを読み取ります。optionsJson に devices/IP/port を含めます。");
 
-        All = new AITool[]
+        All = BuildDelegationTools("organizer");
+    }
+
+    private IReadOnlyList<AITool> BuildDelegationTools(string caller)
+    {
+        var tools = new List<AITool>();
+        foreach (var callee in _delegationPolicy.GetAllowedCallees(caller))
         {
-            AIFunctionFactory.Create(
-                new Func<string, CancellationToken, Task<string>>(InvokeIaiAgentAsync),
-                name: "invoke_iai_agent",
-                description: "IAI 関連のマニュアルを検索し要約を返します。"),
+            if (string.Equals(callee, "iaiAgent", StringComparison.OrdinalIgnoreCase))
+            {
+                tools.Add(_invokeIaiTool);
+                continue;
+            }
 
-            AIFunctionFactory.Create(
-                new Func<string, CancellationToken, Task<string>>(InvokeOrientalAgentAsync),
-                name: "invoke_oriental_agent",
-                description: "Oriental Motor 関連のマニュアルを検索し要約を返します。"),
+            if (string.Equals(callee, "orientalAgent", StringComparison.OrdinalIgnoreCase))
+            {
+                tools.Add(_invokeOrientalTool);
+                continue;
+            }
 
-            AIFunctionFactory.Create(
-                new Func<string, string?, CancellationToken, Task<string>>(InvokePlcAgentAsync),
-                name: "invoke_plc_agent",
-                description: "三菱PLC関連の解析を行います。optionsJsonで Gateway接続情報やdevicesを指定可能です。"),
+            if (string.Equals(callee, "plcAgent", StringComparison.OrdinalIgnoreCase))
+            {
+                tools.Add(_invokePlcTool);
+                continue;
+            }
 
-            AIFunctionFactory.Create(
-                new Func<string, CancellationToken, Task<string>>(InvokeDrawingAgentAsync),
-                name: "invoke_drawing_agent",
-                description: "登録済み図面を検索・要約します。図面に関する質問で利用します。")
-        };
+            if (string.Equals(callee, "drawingAgent", StringComparison.OrdinalIgnoreCase))
+            {
+                tools.Add(_invokeDrawingTool);
+            }
+        }
+
+        return tools;
+    }
+
+    private bool TryEnterDelegation(string callee, ToolCall call, out IDisposable? frame, out string? rejection)
+    {
+        frame = null;
+        rejection = null;
+        var ctx = _context.Value;
+        var caller = ctx?.CallStack.Current ?? "organizer";
+        var depth = ctx?.CallStack.Depth ?? 0;
+
+        if (!_delegationPolicy.CanInvoke(caller, callee, depth, out var reason))
+        {
+            rejection = reason;
+            if (ctx is not null)
+            {
+                ctx.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, reason ?? string.Empty, false, reason)));
+            }
+
+            return false;
+        }
+
+        frame = ctx?.CallStack.Push(callee);
+        return true;
+    }
+
+    private string BuildDelegationHint(string caller)
+    {
+        var allowed = _delegationPolicy.GetAllowedCallees(caller);
+        var depth = _context.Value?.CallStack.Depth ?? 0;
+        var remainingDepth = Math.Max(0, _delegationPolicy.MaxDepth - depth);
+        var allowedList = allowed.Count > 0 ? string.Join(", ", allowed) : "なし";
+        return $"呼び出し元: {caller}\n許可された委譲先: {allowedList}\n残り呼び出し深さ: {remainingDepth}";
+    }
+
+    private static string? MergeContextHints(string? left, string? right)
+    {
+        if (string.IsNullOrWhiteSpace(left))
+        {
+            return right;
+        }
+
+        if (string.IsNullOrWhiteSpace(right))
+        {
+            return left;
+        }
+
+        return $"{left}\n\n{right}";
     }
 
     /// <summary>
@@ -95,11 +181,13 @@ public sealed class OrganizerToolset
     /// <returns>スコープ破棄用ハンドル</returns>
     public IDisposable UseContext(ChatContext chatContext, Action<AgentEvent> sink)
     {
-        _context.Value = new ScopeContext(chatContext, sink);
+        var callStack = new AgentCallStack();
+        var rootFrame = callStack.Push("organizer");
+        _context.Value = new ScopeContext(chatContext, sink, callStack);
         var manualScope = _manualTools.UseContext(chatContext, sink);
         var agentScope = _manualAgentTool.UseContext(chatContext.ConversationId, sink);
         var plcScope = _plcToolset.UseContext(chatContext.ConversationId, sink);
-        return new Scope(this, manualScope, agentScope, plcScope);
+        return new Scope(this, manualScope, agentScope, plcScope, rootFrame);
     }
 
     /// <summary>
@@ -108,14 +196,27 @@ public sealed class OrganizerToolset
     /// <param name="question">問い合わせ内容</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>実行結果</returns>
-    private Task<string> InvokeIaiAgentAsync(string question, CancellationToken cancellationToken)
+    private async Task<string> InvokeIaiAgentAsync(string question, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_iai_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
-        return RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
+        if (!TryEnterDelegation("iaiAgent", call, out var frame, out var rejection))
+        {
+            return rejection ?? "エージェント呼び出しが許可されていません";
+        }
+
+        if (frame is not null)
+        {
+            using (frame)
+            {
+                return await RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
+            }
+        }
+
+        return await RunManualAgentAsync(call, "iaiAgent", question, cancellationToken);
     }
 
     /// <summary>
@@ -124,14 +225,27 @@ public sealed class OrganizerToolset
     /// <param name="question">問い合わせ内容</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>実行結果</returns>
-    private Task<string> InvokeOrientalAgentAsync(string question, CancellationToken cancellationToken)
+    private async Task<string> InvokeOrientalAgentAsync(string question, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_oriental_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
-        return RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
+        if (!TryEnterDelegation("orientalAgent", call, out var frame, out var rejection))
+        {
+            return rejection ?? "エージェント呼び出しが許可されていません";
+        }
+
+        if (frame is not null)
+        {
+            using (frame)
+            {
+                return await RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
+            }
+        }
+
+        return await RunManualAgentAsync(call, "orientalAgent", question, cancellationToken);
     }
 
     /// <summary>
@@ -141,14 +255,27 @@ public sealed class OrganizerToolset
     /// <param name="optionsJson">追加オプション JSON</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>実行結果 JSON</returns>
-    private Task<string> InvokePlcAgentAsync(string question, string? optionsJson, CancellationToken cancellationToken)
+    private async Task<string> InvokePlcAgentAsync(string question, string? optionsJson, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_plc_agent", JsonSerializer.Serialize(new { question, options = optionsJson }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
-        return RunPlcAsync(call, question, optionsJson, cancellationToken);
+        if (!TryEnterDelegation("plcAgent", call, out var frame, out var rejection))
+        {
+            return rejection ?? "エージェント呼び出しが許可されていません";
+        }
+
+        if (frame is not null)
+        {
+            using (frame)
+            {
+                return await RunPlcAsync(call, question, optionsJson, cancellationToken);
+            }
+        }
+
+        return await RunPlcAsync(call, question, optionsJson, cancellationToken);
     }
 
     /// <summary>
@@ -167,9 +294,11 @@ public sealed class OrganizerToolset
             var parsedOptions = ParsePlcOptions(optionsJson);
             var unitId = parsedOptions.PlcUnitId is not null && Guid.TryParse(parsedOptions.PlcUnitId, out var guid) ? guid : (Guid?)null;
             await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
-            var extraTools = new[] { _plcGatewayTool };
-            var contextHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note);
-            var result = await _manualAgentTool.RunAsync("plcAgent", question, _plcToolset.All.Concat(extraTools), contextHint, cancellationToken);
+            var delegationTools = BuildDelegationTools("plcAgent");
+            var extraTools = _plcToolset.All.Concat(new[] { _plcGatewayTool }).Concat(delegationTools);
+            var plcHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note);
+            var contextHint = MergeContextHints(plcHint, BuildDelegationHint("plcAgent"));
+            var result = await _manualAgentTool.RunAsync("plcAgent", question, extraTools, contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));
             return result;
         }
@@ -204,14 +333,27 @@ public sealed class OrganizerToolset
     /// <param name="question">問い合わせ内容</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>実行結果</returns>
-    private Task<string> InvokeDrawingAgentAsync(string question, CancellationToken cancellationToken)
+    private async Task<string> InvokeDrawingAgentAsync(string question, CancellationToken cancellationToken)
     {
         var ctx = _context.Value;
         var call = new ToolCall("invoke_drawing_agent", JsonSerializer.Serialize(new { question }, _serializerOptions));
         ctx?.Emit(AgentEventFactory.ToolRequested(ctx.ChatContext.ConversationId, call));
         ctx?.Emit(AgentEventFactory.ToolStarted(ctx.ChatContext.ConversationId, call));
 
-        return RunManualAgentAsync(call, "drawingAgent", question, cancellationToken);
+        if (!TryEnterDelegation("drawingAgent", call, out var frame, out var rejection))
+        {
+            return rejection ?? "エージェント呼び出しが許可されていません";
+        }
+
+        if (frame is not null)
+        {
+            using (frame)
+            {
+                return await RunManualAgentAsync(call, "drawingAgent", question, cancellationToken);
+            }
+        }
+
+        return await RunManualAgentAsync(call, "drawingAgent", question, cancellationToken);
     }
 
     /// <summary>
@@ -266,9 +408,53 @@ public sealed class OrganizerToolset
         }
     }
 
-    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink)
+    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink, AgentCallStack CallStack)
     {
         public void Emit(AgentEvent ev) => Sink(ev);
+    }
+
+    private sealed class AgentCallStack
+    {
+        private readonly Stack<string> _stack = new();
+
+        public int Depth => _stack.Count;
+        public string Current => _stack.Count > 0 ? _stack.Peek() : "organizer";
+
+        public IDisposable Push(string agent)
+        {
+            _stack.Push(agent);
+            return new PopHandle(this);
+        }
+
+        private void Pop()
+        {
+            if (_stack.Count > 0)
+            {
+                _stack.Pop();
+            }
+        }
+
+        private sealed class PopHandle : IDisposable
+        {
+            private readonly AgentCallStack _owner;
+            private bool _disposed;
+
+            public PopHandle(AgentCallStack owner)
+            {
+                _owner = owner;
+            }
+
+            public void Dispose()
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                _owner.Pop();
+                _disposed = true;
+            }
+        }
     }
 
     private sealed class Scope : IDisposable
@@ -277,6 +463,7 @@ public sealed class OrganizerToolset
         private readonly IDisposable _manualScope;
         private readonly IDisposable _agentScope;
         private readonly IDisposable _plcScope;
+        private readonly IDisposable _rootFrame;
 
         /// <summary>
         /// スコープ生成
@@ -285,12 +472,14 @@ public sealed class OrganizerToolset
         /// <param name="manualScope">マニュアルツールスコープ</param>
         /// <param name="agentScope">サブエージェントツールスコープ</param>
         /// <param name="plcScope">PLCツールスコープ</param>
-        public Scope(OrganizerToolset owner, IDisposable manualScope, IDisposable agentScope, IDisposable plcScope)
+        /// <param name="rootFrame">呼び出しスタック初期フレーム</param>
+        public Scope(OrganizerToolset owner, IDisposable manualScope, IDisposable agentScope, IDisposable plcScope, IDisposable rootFrame)
         {
             _owner = owner;
             _manualScope = manualScope;
             _agentScope = agentScope;
             _plcScope = plcScope;
+            _rootFrame = rootFrame;
         }
 
         /// <summary>
@@ -302,6 +491,7 @@ public sealed class OrganizerToolset
             _manualScope.Dispose();
             _agentScope.Dispose();
             _plcScope.Dispose();
+            _rootFrame.Dispose();
         }
     }
 

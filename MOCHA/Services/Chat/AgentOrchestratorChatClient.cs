@@ -8,6 +8,7 @@ using MOCHA.Models.Chat;
 
 using DomainChatTurn = MOCHA.Agents.Domain.ChatTurn;
 using DomainAuthorRole = MOCHA.Agents.Domain.AuthorRole;
+using DomainChatAttachment = MOCHA.Agents.Domain.ChatAttachment;
 using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 
 namespace MOCHA.Services.Chat;
@@ -65,7 +66,7 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
             : turn.ConversationId;
 
         var history = turn.Messages
-            .Select(m => new DomainChatTurn(MapRole(m.Role), m.Content, DateTimeOffset.UtcNow))
+            .Select(MapToDomainTurn)
             .ToList();
 
         var userTurn = history.LastOrDefault() ?? DomainChatTurn.User(string.Empty);
@@ -112,6 +113,60 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
                     yield return ChatStreamEvent.Completed(ev.ConversationId);
                     break;
             }
+        }
+    }
+
+    private static DomainChatTurn MapToDomainTurn(ChatMessage message)
+    {
+        var attachments = MapAttachments(message.Attachments);
+        return new DomainChatTurn(MapRole(message.Role), message.Content, DateTimeOffset.UtcNow)
+        {
+            Attachments = attachments
+        };
+    }
+
+    private static IReadOnlyList<DomainChatAttachment> MapAttachments(IReadOnlyList<ImageAttachment>? attachments)
+    {
+        if (attachments is null || attachments.Count == 0)
+        {
+            return Array.Empty<DomainChatAttachment>();
+        }
+
+        var list = new List<DomainChatAttachment>(attachments.Count);
+        foreach (var attachment in attachments)
+        {
+            var data = DecodeBase64Data(attachment);
+            if (data is null)
+            {
+                continue;
+            }
+
+            list.Add(new DomainChatAttachment(attachment.FileName, attachment.ContentType, data));
+        }
+
+        return list;
+    }
+
+    private static byte[]? DecodeBase64Data(ImageAttachment attachment)
+    {
+        var source = !string.IsNullOrWhiteSpace(attachment.MediumBase64)
+            ? attachment.MediumBase64
+            : attachment.SmallBase64;
+
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return null;
+        }
+
+        var commaIndex = source.IndexOf(',');
+        var base64 = commaIndex >= 0 ? source[(commaIndex + 1)..] : source;
+        try
+        {
+            return Convert.FromBase64String(base64);
+        }
+        catch (FormatException)
+        {
+            return null;
         }
     }
 

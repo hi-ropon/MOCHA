@@ -300,6 +300,8 @@ internal sealed class PlcConfigurationService
             Role = draft.Role,
             IpAddress = draft.IpAddress,
             Port = draft.Port,
+            GatewayHost = draft.GatewayHost,
+            GatewayPort = draft.GatewayPort,
             Modules = draft.Modules,
             CommentFile = updatedComment,
             ProgramFiles = processedPrograms

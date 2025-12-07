@@ -19,6 +19,8 @@ internal interface IChatDbContext
     DbSet<ChatConversationEntity> Conversations { get; }
     /// <summary>メッセージエンティティのセット</summary>
     DbSet<ChatMessageEntity> Messages { get; }
+    /// <summary>添付エンティティのセット</summary>
+    DbSet<ChatAttachmentEntity> Attachments { get; }
     /// <summary>ユーザーロールエンティティのセット</summary>
     DbSet<UserRoleEntity> UserRoles { get; }
     /// <summary>装置エージェントエンティティのセット</summary>
@@ -33,6 +35,8 @@ internal interface IChatDbContext
     DbSet<PcSettingEntity> PcSettings { get; }
     /// <summary>PLCユニットエンティティのセット</summary>
     DbSet<PlcUnitEntity> PlcUnits { get; }
+    /// <summary>ゲートウェイ設定エンティティのセット</summary>
+    DbSet<GatewaySettingEntity> GatewaySettings { get; }
     /// <summary>装置ユニット構成エンティティのセット</summary>
     DbSet<UnitConfigurationEntity> UnitConfigurations { get; }
     /// <summary>トラッキング操作へのアクセス</summary>

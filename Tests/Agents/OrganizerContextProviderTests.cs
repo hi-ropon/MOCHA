@@ -28,8 +28,9 @@ public class OrganizerContextProviderTests
     {
         var pcRepo = new InMemoryPcSettingRepository();
         var plcRepo = new InMemoryPlcUnitRepository();
+        var gatewayRepo = new InMemoryGatewaySettingRepository();
         var drawingCatalog = new DrawingCatalog(new FakeDrawingRepository(), Options.Create(new DrawingStorageOptions()));
-        var provider = new OrganizerContextProvider(pcRepo, plcRepo, drawingCatalog, NullLogger<OrganizerContextProvider>.Instance);
+        var provider = new OrganizerContextProvider(pcRepo, plcRepo, gatewayRepo, drawingCatalog, NullLogger<OrganizerContextProvider>.Instance);
 
         var pcSetting = PcSetting.Create(
             "user-1",
