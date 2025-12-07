@@ -43,7 +43,9 @@ public class FunctionBlocksControllerTests
             var unitDraft = new PlcUnitDraft
             {
                 Name = "ユニット",
-                Manufacturer = PlcUnitDraft.SupportedManufacturers[0]
+                Manufacturer = PlcUnitDraft.SupportedManufacturers[0],
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000
             };
             var unit = PlcUnit.Create(userId, agentNumber, unitDraft);
             await repo.AddAsync(unit);

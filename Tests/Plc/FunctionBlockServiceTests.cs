@@ -29,6 +29,8 @@ public class FunctionBlockServiceTests
             {
                 Name = "ユニットA",
                 Manufacturer = PlcUnitDraft.SupportedManufacturers.First(),
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 ProgramFiles = Array.Empty<PlcFileUpload>(),
                 Modules = Array.Empty<PlcModuleDraft>()
             };

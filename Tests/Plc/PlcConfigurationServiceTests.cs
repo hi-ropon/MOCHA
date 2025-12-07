@@ -30,6 +30,8 @@ public class PlcConfigurationServiceTests
             Manufacturer = "三菱電機",
             Model = "Q03UDV",
             Role = "制御",
+            GatewayHost = "127.0.0.1",
+            GatewayPort = 8000,
             Modules = new List<PlcModuleDraft>
             {
                 new() { Name = "入力", Specification = "16点" }
@@ -43,6 +45,8 @@ public class PlcConfigurationServiceTests
             Manufacturer = "KEYENCE",
             Model = "Q03UDV",
             Role = "制御",
+            GatewayHost = "127.0.0.1",
+            GatewayPort = 8000,
             Modules = new List<PlcModuleDraft>
             {
                 new() { Name = "入力", Specification = "16点" }
@@ -70,6 +74,8 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-3",
                 Manufacturer = "三菱電機",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 CommentFile = new PlcFileUpload { FileName = "comment_v1.csv", FileSize = 1024, Content = new byte[1024] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -87,6 +93,8 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-3",
                 Manufacturer = "三菱電機",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 CommentFile = new PlcFileUpload { FileName = "comment_v2.csv", FileSize = 3072, Content = new byte[3072] },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -113,7 +121,9 @@ public class PlcConfigurationServiceTests
             new PlcUnitDraft
             {
                 Name = "PLC-4",
-                Manufacturer = "KEYENCE"
+                Manufacturer = "KEYENCE",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000
             });
         Assert.IsTrue(added.Succeeded);
 
@@ -139,7 +149,9 @@ public class PlcConfigurationServiceTests
                 Name = "PLC-5",
                 Manufacturer = "三菱電機",
                 IpAddress = "192.168.0.20",
-                Port = 5000
+                Port = 5000,
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000
             });
 
         Assert.IsTrue(result.Succeeded);
@@ -161,6 +173,8 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-7",
                 Manufacturer = "KEYENCE",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 ProgramFiles = new List<PlcFileUpload>
                 {
                     new() { FileName = "logic_a.csv", FileSize = 1024, DisplayName = "ロジックA", Content = new byte[1024] },
@@ -195,6 +209,8 @@ public class PlcConfigurationServiceTests
                 {
                     Name = "PLC-8",
                     Manufacturer = "三菱電機",
+                    GatewayHost = "127.0.0.1",
+                    GatewayPort = 8000,
                     ProgramFiles = new List<PlcFileUpload>
                     {
                         new() { FileName = "logic.csv", FileSize = 3, Content = new byte[] { 1, 2, 3 } }
@@ -231,6 +247,8 @@ public class PlcConfigurationServiceTests
             {
                 Name = "PLC-6",
                 Manufacturer = "KEYENCE",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
                 CommentFile = new PlcFileUpload { FileName = "memo.txt", FileSize = 512 },
                 ProgramFiles = new List<PlcFileUpload>
                 {
@@ -254,7 +272,9 @@ public class PlcConfigurationServiceTests
             "H-08",
             new PlcUnitDraft
             {
-                Name = "PLC-9"
+                Name = "PLC-9",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000
             });
 
         Assert.IsFalse(result.Succeeded);

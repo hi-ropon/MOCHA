@@ -119,6 +119,8 @@ builder.Services.AddScoped<IPcSettingRepository, PcSettingRepository>();
 builder.Services.AddScoped<PcConfigurationService>();
 builder.Services.AddScoped<IPlcUnitRepository, PlcUnitRepository>();
 builder.Services.AddScoped<PlcConfigurationService>();
+builder.Services.AddScoped<IGatewaySettingRepository, GatewaySettingRepository>();
+builder.Services.AddScoped<GatewayConfigurationService>();
 builder.Services.AddScoped<IUnitConfigurationRepository, UnitConfigurationRepository>();
 builder.Services.AddScoped<UnitConfigurationService>();
 builder.Services.AddScoped<FunctionBlockApiClient>();

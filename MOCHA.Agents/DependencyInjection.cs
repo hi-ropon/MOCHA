@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
@@ -40,7 +41,10 @@ public static class DependencyInjection
         services.AddSingleton<PlcProgramAnalyzer>();
         services.AddSingleton<PlcReasoner>();
         services.AddSingleton<PlcManualService>();
-        services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>();
+        services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>(client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(10);
+        });
         services.AddSingleton<PlcToolset>();
         services.AddSingleton<AgentDelegationPolicy>(sp =>
         {

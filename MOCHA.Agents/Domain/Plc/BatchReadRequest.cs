@@ -10,5 +10,6 @@ public sealed record BatchReadRequest(
     IReadOnlyList<string> Specs,
     string? Ip = null,
     int? Port = null,
+    string? PlcHost = null,
     TimeSpan? Timeout = null,
     string? BaseUrl = null);

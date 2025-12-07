@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -158,6 +160,8 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 Role TEXT NULL,
                 IpAddress TEXT NULL,
                 Port INTEGER NULL,
+                GatewayHost TEXT NULL,
+                GatewayPort INTEGER NULL,
                 CommentFileJson TEXT NULL,
                 ProgramFilesJson TEXT NULL,
                 ModulesJson TEXT NULL,
@@ -165,11 +169,22 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 UpdatedAt TEXT NOT NULL
             );
             CREATE INDEX IF NOT EXISTS IX_PlcUnits_UserId_AgentNumber_CreatedAt ON PlcUnits(UserId, AgentNumber, CreatedAt);
+
+            CREATE TABLE IF NOT EXISTS GatewaySettings(
+                Id TEXT NOT NULL CONSTRAINT PK_GatewaySettings PRIMARY KEY,
+                UserId TEXT NOT NULL,
+                AgentNumber TEXT NOT NULL,
+                Host TEXT NOT NULL,
+                Port INTEGER NOT NULL,
+                UpdatedAt TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_GatewaySettings_UserId_AgentNumber ON GatewaySettings(UserId, AgentNumber);
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
         await EnsureAgentColumnAsync(cancellationToken);
         await EnsurePlcManufacturerColumnAsync(cancellationToken);
+        await EnsurePlcGatewayColumnsAsync(cancellationToken);
     }
 
     /// <summary>
@@ -260,6 +275,71 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         }
 
         const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN Manufacturer TEXT NULL;";
+        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+    }
+
+    /// <summary>
+    /// PlcUnits テーブルへのゲートウェイ列追加確認
+    /// </summary>
+    /// <param name="cancellationToken">キャンセル通知</param>
+    private async Task EnsurePlcGatewayColumnsAsync(CancellationToken cancellationToken)
+    {
+        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
+        var hasGatewayHost = false;
+        var hasGatewayPort = false;
+
+        var connection = _db.Database.GetDbConnection();
+        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
+        if (shouldClose)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "GatewayHost", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasGatewayHost = true;
+                }
+
+                if (string.Equals(name, "GatewayPort", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasGatewayPort = true;
+                }
+
+                if (hasGatewayHost && hasGatewayPort)
+                {
+                    break;
+                }
+            }
+        }
+
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+
+        var commands = new List<string>();
+        if (!hasGatewayHost)
+        {
+            commands.Add("ALTER TABLE PlcUnits ADD COLUMN GatewayHost TEXT NULL;");
+        }
+
+        if (!hasGatewayPort)
+        {
+            commands.Add("ALTER TABLE PlcUnits ADD COLUMN GatewayPort INTEGER NULL;");
+        }
+
+        if (commands.Count == 0)
+        {
+            return;
+        }
+
+        var alterSql = string.Join(Environment.NewLine, commands);
         await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

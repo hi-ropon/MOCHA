@@ -26,6 +26,7 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private const int _maxRepositoryUrls = 3;
     private readonly IPcSettingRepository _pcSettingRepository;
     private readonly IPlcUnitRepository _plcUnitRepository;
+    private readonly IGatewaySettingRepository _gatewaySettingRepository;
     private readonly DrawingCatalog _drawingCatalog;
     private readonly ILogger<OrganizerContextProvider> _logger;
 
@@ -35,11 +36,13 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     public OrganizerContextProvider(
         IPcSettingRepository pcSettingRepository,
         IPlcUnitRepository plcUnitRepository,
+        IGatewaySettingRepository gatewaySettingRepository,
         DrawingCatalog drawingCatalog,
         ILogger<OrganizerContextProvider> logger)
     {
         _pcSettingRepository = pcSettingRepository ?? throw new ArgumentNullException(nameof(pcSettingRepository));
         _plcUnitRepository = plcUnitRepository ?? throw new ArgumentNullException(nameof(plcUnitRepository));
+        _gatewaySettingRepository = gatewaySettingRepository ?? throw new ArgumentNullException(nameof(gatewaySettingRepository));
         _drawingCatalog = drawingCatalog ?? throw new ArgumentNullException(nameof(drawingCatalog));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -68,6 +71,12 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private async Task<string> BuildArchitectureAsync(string userId, string agentNumber, CancellationToken cancellationToken)
     {
         var sb = new StringBuilder();
+
+        var gateway = await _gatewaySettingRepository.GetAsync(userId, agentNumber, cancellationToken);
+        if (gateway is not null)
+        {
+            sb.AppendLine($"- ゲートウェイ: {gateway.Host}:{gateway.Port}");
+        }
 
         var pcSettings = await _pcSettingRepository.ListAsync(userId, agentNumber, cancellationToken);
         if (pcSettings.Count > 0)

@@ -21,6 +21,7 @@
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
+@inject MOCHA.Services.Architecture.GatewayConfigurationService GatewayService
 @inject PcConfigurationService PcConfigurationService
 @inject UnitConfigurationService UnitConfigurationService
 @inject FunctionBlockService FunctionBlockService
@@ -250,6 +251,42 @@
                             }
                             else
                             {
+                                <div class="plc-card gateway-card">
+                                    <div class="plc-title-row">
+                                        <div>
+                                            <div class="plc-name">ゲートウェイ設定</div>
+                                            <div class="plc-meta">この装置エージェントで共通のゲートウェイ接続先</div>
+                                        </div>
+                                    </div>
+                                    <div class="plc-row endpoint-row">
+                                        <div class="endpoint-cell">
+                                            <div class="plc-label">ゲートウェイIP</div>
+                                            <input class="agent-input" @bind="_gatewayHost" placeholder="例: 127.0.0.1" />
+                                        </div>
+                                        <div class="endpoint-cell">
+                                            <div class="plc-label">ゲートウェイポート</div>
+                                            <input class="agent-input"
+                                                   type="number"
+                                                   min="1"
+                                                   max="65535"
+                                                   @bind="_gatewayPort"
+                                                   placeholder="例: 8000" />
+                                        </div>
+                                    </div>
+                                    <div class="plc-row">
+                                        <button type="button"
+                                                class="agent-delete-btn drawing-edit-btn"
+                                                @onclick="SaveGatewaySettingAsync"
+                                                disabled="@_gatewaySaving">
+                                            保存
+                                        </button>
+                                        @if (!string.IsNullOrWhiteSpace(_gatewayError))
+                                        {
+                                            <span class="drawing-error" style="margin-left: 12px;">@_gatewayError</span>
+                                        }
+                                    </div>
+                                </div>
+
                                 <div class="plc-list unit-list">
                                     @if (_unitConfigurations.Any())
                                     {
@@ -1235,6 +1272,10 @@
     private string _plcRole = string.Empty;
     private string _plcIp = string.Empty;
     private int? _plcPort;
+    private string _gatewayHost = string.Empty;
+    private int? _gatewayPort;
+    private bool _gatewaySaving;
+    private string? _gatewayError;
     private IBrowserFile? _commentFile;
     private string? _commentFileName;
     private long _commentFileSize;
@@ -1375,6 +1416,7 @@
         await LoadDrawingsAsync();
         await LoadPcSettingsAsync();
         await LoadUnitConfigurationsAsync();
+        await LoadGatewaySettingAsync();
         await LoadPlcUnitsAsync();
     }
 
@@ -1548,6 +1590,51 @@
         }
 
         _plcUnits = await PlcService.ListAsync(_userId, SettingsSelectedAgentNumber);
+    }
+
+    private async Task LoadGatewaySettingAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _gatewayHost = string.Empty;
+            _gatewayPort = null;
+            return;
+        }
+
+        var setting = await GatewayService.GetAsync(_userId, SettingsSelectedAgentNumber);
+        _gatewayHost = setting?.Host ?? string.Empty;
+        _gatewayPort = setting?.Port;
+    }
+
+    private async Task SaveGatewaySettingAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _gatewayError = "装置エージェントを選択してください";
+            return;
+        }
+
+        _gatewaySaving = true;
+        _gatewayError = null;
+        try
+        {
+            var draft = new GatewaySettingDraft
+            {
+                Host = _gatewayHost,
+                Port = _gatewayPort
+            };
+
+            var result = await GatewayService.SaveAsync(_userId, SettingsSelectedAgentNumber, draft);
+            if (!result.Succeeded)
+            {
+                _gatewayError = result.Error;
+                return;
+            }
+        }
+        finally
+        {
+            _gatewaySaving = false;
+        }
     }
 
     private async Task OpenDrawingModalForCreate()

@@ -29,6 +29,16 @@ public static class PlcAgentInstructions
         - 縦線: │、分岐: ├/┤、横線: ─、タイマ/カウンタ: ─[TMR Tn Kn]─、命令ブロック: ─[命令名 パラメータ]─
         - 行番号を付けて簡潔に示す
 
+        "【ラダー図出力例】\n"
+        "```ladder\n"
+        "0000  ─┤X0├──┤X1/├─(Y0)─\n"
+        "            │\n"
+        "0001  ─┤X2├─┘\n"
+        "\n"
+        "0002  ─┤X3├─[TMR T0 K100]─\n"
+        "```\n"
+        "\n"
+
         【ツール選択ガイド】
         - マニュアル/命令: search_manual, search_instruction, get_command_overview（必要に応じ read_manual で根拠を読む）
         - プログラム解析: program_lines, related_devices, get_comment

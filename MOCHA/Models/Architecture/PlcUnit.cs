@@ -37,6 +37,8 @@ public sealed class PlcUnit
         string? role,
         string? ipAddress,
         int? port,
+        string? gatewayHost,
+        int? gatewayPort,
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
@@ -53,6 +55,8 @@ public sealed class PlcUnit
         Role = role;
         IpAddress = ipAddress;
         Port = port;
+        GatewayHost = gatewayHost;
+        GatewayPort = gatewayPort;
         CommentFile = commentFile;
         ProgramFiles = programFiles;
         Modules = modules;
@@ -79,6 +83,10 @@ public sealed class PlcUnit
     public string? IpAddress { get; }
     /// <summary>ポート番号</summary>
     public int? Port { get; }
+    /// <summary>ゲートウェイIP</summary>
+    public string? GatewayHost { get; }
+    /// <summary>ゲートウェイポート</summary>
+    public int? GatewayPort { get; }
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; }
     /// <summary>プログラムファイル</summary>
@@ -113,6 +121,8 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
+            NormalizeNullable(draft.GatewayHost),
+            draft.GatewayPort,
             NormalizeFile(draft.CommentFile),
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
@@ -149,6 +159,8 @@ public sealed class PlcUnit
         string? role,
         string? ipAddress,
         int? port,
+        string? gatewayHost,
+        int? gatewayPort,
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
         IReadOnlyCollection<PlcUnitModule> modules,
@@ -166,6 +178,8 @@ public sealed class PlcUnit
             role,
             ipAddress,
             port,
+            gatewayHost,
+            gatewayPort,
             commentFile,
             programFiles ?? Array.Empty<PlcFileUpload>(),
             modules ?? Array.Empty<PlcUnitModule>(),
@@ -191,6 +205,8 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
+            NormalizeNullable(draft.GatewayHost),
+            draft.GatewayPort,
             NormalizeFile(draft.CommentFile) ?? CommentFile,
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
@@ -216,6 +232,8 @@ public sealed class PlcUnit
             Role,
             IpAddress,
             Port,
+            GatewayHost,
+            GatewayPort,
             CommentFile,
             ProgramFiles,
             Modules,

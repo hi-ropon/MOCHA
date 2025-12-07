@@ -24,6 +24,10 @@ public sealed class PlcUnitDraft
     public string? IpAddress { get; init; }
     /// <summary>ポート番号</summary>
     public int? Port { get; init; }
+    /// <summary>ゲートウェイIPアドレス</summary>
+    public string? GatewayHost { get; init; }
+    /// <summary>ゲートウェイポート番号</summary>
+    public int? GatewayPort { get; init; }
     /// <summary>コメントファイル</summary>
     public PlcFileUpload? CommentFile { get; init; }
     /// <summary>プログラムファイル群</summary>
