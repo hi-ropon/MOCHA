@@ -26,6 +26,7 @@ public static class PlcAgentInstructions
         【ルール】
         - 強制ON/OFFの指示は出さないでください。
         - 調査するデバイスが分からない時は、まずget_commnentやprogram_linesで手がかりを探してください。
+        - ビットの信号はON/OFFで表現して回答してください。
 
         【ラダー図出力ルール】
         - ラダー図は必ず ```ladder ブロックで返す
