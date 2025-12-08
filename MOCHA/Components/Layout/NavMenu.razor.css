@@ -318,6 +318,11 @@
     cursor: not-allowed;
 }
 
+.gateway-save-btn {
+    min-width: 110px;
+    padding: 9px 16px;
+}
+
 .drawing-empty {
     color: var(--text-muted);
     font-size: 13px;
