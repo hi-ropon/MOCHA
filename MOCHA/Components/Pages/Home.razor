@@ -23,12 +23,14 @@
 @inject MOCHA.Services.Chat.IChatOrchestrator Orchestrator
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
+@inject MOCHA.Services.Agents.PlcConnectionState PlcConnectionState
 @inject MOCHA.Services.Chat.IChatAttachmentService AttachmentService
 @inject IOptionsMonitor<LlmOptions> LlmOptions
 @inject MOCHA.Services.Feedback.IFeedbackService FeedbackService
 @inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
 @inject ILogger<Home> Logger
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <PageTitle>M.O.C.H.A.</PageTitle>
@@ -265,6 +267,8 @@
 
         _llmOptionsSubscription = LlmOptions.OnChange(_ => InvokeAsync(StateHasChanged));
         AgentState.Changed += OnAgentStateChanged;
+        PlcConnectionState.SetAgent(AgentState.SelectedAgentNumber);
+        PlcConnectionState.Changed += OnPlcConnectionStateChanged;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -533,6 +537,7 @@
 
         ConversationId ??= Guid.NewGuid().ToString("N");
         var sendingConversationId = ConversationId;
+        NavigateToConversationIfNeeded(sendingConversationId);
         _assistantStreamBuffers[sendingConversationId] = new StringBuilder();
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
@@ -662,6 +667,7 @@
                 ResetConversation();
                 _activeAgentNumber = selected;
             }
+            PlcConnectionState.SetAgent(selected);
 
             if (string.IsNullOrWhiteSpace(selected))
             {
@@ -670,6 +676,11 @@
 
             StateHasChanged();
         });
+    }
+
+    private void OnPlcConnectionStateChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
     }
 
     private void CancelStream()
@@ -1151,6 +1162,7 @@
         }
 
         AgentState.Changed -= OnAgentStateChanged;
+        PlcConnectionState.Changed -= OnPlcConnectionStateChanged;
         _dotNetRef?.Dispose();
     }
 
@@ -1202,6 +1214,21 @@
         if (!string.IsNullOrWhiteSpace(streamConversationId))
         {
             _assistantStreamBuffers[streamConversationId] = new StringBuilder(bufferedContent);
+        }
+    }
+
+    private void NavigateToConversationIfNeeded(string? conversationId)
+    {
+        if (string.IsNullOrWhiteSpace(conversationId) || NavigationManager is null)
+        {
+            return;
+        }
+
+        _loadedConversationId = conversationId;
+        var target = NavigationManager.GetUriWithQueryParameter("c", conversationId);
+        if (!string.Equals(target, NavigationManager.Uri, StringComparison.Ordinal))
+        {
+            NavigationManager.NavigateTo(target, replace: true);
         }
     }
 

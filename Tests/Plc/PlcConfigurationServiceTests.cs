@@ -234,6 +234,70 @@ public class PlcConfigurationServiceTests
     }
 
     /// <summary>
+    /// プログラム構成説明を保存・更新できる
+    /// </summary>
+    [TestMethod]
+    public async Task プログラム構成説明を保存し更新できる()
+    {
+        var service = CreateService();
+        var added = await service.AddAsync(
+            "user-10",
+            "I-10",
+            new PlcUnitDraft
+            {
+                Name = "PLC-10",
+                Manufacturer = "三菱電機",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
+                ProgramDescription = "メインプログラムと安全系を分離"
+            });
+
+        Assert.IsTrue(added.Succeeded);
+        Assert.AreEqual("メインプログラムと安全系を分離", added.Unit!.ProgramDescription);
+
+        var updated = await service.UpdateAsync(
+            "user-10",
+            "I-10",
+            added.Unit.Id,
+            new PlcUnitDraft
+            {
+                Name = "PLC-10",
+                Manufacturer = "三菱電機",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
+                ProgramDescription = "安全系:FB_SAFETY 呼出し順を先頭に移動"
+            });
+
+        Assert.IsTrue(updated.Succeeded);
+        Assert.AreEqual("安全系:FB_SAFETY 呼出し順を先頭に移動", updated.Unit!.ProgramDescription);
+    }
+
+    /// <summary>
+    /// プログラム構成説明が長すぎる場合は保存に失敗する
+    /// </summary>
+    [TestMethod]
+    public async Task プログラム構成説明が長すぎる場合_保存に失敗する()
+    {
+        var service = CreateService();
+        var tooLong = new string('a', PlcUnitDraft.ProgramDescriptionMaxLength + 1);
+
+        var result = await service.AddAsync(
+            "user-11",
+            "J-11",
+            new PlcUnitDraft
+            {
+                Name = "PLC-11",
+                Manufacturer = "KEYENCE",
+                GatewayHost = "127.0.0.1",
+                GatewayPort = 8000,
+                ProgramDescription = tooLong
+            });
+
+        Assert.IsFalse(result.Succeeded);
+        StringAssert.Contains(result.Error!, "300文字以内");
+    }
+
+    /// <summary>
     /// CSV以外のファイルは拒否する確認
     /// </summary>
     [TestMethod]

@@ -3,6 +3,7 @@ using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
 using MOCHA.Models.Chat;
+using MOCHA.Services.Agents;
 
 namespace MOCHA.Services.Chat;
 
@@ -16,6 +17,7 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
     private readonly IChatRepository _chatRepository;
     private readonly ConversationHistoryState _history;
     private readonly IChatTitleService _chatTitleService;
+    private readonly PlcConnectionState _plcConnectionState;
     private static readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
         Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping
@@ -32,12 +34,14 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         IAgentChatClient agentChatClient,
         IChatRepository chatRepository,
         ConversationHistoryState history,
-        IChatTitleService chatTitleService)
+        IChatTitleService chatTitleService,
+        PlcConnectionState plcConnectionState)
     {
         _agentChatClient = agentChatClient;
         _chatRepository = chatRepository;
         _history = history;
         _chatTitleService = chatTitleService;
+        _plcConnectionState = plcConnectionState;
     }
 
     /// <summary>
@@ -63,6 +67,8 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
             : conversationId;
 
         var attachmentList = attachments ?? Array.Empty<ImageAttachment>();
+        _plcConnectionState.SetAgent(agentNumber);
+        var plcOnline = _plcConnectionState.GetOnline(agentNumber);
 
         await _history.UpsertAsync(user.UserId, convId, text, agentNumber, cancellationToken, preserveExistingTitle: true);
         await _chatRepository.AddMessageAsync(user.UserId, convId, new ChatMessage(ChatRole.User, text, attachmentList), agentNumber, cancellationToken);
@@ -74,7 +80,8 @@ internal sealed class ChatOrchestrator : IChatOrchestrator
         })
         {
             AgentNumber = agentNumber,
-            UserId = user.UserId
+            UserId = user.UserId,
+            PlcOnline = plcOnline
         };
 
         var stream = await _agentChatClient.SendAsync(turn, cancellationToken);

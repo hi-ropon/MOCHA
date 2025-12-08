@@ -19,14 +19,12 @@ namespace MOCHA.Services.Agents;
 /// </summary>
 public sealed class OrganizerContextProvider : IOrganizerContextProvider
 {
-    private const int _maxUnits = 3;
-    private const int _maxModules = 4;
-    private const int _maxFunctionBlocks = 4;
     private const int _maxPcSettings = 3;
     private const int _maxRepositoryUrls = 3;
     private readonly IPcSettingRepository _pcSettingRepository;
     private readonly IPlcUnitRepository _plcUnitRepository;
     private readonly IGatewaySettingRepository _gatewaySettingRepository;
+    private readonly IUnitConfigurationRepository _unitConfigurationRepository;
     private readonly DrawingCatalog _drawingCatalog;
     private readonly ILogger<OrganizerContextProvider> _logger;
 
@@ -37,12 +35,14 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         IPcSettingRepository pcSettingRepository,
         IPlcUnitRepository plcUnitRepository,
         IGatewaySettingRepository gatewaySettingRepository,
+        IUnitConfigurationRepository unitConfigurationRepository,
         DrawingCatalog drawingCatalog,
         ILogger<OrganizerContextProvider> logger)
     {
         _pcSettingRepository = pcSettingRepository ?? throw new ArgumentNullException(nameof(pcSettingRepository));
         _plcUnitRepository = plcUnitRepository ?? throw new ArgumentNullException(nameof(plcUnitRepository));
         _gatewaySettingRepository = gatewaySettingRepository ?? throw new ArgumentNullException(nameof(gatewaySettingRepository));
+        _unitConfigurationRepository = unitConfigurationRepository ?? throw new ArgumentNullException(nameof(unitConfigurationRepository));
         _drawingCatalog = drawingCatalog ?? throw new ArgumentNullException(nameof(drawingCatalog));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -99,54 +99,52 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         }
 
         var units = await _plcUnitRepository.ListAsync(userId, agentNumber, cancellationToken);
-        if (units.Count == 0)
+        if (units.Count > 0)
         {
-            return sb.ToString().TrimEnd();
+            var orderedPlc = units
+                .OrderBy(u => u.Name, StringComparer.OrdinalIgnoreCase)
+                .ThenBy(u => u.CreatedAt)
+                .ToList();
+
+            foreach (var unit in orderedPlc)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                var header = FormatUnitHeader(unit);
+                sb.AppendLine(header);
+
+                var programDescription = TrimDescription(unit.ProgramDescription);
+                if (!string.IsNullOrWhiteSpace(programDescription))
+                {
+                    sb.AppendLine($"  プログラム構成: {programDescription}");
+                }
+
+                var modules = unit.Modules?.ToList() ?? new List<PlcUnitModule>();
+                if (modules.Count > 0)
+                {
+                    var moduleText = string.Join(", ", modules.Select(m => string.IsNullOrWhiteSpace(m.Specification) ? m.Name : $"{m.Name}({m.Specification})"));
+                    sb.AppendLine($"  モジュール: {moduleText}");
+                }
+
+                var blocks = unit.FunctionBlocks?.ToList() ?? new List<FunctionBlock>();
+                if (blocks.Count > 0)
+                {
+                    var blockText = string.Join(", ", blocks.Select(b => $"{b.Name}(safe:{b.SafeName})"));
+                    sb.AppendLine($"  FB: {blockText}");
+                }
+
+                var files = CollectFiles(unit);
+                if (files.Count > 0)
+                {
+                    sb.AppendLine($"  ファイル: {string.Join(", ", files)}");
+                }
+            }
         }
 
-        var orderedPlc = units
-            .OrderBy(u => u.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(u => u.CreatedAt)
-            .ToList();
-
-        foreach (var unit in orderedPlc.Take(_maxUnits))
+        var unitConfigurations = await _unitConfigurationRepository.ListAsync(userId, agentNumber, cancellationToken);
+        foreach (var config in unitConfigurations)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var header = FormatUnitHeader(unit);
-            sb.AppendLine(header);
-
-            var modules = unit.Modules?.Take(_maxModules).ToList() ?? new List<PlcUnitModule>();
-            if (modules.Count > 0)
-            {
-                var moduleText = string.Join(", ", modules.Select(m => string.IsNullOrWhiteSpace(m.Specification) ? m.Name : $"{m.Name}({m.Specification})"));
-                sb.AppendLine($"  モジュール: {moduleText}");
-                if ((unit.Modules?.Count ?? 0) > modules.Count)
-                {
-                    sb.AppendLine($"  …他{(unit.Modules!.Count - modules.Count)}モジュール");
-                }
-            }
-
-            var blocks = unit.FunctionBlocks?.Take(_maxFunctionBlocks).ToList() ?? new List<FunctionBlock>();
-            if (blocks.Count > 0)
-            {
-                var blockText = string.Join(", ", blocks.Select(b => $"{b.Name}(safe:{b.SafeName})"));
-                sb.AppendLine($"  FB: {blockText}");
-                if ((unit.FunctionBlocks?.Count ?? 0) > blocks.Count)
-                {
-                    sb.AppendLine($"  …他{(unit.FunctionBlocks!.Count - blocks.Count)}ファンクションブロック");
-                }
-            }
-
-            var files = CollectFiles(unit);
-            if (files.Count > 0)
-            {
-                sb.AppendLine($"  ファイル: {string.Join(", ", files)}");
-            }
-        }
-
-        if (orderedPlc.Count > _maxUnits)
-        {
-            sb.AppendLine($"…他{orderedPlc.Count - _maxUnits}ユニット");
+            sb.AppendLine(FormatUnitConfiguration(config));
         }
 
         return sb.ToString().TrimEnd();
@@ -259,5 +257,46 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private static string NormalizeFileName(PlcFileUpload file)
     {
         return string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName : file.DisplayName!;
+    }
+
+    private static string TrimDescription(string? description)
+    {
+        var text = description?.Trim() ?? string.Empty;
+        if (text.Length <= PlcUnitDraft.ProgramDescriptionMaxLength)
+        {
+            return text;
+        }
+
+        return text.Substring(0, PlcUnitDraft.ProgramDescriptionMaxLength);
+    }
+
+    private static string FormatUnitConfiguration(UnitConfiguration config)
+    {
+        var description = string.IsNullOrWhiteSpace(config.Description) ? "-" : config.Description;
+        var devices = config.Devices?
+            .OrderBy(d => d.Order)
+            .Select(FormatDevice)
+            .ToList() ?? new List<string>();
+        var deviceText = devices.Count == 0 ? "-" : string.Join(", ", devices);
+
+        return $"- 装置ユニット: {config.Name} desc:{description}\n  機器: {deviceText}";
+    }
+
+    private static string FormatDevice(UnitDevice device)
+    {
+        var specParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(device.Model))
+        {
+            specParts.Add(device.Model);
+        }
+
+        if (!string.IsNullOrWhiteSpace(device.Maker))
+        {
+            specParts.Add(device.Maker);
+        }
+
+        var spec = specParts.Count > 0 ? $"({string.Join("/", specParts)})" : string.Empty;
+        var description = string.IsNullOrWhiteSpace(device.Description) ? string.Empty : $" desc:{device.Description}";
+        return $"{device.Name}{spec}{description}";
     }
 }

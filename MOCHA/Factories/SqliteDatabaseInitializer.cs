@@ -1,9 +1,7 @@
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Data.Sqlite;
 using MOCHA.Data;
 
 namespace MOCHA.Factories;
@@ -162,9 +160,11 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 Port INTEGER NULL,
                 GatewayHost TEXT NULL,
                 GatewayPort INTEGER NULL,
+                ProgramDescription TEXT NULL,
                 CommentFileJson TEXT NULL,
                 ProgramFilesJson TEXT NULL,
                 ModulesJson TEXT NULL,
+                FunctionBlocksJson TEXT NULL,
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
@@ -182,164 +182,5 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
         """;
 
         await _db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
-        await EnsureAgentColumnAsync(cancellationToken);
-        await EnsurePlcManufacturerColumnAsync(cancellationToken);
-        await EnsurePlcGatewayColumnsAsync(cancellationToken);
-    }
-
-    /// <summary>
-    /// Conversations テーブルへの AgentNumber 列追加確認
-    /// </summary>
-    /// <param name="cancellationToken">キャンセル通知</param>
-    private async Task EnsureAgentColumnAsync(CancellationToken cancellationToken)
-    {
-        const string pragmaSql = "PRAGMA table_info(Conversations);";
-        var hasAgentColumn = false;
-
-        var connection = _db.Database.GetDbConnection();
-        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
-        if (shouldClose)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
-        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-        {
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var name = reader.GetString(1);
-                if (string.Equals(name, "AgentNumber", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasAgentColumn = true;
-                    break;
-                }
-            }
-        }
-
-        if (shouldClose)
-        {
-            await connection.CloseAsync();
-        }
-
-        if (hasAgentColumn)
-        {
-            return;
-        }
-
-        const string alterSql = """
-            ALTER TABLE Conversations ADD COLUMN AgentNumber TEXT NULL;
-            CREATE INDEX IF NOT EXISTS IX_Conversations_UserObjectId_AgentNumber_UpdatedAt ON Conversations(UserObjectId, AgentNumber, UpdatedAt);
-        """;
-        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
-    }
-
-    /// <summary>
-    /// PlcUnits テーブルへの Manufacturer 列追加確認
-    /// </summary>
-    /// <param name="cancellationToken">キャンセル通知</param>
-    private async Task EnsurePlcManufacturerColumnAsync(CancellationToken cancellationToken)
-    {
-        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
-        var hasColumn = false;
-
-        var connection = _db.Database.GetDbConnection();
-        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
-        if (shouldClose)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
-        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-        {
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var name = reader.GetString(1);
-                if (string.Equals(name, "Manufacturer", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasColumn = true;
-                    break;
-                }
-            }
-        }
-
-        if (shouldClose)
-        {
-            await connection.CloseAsync();
-        }
-
-        if (hasColumn)
-        {
-            return;
-        }
-
-        const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN Manufacturer TEXT NULL;";
-        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
-    }
-
-    /// <summary>
-    /// PlcUnits テーブルへのゲートウェイ列追加確認
-    /// </summary>
-    /// <param name="cancellationToken">キャンセル通知</param>
-    private async Task EnsurePlcGatewayColumnsAsync(CancellationToken cancellationToken)
-    {
-        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
-        var hasGatewayHost = false;
-        var hasGatewayPort = false;
-
-        var connection = _db.Database.GetDbConnection();
-        var shouldClose = connection.State == System.Data.ConnectionState.Closed;
-        if (shouldClose)
-        {
-            await connection.OpenAsync(cancellationToken);
-        }
-
-        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
-        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
-        {
-            while (await reader.ReadAsync(cancellationToken))
-            {
-                var name = reader.GetString(1);
-                if (string.Equals(name, "GatewayHost", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasGatewayHost = true;
-                }
-
-                if (string.Equals(name, "GatewayPort", StringComparison.OrdinalIgnoreCase))
-                {
-                    hasGatewayPort = true;
-                }
-
-                if (hasGatewayHost && hasGatewayPort)
-                {
-                    break;
-                }
-            }
-        }
-
-        if (shouldClose)
-        {
-            await connection.CloseAsync();
-        }
-
-        var commands = new List<string>();
-        if (!hasGatewayHost)
-        {
-            commands.Add("ALTER TABLE PlcUnits ADD COLUMN GatewayHost TEXT NULL;");
-        }
-
-        if (!hasGatewayPort)
-        {
-            commands.Add("ALTER TABLE PlcUnits ADD COLUMN GatewayPort INTEGER NULL;");
-        }
-
-        if (commands.Count == 0)
-        {
-            return;
-        }
-
-        var alterSql = string.Join(Environment.NewLine, commands);
-        await _db.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

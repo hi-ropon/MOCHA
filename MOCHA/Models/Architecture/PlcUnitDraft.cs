@@ -34,6 +34,10 @@ public sealed class PlcUnitDraft
     public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; init; } = new List<PlcFileUpload>();
     /// <summary>モジュールドラフト</summary>
     public IReadOnlyCollection<PlcModuleDraft> Modules { get; init; } = new List<PlcModuleDraft>();
+    /// <summary>プログラム構成説明</summary>
+    public string? ProgramDescription { get; init; }
+    /// <summary>説明文字数上限</summary>
+    public const int ProgramDescriptionMaxLength = 300;
 
     /// <summary>
     /// 入力値のバリデーション
@@ -116,6 +120,11 @@ public sealed class PlcUnitDraft
             {
                 return (false, "プログラムファイルはCSVファイルを選択してください");
             }
+        }
+
+        if (!string.IsNullOrWhiteSpace(ProgramDescription) && ProgramDescription.Trim().Length > ProgramDescriptionMaxLength)
+        {
+            return (false, $"プログラム構成の説明は{ProgramDescriptionMaxLength}文字以内で入力してください");
         }
 
         return (true, null);

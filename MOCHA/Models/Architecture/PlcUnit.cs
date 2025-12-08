@@ -23,6 +23,7 @@ public sealed class PlcUnit
     /// <param name="port">ポート番号</param>
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
+    /// <param name="programDescription">プログラム構成説明</param>
     /// <param name="modules">モジュール一覧</param>
     /// <param name="functionBlocks">ファンクションブロック一覧</param>
     /// <param name="createdAt">作成日時</param>
@@ -41,6 +42,7 @@ public sealed class PlcUnit
         int? gatewayPort,
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
+        string? programDescription,
         IReadOnlyCollection<PlcUnitModule> modules,
         IReadOnlyCollection<FunctionBlock> functionBlocks,
         DateTimeOffset createdAt,
@@ -59,6 +61,7 @@ public sealed class PlcUnit
         GatewayPort = gatewayPort;
         CommentFile = commentFile;
         ProgramFiles = programFiles;
+        ProgramDescription = programDescription;
         Modules = modules;
         FunctionBlocks = functionBlocks;
         CreatedAt = createdAt;
@@ -91,6 +94,8 @@ public sealed class PlcUnit
     public PlcFileUpload? CommentFile { get; }
     /// <summary>プログラムファイル</summary>
     public IReadOnlyCollection<PlcFileUpload> ProgramFiles { get; }
+    /// <summary>プログラム構成説明</summary>
+    public string? ProgramDescription { get; }
     /// <summary>モジュール一覧</summary>
     public IReadOnlyCollection<PlcUnitModule> Modules { get; }
     /// <summary>ファンクションブロック一覧</summary>
@@ -125,6 +130,7 @@ public sealed class PlcUnit
             draft.GatewayPort,
             NormalizeFile(draft.CommentFile),
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
+            NormalizeNullable(draft.ProgramDescription),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
             Array.Empty<FunctionBlock>(),
             timestamp,
@@ -145,6 +151,7 @@ public sealed class PlcUnit
     /// <param name="port">ポート番号</param>
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
+    /// <param name="programDescription">プログラム構成説明</param>
     /// <param name="modules">モジュール</param>
     /// <param name="createdAt">作成日時</param>
     /// <param name="updatedAt">更新日時</param>
@@ -163,6 +170,7 @@ public sealed class PlcUnit
         int? gatewayPort,
         PlcFileUpload? commentFile,
         IReadOnlyCollection<PlcFileUpload> programFiles,
+        string? programDescription,
         IReadOnlyCollection<PlcUnitModule> modules,
         IReadOnlyCollection<FunctionBlock> functionBlocks,
         DateTimeOffset createdAt,
@@ -182,6 +190,7 @@ public sealed class PlcUnit
             gatewayPort,
             commentFile,
             programFiles ?? Array.Empty<PlcFileUpload>(),
+            NormalizeNullable(programDescription),
             modules ?? Array.Empty<PlcUnitModule>(),
             functionBlocks ?? Array.Empty<FunctionBlock>(),
             createdAt,
@@ -209,6 +218,7 @@ public sealed class PlcUnit
             draft.GatewayPort,
             NormalizeFile(draft.CommentFile) ?? CommentFile,
             NormalizeFiles(draft.ProgramFiles ?? Array.Empty<PlcFileUpload>()),
+            NormalizeNullable(draft.ProgramDescription),
             draft.Modules.Select(PlcUnitModule.FromDraft).ToList(),
             FunctionBlocks,
             CreatedAt,
@@ -236,6 +246,7 @@ public sealed class PlcUnit
             GatewayPort,
             CommentFile,
             ProgramFiles,
+            ProgramDescription,
             Modules,
             functionBlocks,
             CreatedAt,

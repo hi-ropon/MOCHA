@@ -73,7 +73,8 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
         var context = new ChatContext(conversationId, history)
         {
             AgentNumber = turn.AgentNumber,
-            UserId = turn.UserId
+            UserId = turn.UserId,
+            PlcOnline = turn.PlcOnline
         };
 
         var events = await _orchestrator.ReplyAsync(userTurn, context, cancellationToken);

@@ -67,6 +67,7 @@ public class HomeHistoryUpdateTests
         SetProperty(home, "AgentState", agentState);
         SetProperty(home, "Orchestrator", orchestrator);
         SetProperty(home, "LlmOptions", new StaticOptionsMonitor<LlmOptions>(new LlmOptions()));
+        SetProperty(home, "PlcConnectionState", new PlcConnectionState());
         SetProperty(home, "AuthenticationStateTask", Task.FromResult(new AuthenticationState(new ClaimsPrincipal(
             new ClaimsIdentity(new[] { new Claim("oid", userId), new Claim("name", "Tester") }, "test")))));
 

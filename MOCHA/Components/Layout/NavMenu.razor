@@ -18,6 +18,7 @@
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject MOCHA.Services.Settings.UserPreferencesState PreferencesState
+@inject MOCHA.Services.Agents.PlcConnectionState PlcConnectionState
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
@@ -275,7 +276,7 @@
                                     </div>
                                     <div class="plc-row">
                                         <button type="button"
-                                                class="agent-delete-btn drawing-edit-btn"
+                                                class="agent-delete-btn drawing-edit-btn gateway-save-btn"
                                                 @onclick="SaveGatewaySettingAsync"
                                                 disabled="@_gatewaySaving">
                                             保存
@@ -412,6 +413,10 @@
                                                             }
                                                         </div>
                                                     </div>
+                                                </div>
+                                                <div class="plc-row">
+                                                    <div class="plc-label">プログラム構成</div>
+                                                    <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.ProgramDescription) ? plc.ProgramDescription : "未設定")</div>
                                                 </div>
                                                 <div class="plc-row modules-row">
                                                     <div class="plc-label">ユニット</div>
@@ -871,13 +876,22 @@
                     </div>
                 </div>
 
+                <div class="field">
+                    <label>プログラム構成説明</label>
+                    <textarea class="agent-input drawing-description"
+                              rows="3"
+                              maxlength="@PlcUnitDraft.ProgramDescriptionMaxLength"
+                              placeholder="主要プログラムやサブルーチン、FB構成のメモ"
+                              @bind="_plcProgramDescription"></textarea>
+                    <div class="drawing-subtitle">@($"{_plcProgramDescription?.Length ?? 0}/{PlcUnitDraft.ProgramDescriptionMaxLength}")</div>
+                </div>
+
                 <div class="plc-program-group">
                     <div class="plc-module-header">
                         <div>
                             <div class="plc-file-title">プログラムファイル（複数可）</div>
                             <div class="drawing-subtitle">CSVのみ・最大10MB/件</div>
                         </div>
-                        <label class="plc-module-add-btn program-add-btn" for="programFileInput">追加</label>
                     </div>
                     <label class="plc-file-box program-add-box" for="programFileInput">
                         <div class="plc-file-trigger">
@@ -1156,6 +1170,11 @@
                     <span>テーマ</span>
                 </button>
                 <button type="button"
+                        class="user-settings-nav @(_selectedAction == UserAction.PlcAgent ? "active" : string.Empty)"
+                        @onclick="() => SelectAction(UserAction.PlcAgent)">
+                    <span>PLCエージェント</span>
+                </button>
+                <button type="button"
                         class="user-settings-nav @(_selectedAction == UserAction.Logout ? "active" : string.Empty)"
                         @onclick="() => SelectAction(UserAction.Logout)">
                     <span>ログアウト</span>
@@ -1183,6 +1202,30 @@
                         </div>
                         <div class="user-settings-actions">
                             <button type="button" class="user-settings-save" @onclick="SaveUserSettingsAsync">保存</button>
+                        </div>
+                    </div>
+                }
+                else if (_selectedAction == UserAction.PlcAgent)
+                {
+                    <div class="user-settings-section">
+                        <div class="user-settings-title-row">
+                            <div>
+                                <div class="user-settings-title">PLCエージェント</div>
+                                <div class="user-settings-subtitle">実機読み取りツールの利用可否を切り替えます</div>
+                            </div>
+                        </div>
+                        <div class="user-settings-row plc-toggle-row">
+                            <div class="user-settings-label">実機読み取り</div>
+                            <div class="user-settings-helper">@PlcToggleHint</div>
+                            <label class="plc-switch">
+                                <input type="checkbox"
+                                       checked="@_plcOnlineSetting"
+                                       @onchange="TogglePlcOnline"
+                                       disabled="@PlcToggleDisabled"
+                                       aria-label="PLCオンライン切替" />
+                                <span class="plc-switch-track"></span>
+                                <span class="plc-switch-thumb"></span>
+                            </label>
                         </div>
                     </div>
                 }
@@ -1235,6 +1278,7 @@
     private AgentSettingsTab _agentSettingsTab = AgentSettingsTab.Register;
     private string SettingsSelectedAgentNumber => _agentSettingsSelection.SelectedAgentNumber ?? string.Empty;
     private Theme _selectedTheme = Theme.Light;
+    private bool _plcOnlineSetting = true;
     private IReadOnlyList<DrawingDocument> _drawings = Array.Empty<DrawingDocument>();
     private bool _drawingModalOpen;
     private Guid? _editingDrawingId;
@@ -1270,6 +1314,7 @@
     private string _plcManufacturer = string.Empty;
     private string _plcModel = string.Empty;
     private string _plcRole = string.Empty;
+    private string _plcProgramDescription = string.Empty;
     private string _plcIp = string.Empty;
     private int? _plcPort;
     private string _gatewayHost = string.Empty;
@@ -1304,6 +1349,7 @@
         HistoryState.Changed += OnHistoryChanged;
         AgentState.Changed += OnAgentStateChanged;
         PreferencesState.Changed += OnPreferencesChanged;
+        PlcConnectionState.Changed += OnPlcConnectionChanged;
         await EnsureHistoryAsync();
     }
 
@@ -1352,6 +1398,8 @@
         await AgentState.LoadAsync(_userId);
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+        PlcConnectionState.SetAgent(selectedAgentNumber);
+        _plcOnlineSetting = PlcConnectionState.GetOnline(selectedAgentNumber);
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
         await EnsureSettingsSelectionAsync();
         _loaded = true;
@@ -1392,6 +1440,8 @@
         {
             selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
             selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+            PlcConnectionState.SetAgent(selectedAgentNumber);
+            _plcOnlineSetting = PlcConnectionState.GetOnline(selectedAgentNumber);
             if (_userId is not null)
             {
                 await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
@@ -1466,6 +1516,7 @@
     {
         _selectedAction = UserAction.Theme;
         _selectedTheme = PreferencesState.Preferences.Theme;
+        SyncPlcToggle();
         _userSettingsOpen = true;
     }
 
@@ -1474,14 +1525,47 @@
         _userSettingsOpen = false;
     }
 
+    private void SyncPlcToggle()
+    {
+        PlcConnectionState.SetAgent(AgentState.SelectedAgentNumber);
+        _plcOnlineSetting = PlcConnectionState.GetOnline(AgentState.SelectedAgentNumber);
+    }
+
+    private bool PlcToggleDisabled => string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
+
+    private string PlcToggleHint => PlcToggleDisabled
+        ? "装置エージェントを選択してください"
+        : (_plcOnlineSetting
+            ? "ON: 実機読み取りツールが利用可能"
+            : "OFF: 実機読み取りツール は無効");
+
+    private void TogglePlcOnline(ChangeEventArgs e)
+    {
+        var enabled = e.Value is bool b ? b : bool.TryParse(e.Value?.ToString(), out var parsed) && parsed;
+        var agent = AgentState.SelectedAgentNumber;
+        PlcConnectionState.SetAgent(agent);
+        PlcConnectionState.SetOnline(agent, enabled);
+        _plcOnlineSetting = enabled;
+    }
+
     private void SelectAction(UserAction action)
     {
         _selectedAction = action;
+        if (action == UserAction.PlcAgent)
+        {
+            SyncPlcToggle();
+        }
     }
 
     private void ConfirmLogout()
     {
         NavigationManager.NavigateTo("/logout?confirm=true", forceLoad: true);
+    }
+
+    private void OnPlcConnectionChanged()
+    {
+        _plcOnlineSetting = PlcConnectionState.GetOnline(AgentState.SelectedAgentNumber);
+        InvokeAsync(StateHasChanged);
     }
 
     private bool CanManageAgents => isAdmin || isDeveloper;
@@ -2154,6 +2238,7 @@
         _plcManufacturer = string.Empty;
         _plcModel = string.Empty;
         _plcRole = string.Empty;
+        _plcProgramDescription = string.Empty;
         _plcIp = string.Empty;
         _plcPort = null;
         _commentFile = null;
@@ -2186,6 +2271,7 @@
         _plcManufacturer = unit.Manufacturer ?? string.Empty;
         _plcModel = unit.Model ?? string.Empty;
         _plcRole = unit.Role ?? string.Empty;
+        _plcProgramDescription = unit.ProgramDescription ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
         _plcPort = unit.Port;
         _commentFile = null;
@@ -2230,6 +2316,7 @@
         _commentFileSize = 0;
         _commentFileContent = null;
         _plcManufacturer = string.Empty;
+        _plcProgramDescription = string.Empty;
         ResetUnitInput();
         _functionBlocks.Clear();
         _fbName = string.Empty;
@@ -2618,6 +2705,7 @@
                 Manufacturer = _plcManufacturer,
                 Model = _plcModel,
                 Role = _plcRole,
+                ProgramDescription = _plcProgramDescription,
                 IpAddress = _plcIp,
                 Port = _plcPort,
                 Modules = _unitInputs.ToList(),
@@ -2791,6 +2879,7 @@
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
         PreferencesState.Changed -= OnPreferencesChanged;
+        PlcConnectionState.Changed -= OnPlcConnectionChanged;
     }
 
     private sealed class DrawingFileDraft
@@ -2829,6 +2918,7 @@
     private enum UserAction
     {
         Theme,
+        PlcAgent,
         Logout
     }
 }

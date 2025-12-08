@@ -55,6 +55,9 @@ public record ChatTurn(string? ConversationId, IReadOnlyList<ChatMessage> Messag
 
     /// <summary>ユーザーID</summary>
     public string? UserId { get; init; }
+
+    /// <summary>PLC接続可否</summary>
+    public bool PlcOnline { get; init; } = true;
 }
 
 /// <summary>
