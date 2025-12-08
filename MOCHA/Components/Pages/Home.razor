@@ -29,6 +29,7 @@
 @inject MOCHA.Services.Markdown.IMarkdownRenderer MarkdownRenderer
 @inject ILogger<Home> Logger
 @inject IJSRuntime JS
+@inject NavigationManager NavigationManager
 @implements IDisposable
 
 <PageTitle>M.O.C.H.A.</PageTitle>
@@ -533,6 +534,7 @@
 
         ConversationId ??= Guid.NewGuid().ToString("N");
         var sendingConversationId = ConversationId;
+        NavigateToConversationIfNeeded(sendingConversationId);
         _assistantStreamBuffers[sendingConversationId] = new StringBuilder();
         _activeAgentNumber = agentNumber;
         var user = _user ?? new UserContext("anonymous", "Anonymous");
@@ -1202,6 +1204,21 @@
         if (!string.IsNullOrWhiteSpace(streamConversationId))
         {
             _assistantStreamBuffers[streamConversationId] = new StringBuilder(bufferedContent);
+        }
+    }
+
+    private void NavigateToConversationIfNeeded(string? conversationId)
+    {
+        if (string.IsNullOrWhiteSpace(conversationId) || NavigationManager is null)
+        {
+            return;
+        }
+
+        _loadedConversationId = conversationId;
+        var target = NavigationManager.GetUriWithQueryParameter("c", conversationId);
+        if (!string.Equals(target, NavigationManager.Uri, StringComparison.Ordinal))
+        {
+            NavigationManager.NavigateTo(target, replace: true);
         }
     }
 
