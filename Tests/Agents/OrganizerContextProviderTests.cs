@@ -123,6 +123,7 @@ public class OrganizerContextProviderTests
             null,
             null,
             Array.Empty<PlcFileUpload>(),
+            "メインシーケンス",
             modules,
             blocks,
             DateTimeOffset.UtcNow,
@@ -136,7 +137,51 @@ public class OrganizerContextProviderTests
         StringAssert.Contains(context.Architecture, "M5(Spec5)");
         StringAssert.Contains(context.Architecture, "FB: FB1(safe:fb1)");
         StringAssert.Contains(context.Architecture, "FB5(safe:fb5)");
+        StringAssert.Contains(context.Architecture, "プログラム構成: メインシーケンス");
         Assert.IsFalse(context.Architecture.Contains("…他"));
+    }
+
+    /// <summary>
+    /// 説明が長い場合は300文字で丸める
+    /// </summary>
+    [TestMethod]
+    public async Task BuildAsync_プログラム説明が長い場合_上限で切り詰める()
+    {
+        var pcRepo = new InMemoryPcSettingRepository();
+        var plcRepo = new InMemoryPlcUnitRepository();
+        var gatewayRepo = new InMemoryGatewaySettingRepository();
+        var unitConfigRepo = new InMemoryUnitConfigurationRepository();
+        var drawingCatalog = new DrawingCatalog(new FakeDrawingRepository(), Options.Create(new DrawingStorageOptions()));
+        var provider = new OrganizerContextProvider(pcRepo, plcRepo, gatewayRepo, unitConfigRepo, drawingCatalog, NullLogger<OrganizerContextProvider>.Instance);
+
+        var longDescription = new string('x', PlcUnitDraft.ProgramDescriptionMaxLength + 20);
+        var unit = PlcUnit.Restore(
+            Guid.NewGuid(),
+            "user-10",
+            "Z-10",
+            "Unit-Long",
+            "Mitsubishi",
+            "R04",
+            "main",
+            "192.168.0.10",
+            5000,
+            null,
+            null,
+            null,
+            Array.Empty<PlcFileUpload>(),
+            longDescription,
+            Array.Empty<PlcUnitModule>(),
+            Array.Empty<FunctionBlock>(),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow);
+
+        await plcRepo.AddAsync(unit);
+
+        var context = await provider.BuildAsync("user-10", "Z-10", CancellationToken.None);
+
+        var expected = new string('x', PlcUnitDraft.ProgramDescriptionMaxLength);
+        StringAssert.Contains(context.Architecture, expected);
+        Assert.IsFalse(context.Architecture.Contains(new string('x', PlcUnitDraft.ProgramDescriptionMaxLength + 1)));
     }
 
     private sealed class FakeDrawingRepository : IDrawingRepository

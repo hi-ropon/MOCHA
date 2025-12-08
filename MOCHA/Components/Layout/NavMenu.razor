@@ -413,6 +413,10 @@
                                                         </div>
                                                     </div>
                                                 </div>
+                                                <div class="plc-row">
+                                                    <div class="plc-label">プログラム構成</div>
+                                                    <div class="plc-value">@(!string.IsNullOrWhiteSpace(plc.ProgramDescription) ? plc.ProgramDescription : "未設定")</div>
+                                                </div>
                                                 <div class="plc-row modules-row">
                                                     <div class="plc-label">ユニット</div>
                                                     <div class="plc-modules">
@@ -871,13 +875,22 @@
                     </div>
                 </div>
 
+                <div class="field">
+                    <label>プログラム構成説明</label>
+                    <textarea class="agent-input drawing-description"
+                              rows="3"
+                              maxlength="@PlcUnitDraft.ProgramDescriptionMaxLength"
+                              placeholder="主要プログラムやサブルーチン、FB構成のメモ"
+                              @bind="_plcProgramDescription"></textarea>
+                    <div class="drawing-subtitle">@($"{_plcProgramDescription?.Length ?? 0}/{PlcUnitDraft.ProgramDescriptionMaxLength}")</div>
+                </div>
+
                 <div class="plc-program-group">
                     <div class="plc-module-header">
                         <div>
                             <div class="plc-file-title">プログラムファイル（複数可）</div>
                             <div class="drawing-subtitle">CSVのみ・最大10MB/件</div>
                         </div>
-                        <label class="plc-module-add-btn program-add-btn" for="programFileInput">追加</label>
                     </div>
                     <label class="plc-file-box program-add-box" for="programFileInput">
                         <div class="plc-file-trigger">
@@ -1270,6 +1283,7 @@
     private string _plcManufacturer = string.Empty;
     private string _plcModel = string.Empty;
     private string _plcRole = string.Empty;
+    private string _plcProgramDescription = string.Empty;
     private string _plcIp = string.Empty;
     private int? _plcPort;
     private string _gatewayHost = string.Empty;
@@ -2154,6 +2168,7 @@
         _plcManufacturer = string.Empty;
         _plcModel = string.Empty;
         _plcRole = string.Empty;
+        _plcProgramDescription = string.Empty;
         _plcIp = string.Empty;
         _plcPort = null;
         _commentFile = null;
@@ -2186,6 +2201,7 @@
         _plcManufacturer = unit.Manufacturer ?? string.Empty;
         _plcModel = unit.Model ?? string.Empty;
         _plcRole = unit.Role ?? string.Empty;
+        _plcProgramDescription = unit.ProgramDescription ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
         _plcPort = unit.Port;
         _commentFile = null;
@@ -2230,6 +2246,7 @@
         _commentFileSize = 0;
         _commentFileContent = null;
         _plcManufacturer = string.Empty;
+        _plcProgramDescription = string.Empty;
         ResetUnitInput();
         _functionBlocks.Clear();
         _fbName = string.Empty;
@@ -2618,6 +2635,7 @@
                 Manufacturer = _plcManufacturer,
                 Model = _plcModel,
                 Role = _plcRole,
+                ProgramDescription = _plcProgramDescription,
                 IpAddress = _plcIp,
                 Port = _plcPort,
                 Modules = _unitInputs.ToList(),

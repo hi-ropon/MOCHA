@@ -146,16 +146,17 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             else
             {
                 entity.UserId = unit.UserId;
-            entity.AgentNumber = unit.AgentNumber;
-            entity.Name = unit.Name;
-            entity.Manufacturer = unit.Manufacturer;
-            entity.Model = unit.Model;
-            entity.Role = unit.Role;
-            entity.IpAddress = unit.IpAddress;
-            entity.Port = unit.Port;
-            entity.GatewayHost = unit.GatewayHost;
-            entity.GatewayPort = unit.GatewayPort;
-            entity.CommentFileJson = SerializeFile(unit.CommentFile);
+                entity.AgentNumber = unit.AgentNumber;
+                entity.Name = unit.Name;
+                entity.Manufacturer = unit.Manufacturer;
+                entity.Model = unit.Model;
+                entity.Role = unit.Role;
+                entity.IpAddress = unit.IpAddress;
+                entity.Port = unit.Port;
+                entity.GatewayHost = unit.GatewayHost;
+                entity.GatewayPort = unit.GatewayPort;
+                entity.ProgramDescription = unit.ProgramDescription;
+                entity.CommentFileJson = SerializeFile(unit.CommentFile);
                 entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
                 entity.ModulesJson = SerializeModules(unit.Modules);
                 entity.FunctionBlocksJson = SerializeFunctionBlocks(unit.FunctionBlocks);
@@ -195,6 +196,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             Port = unit.Port,
             GatewayHost = unit.GatewayHost,
             GatewayPort = unit.GatewayPort,
+            ProgramDescription = unit.ProgramDescription,
             CommentFileJson = SerializeFile(unit.CommentFile),
             ProgramFilesJson = SerializeFiles(unit.ProgramFiles),
             ModulesJson = SerializeModules(unit.Modules),
@@ -225,6 +227,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             entity.GatewayPort,
             commentFile,
             programFiles,
+            entity.ProgramDescription,
             modules,
             functionBlocks,
             entity.CreatedAt,
@@ -310,6 +313,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
                 Port INTEGER NULL,
                 GatewayHost TEXT NULL,
                 GatewayPort INTEGER NULL,
+                ProgramDescription TEXT NULL,
                 CommentFileJson TEXT NULL,
                 ProgramFilesJson TEXT NULL,
                 ModulesJson TEXT NULL,
@@ -324,6 +328,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         await EnsureManufacturerColumnAsync(cancellationToken);
         await EnsureFunctionBlocksColumnAsync(cancellationToken);
         await EnsureGatewayColumnsAsync(cancellationToken);
+        await EnsureProgramDescriptionColumnAsync(cancellationToken);
     }
 
     private static bool IsMissingTable(Exception exception, string tableName)
@@ -478,6 +483,45 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         }
 
         var alterSql = string.Join(Environment.NewLine, commands);
+        await _dbContext.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
+    }
+
+    private async Task EnsureProgramDescriptionColumnAsync(CancellationToken cancellationToken)
+    {
+        var connection = _dbContext.Database.GetDbConnection();
+        var shouldClose = connection.State != System.Data.ConnectionState.Open;
+        if (shouldClose)
+        {
+            await connection.OpenAsync(cancellationToken);
+        }
+
+        const string pragmaSql = "PRAGMA table_info(PlcUnits);";
+        var hasColumn = false;
+        await using (var command = new SqliteCommand(pragmaSql, (SqliteConnection)connection))
+        await using (var reader = await command.ExecuteReaderAsync(cancellationToken))
+        {
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var name = reader.GetString(1);
+                if (string.Equals(name, "ProgramDescription", StringComparison.OrdinalIgnoreCase))
+                {
+                    hasColumn = true;
+                    break;
+                }
+            }
+        }
+
+        if (shouldClose)
+        {
+            await connection.CloseAsync();
+        }
+
+        if (hasColumn)
+        {
+            return;
+        }
+
+        const string alterSql = "ALTER TABLE PlcUnits ADD COLUMN ProgramDescription TEXT NULL;";
         await _dbContext.Database.ExecuteSqlRawAsync(alterSql, cancellationToken);
     }
 }

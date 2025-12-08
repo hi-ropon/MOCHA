@@ -112,6 +112,12 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
                 var header = FormatUnitHeader(unit);
                 sb.AppendLine(header);
 
+                var programDescription = TrimDescription(unit.ProgramDescription);
+                if (!string.IsNullOrWhiteSpace(programDescription))
+                {
+                    sb.AppendLine($"  プログラム構成: {programDescription}");
+                }
+
                 var modules = unit.Modules?.ToList() ?? new List<PlcUnitModule>();
                 if (modules.Count > 0)
                 {
@@ -251,6 +257,17 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private static string NormalizeFileName(PlcFileUpload file)
     {
         return string.IsNullOrWhiteSpace(file.DisplayName) ? file.FileName : file.DisplayName!;
+    }
+
+    private static string TrimDescription(string? description)
+    {
+        var text = description?.Trim() ?? string.Empty;
+        if (text.Length <= PlcUnitDraft.ProgramDescriptionMaxLength)
+        {
+            return text;
+        }
+
+        return text.Substring(0, PlcUnitDraft.ProgramDescriptionMaxLength);
     }
 
     private static string FormatUnitConfiguration(UnitConfiguration config)
