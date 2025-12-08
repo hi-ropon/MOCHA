@@ -18,6 +18,7 @@
 @inject MOCHA.Services.Chat.ConversationHistoryState HistoryState
 @inject MOCHA.Services.Agents.DeviceAgentState AgentState
 @inject MOCHA.Services.Settings.UserPreferencesState PreferencesState
+@inject MOCHA.Services.Agents.PlcConnectionState PlcConnectionState
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
@@ -1169,6 +1170,11 @@
                     <span>テーマ</span>
                 </button>
                 <button type="button"
+                        class="user-settings-nav @(_selectedAction == UserAction.PlcAgent ? "active" : string.Empty)"
+                        @onclick="() => SelectAction(UserAction.PlcAgent)">
+                    <span>PLCエージェント</span>
+                </button>
+                <button type="button"
                         class="user-settings-nav @(_selectedAction == UserAction.Logout ? "active" : string.Empty)"
                         @onclick="() => SelectAction(UserAction.Logout)">
                     <span>ログアウト</span>
@@ -1196,6 +1202,30 @@
                         </div>
                         <div class="user-settings-actions">
                             <button type="button" class="user-settings-save" @onclick="SaveUserSettingsAsync">保存</button>
+                        </div>
+                    </div>
+                }
+                else if (_selectedAction == UserAction.PlcAgent)
+                {
+                    <div class="user-settings-section">
+                        <div class="user-settings-title-row">
+                            <div>
+                                <div class="user-settings-title">PLCエージェント</div>
+                                <div class="user-settings-subtitle">実機読み取りツールの利用可否を切り替えます</div>
+                            </div>
+                        </div>
+                        <div class="user-settings-row plc-toggle-row">
+                            <div class="user-settings-label">実機読み取り</div>
+                            <div class="user-settings-helper">@PlcToggleHint</div>
+                            <label class="plc-switch">
+                                <input type="checkbox"
+                                       checked="@_plcOnlineSetting"
+                                       @onchange="TogglePlcOnline"
+                                       disabled="@PlcToggleDisabled"
+                                       aria-label="PLCオンライン切替" />
+                                <span class="plc-switch-track"></span>
+                                <span class="plc-switch-thumb"></span>
+                            </label>
                         </div>
                     </div>
                 }
@@ -1248,6 +1278,7 @@
     private AgentSettingsTab _agentSettingsTab = AgentSettingsTab.Register;
     private string SettingsSelectedAgentNumber => _agentSettingsSelection.SelectedAgentNumber ?? string.Empty;
     private Theme _selectedTheme = Theme.Light;
+    private bool _plcOnlineSetting = true;
     private IReadOnlyList<DrawingDocument> _drawings = Array.Empty<DrawingDocument>();
     private bool _drawingModalOpen;
     private Guid? _editingDrawingId;
@@ -1318,6 +1349,7 @@
         HistoryState.Changed += OnHistoryChanged;
         AgentState.Changed += OnAgentStateChanged;
         PreferencesState.Changed += OnPreferencesChanged;
+        PlcConnectionState.Changed += OnPlcConnectionChanged;
         await EnsureHistoryAsync();
     }
 
@@ -1366,6 +1398,8 @@
         await AgentState.LoadAsync(_userId);
         selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
         selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+        PlcConnectionState.SetAgent(selectedAgentNumber);
+        _plcOnlineSetting = PlcConnectionState.GetOnline(selectedAgentNumber);
         await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
         await EnsureSettingsSelectionAsync();
         _loaded = true;
@@ -1406,6 +1440,8 @@
         {
             selectedAgentNumber = AgentState.SelectedAgentNumber ?? string.Empty;
             selectedAgentName = AgentState.Agents.FirstOrDefault(a => a.Number == AgentState.SelectedAgentNumber)?.Name ?? string.Empty;
+            PlcConnectionState.SetAgent(selectedAgentNumber);
+            _plcOnlineSetting = PlcConnectionState.GetOnline(selectedAgentNumber);
             if (_userId is not null)
             {
                 await HistoryState.LoadAsync(_userId, AgentState.SelectedAgentNumber);
@@ -1480,6 +1516,7 @@
     {
         _selectedAction = UserAction.Theme;
         _selectedTheme = PreferencesState.Preferences.Theme;
+        SyncPlcToggle();
         _userSettingsOpen = true;
     }
 
@@ -1488,14 +1525,47 @@
         _userSettingsOpen = false;
     }
 
+    private void SyncPlcToggle()
+    {
+        PlcConnectionState.SetAgent(AgentState.SelectedAgentNumber);
+        _plcOnlineSetting = PlcConnectionState.GetOnline(AgentState.SelectedAgentNumber);
+    }
+
+    private bool PlcToggleDisabled => string.IsNullOrWhiteSpace(AgentState.SelectedAgentNumber);
+
+    private string PlcToggleHint => PlcToggleDisabled
+        ? "装置エージェントを選択してください"
+        : (_plcOnlineSetting
+            ? "ON: 実機読み取りツールが利用可能"
+            : "OFF: 実機読み取りツール は無効");
+
+    private void TogglePlcOnline(ChangeEventArgs e)
+    {
+        var enabled = e.Value is bool b ? b : bool.TryParse(e.Value?.ToString(), out var parsed) && parsed;
+        var agent = AgentState.SelectedAgentNumber;
+        PlcConnectionState.SetAgent(agent);
+        PlcConnectionState.SetOnline(agent, enabled);
+        _plcOnlineSetting = enabled;
+    }
+
     private void SelectAction(UserAction action)
     {
         _selectedAction = action;
+        if (action == UserAction.PlcAgent)
+        {
+            SyncPlcToggle();
+        }
     }
 
     private void ConfirmLogout()
     {
         NavigationManager.NavigateTo("/logout?confirm=true", forceLoad: true);
+    }
+
+    private void OnPlcConnectionChanged()
+    {
+        _plcOnlineSetting = PlcConnectionState.GetOnline(AgentState.SelectedAgentNumber);
+        InvokeAsync(StateHasChanged);
     }
 
     private bool CanManageAgents => isAdmin || isDeveloper;
@@ -2809,6 +2879,7 @@
         HistoryState.Changed -= OnHistoryChanged;
         AgentState.Changed -= OnAgentStateChanged;
         PreferencesState.Changed -= OnPreferencesChanged;
+        PlcConnectionState.Changed -= OnPlcConnectionChanged;
     }
 
     private sealed class DrawingFileDraft
@@ -2847,6 +2918,7 @@
     private enum UserAction
     {
         Theme,
+        PlcAgent,
         Logout
     }
 }

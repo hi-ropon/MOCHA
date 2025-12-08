@@ -27,6 +27,7 @@ public sealed class PlcToolset
     private readonly PlcReasoner _reasoner;
     private readonly PlcManualService _manuals;
     private readonly ILogger<PlcToolset> _logger;
+    private IReadOnlyList<AITool>? _toolsWithoutGatewayReads;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -38,6 +39,26 @@ public sealed class PlcToolset
     /// 提供するツール一覧
     /// </summary>
     public IReadOnlyList<AITool> All { get; }
+
+    /// <summary>
+    /// 接続状態に応じたツール一覧を返す
+    /// </summary>
+    /// <param name="includeGatewayReads">ゲートウェイ読み取りツールを含めるか</param>
+    /// <returns>使用可能なツール一覧</returns>
+    public IReadOnlyList<AITool> GetTools(bool includeGatewayReads)
+    {
+        if (includeGatewayReads)
+        {
+            return All;
+        }
+
+        _toolsWithoutGatewayReads ??= All
+            .Where(t => !string.Equals(t.Name, "read_plc_values", StringComparison.OrdinalIgnoreCase)
+                        && !string.Equals(t.Name, "read_multiple_plc_values", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        return _toolsWithoutGatewayReads;
+    }
 
     /// <summary>
     /// 依存関係の注入による初期化
@@ -122,14 +143,20 @@ public sealed class PlcToolset
     /// <summary>
     /// データロード後のコンテキストヒントを構築
     /// </summary>
-    /// <param name="optionsJson">ゲートウェイオプション</param>
+    /// <param name="gatewayOptionsJson">ゲートウェイオプション</param>
+    /// <param name="plcUnitId">対象PLCユニットID</param>
+    /// <param name="plcUnitName">対象PLCユニット名</param>
+    /// <param name="enableFunctionBlocks">ファンクションブロックの有効化</param>
+    /// <param name="note">補足情報</param>
+    /// <param name="plcOnline">実機読み取り可否</param>
     /// <returns>ヒント文字列</returns>
-    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note)
+    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note, bool plcOnline)
     {
         var sb = new StringBuilder();
         sb.AppendLine("登録済みPLCデータ概要");
         sb.AppendLine($"- プログラムファイル: {_store.Programs.Count}");
         sb.AppendLine($"- ファンクションブロック: {_store.FunctionBlocks.Count} ({(enableFunctionBlocks ? "enabled" : "disabled")})");
+        sb.AppendLine($"- 実機接続: {(plcOnline ? "オンライン" : "オフライン（read_plc_values/read_multiple_plc_values は無効）")}");
 
         if (_store.FunctionBlocks.Count > 0)
         {

@@ -294,9 +294,12 @@ public sealed class OrganizerToolset
             var parsedOptions = ParsePlcOptions(optionsJson);
             var unitId = parsedOptions.PlcUnitId is not null && Guid.TryParse(parsedOptions.PlcUnitId, out var guid) ? guid : (Guid?)null;
             await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
+            var plcOnline = ctx?.ChatContext.PlcOnline ?? true;
             var delegationTools = BuildDelegationTools("plcAgent");
-            var extraTools = _plcToolset.All.Concat(new[] { _plcGatewayTool }).Concat(delegationTools);
-            var plcHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note);
+            var plcTools = _plcToolset.GetTools(plcOnline);
+            var gatewayTools = plcOnline ? new[] { _plcGatewayTool } : Array.Empty<AITool>();
+            var extraTools = plcTools.Concat(gatewayTools).Concat(delegationTools);
+            var plcHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note, plcOnline);
             var contextHint = MergeContextHints(plcHint, BuildDelegationHint("plcAgent"));
             var result = await _manualAgentTool.RunAsync("plcAgent", question, extraTools, contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));

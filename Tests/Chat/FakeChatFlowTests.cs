@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Chat;
+using MOCHA.Services.Agents;
 using ChatTurnModel = MOCHA.Models.Chat.ChatTurn;
 using MOCHA.Services.Chat;
 
@@ -180,7 +182,8 @@ public class FakeChatFlowTests
             }),
             repo,
             history,
-            new NoopChatTitleService());
+            new NoopChatTitleService(),
+            new PlcConnectionState());
 
         var user = new UserContext("persist-user", "Persist User");
         var conversationId = "conv-agent-tool";
@@ -217,7 +220,8 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        return new ChatOrchestrator(new FakeAgentChatClient(script), repo, history, new NoopChatTitleService());
+        var plcState = new PlcConnectionState();
+        return new ChatOrchestrator(new FakeAgentChatClient(script), repo, history, new NoopChatTitleService(), plcState);
     }
 
     /// <summary>
@@ -228,7 +232,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService(), new PlcConnectionState());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-1";
 
@@ -261,7 +265,8 @@ public class FakeChatFlowTests
             }),
             repo,
             history,
-            new NoopChatTitleService());
+            new NoopChatTitleService(),
+            new PlcConnectionState());
 
         var user = new UserContext("stream-user", "Stream User");
         var conversationId = "conv-stream";
@@ -285,7 +290,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService(), new PlcConnectionState());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-del";
 
@@ -311,7 +316,7 @@ public class FakeChatFlowTests
     {
         var repo = new InMemoryChatRepository();
         var history = new ConversationHistoryState(repo);
-        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService());
+        var orchestrator = new ChatOrchestrator(new FakeAgentChatClient(), repo, history, new NoopChatTitleService(), new PlcConnectionState());
         var user = new UserContext("test-user", "Test User");
         var conversationId = "conv-agent";
 
@@ -323,9 +328,55 @@ public class FakeChatFlowTests
         Assert.IsTrue(history.Summaries.Any(s => s.Id == conversationId && s.AgentNumber == "AG-77"));
     }
 
+    /// <summary>
+    /// PLCオンライン設定がチャットターンへ渡される確認
+    /// </summary>
+    [TestMethod]
+    public async Task PLCオフライン設定で読み取りが無効になる()
+    {
+        var repo = new InMemoryChatRepository();
+        var history = new ConversationHistoryState(repo);
+        var plcState = new PlcConnectionState();
+        plcState.SetOnline("AG-99", false);
+        var client = new CapturingAgentChatClient();
+        var orchestrator = new ChatOrchestrator(client, repo, history, new NoopChatTitleService(), plcState);
+        var user = new UserContext("plc-user", "PLC User");
+
+        await foreach (var _ in orchestrator.HandleUserMessageAsync(user, null, "ping", "AG-99"))
+        {
+        }
+
+        Assert.IsNotNull(client.CapturedTurn);
+        Assert.IsFalse(client.CapturedTurn!.PlcOnline);
+    }
+
     private sealed class NoopChatTitleService : IChatTitleService
     {
         public Task RequestAsync(UserContext user, string conversationId, string userMessage, string? agentNumber, CancellationToken cancellationToken = default)
+        {
+            return Task.CompletedTask;
+        }
+    }
+
+    private sealed class CapturingAgentChatClient : IAgentChatClient
+    {
+        public ChatTurnModel? CapturedTurn { get; private set; }
+
+        public Task<IAsyncEnumerable<ChatStreamEvent>> SendAsync(ChatTurnModel turn, CancellationToken cancellationToken = default)
+        {
+            CapturedTurn = turn;
+
+            async IAsyncEnumerable<ChatStreamEvent> Enumerate([EnumeratorCancellation] CancellationToken ct = default)
+            {
+                ct.ThrowIfCancellationRequested();
+                yield return ChatStreamEvent.Completed(turn.ConversationId ?? "captured");
+                await Task.CompletedTask;
+            }
+
+            return Task.FromResult<IAsyncEnumerable<ChatStreamEvent>>(Enumerate(cancellationToken));
+        }
+
+        public Task SubmitActionResultAsync(AgentActionResult result, CancellationToken cancellationToken = default)
         {
             return Task.CompletedTask;
         }

@@ -41,6 +41,7 @@ public class HomeComposerKeyboardTests
 
         SetProperty(home, "Orchestrator", orchestrator);
         SetProperty(home, "AgentState", agentState);
+        SetProperty(home, "PlcConnectionState", new PlcConnectionState());
         SetProperty(home, "ChatRepository", new NullChatRepository());
         SetProperty(home, "HistoryState", new ConversationHistoryState(new NullChatRepository()));
         SetProperty(
@@ -82,6 +83,7 @@ public class HomeComposerKeyboardTests
 
         SetProperty(home, "Orchestrator", orchestrator);
         SetProperty(home, "AgentState", agentState);
+        SetProperty(home, "PlcConnectionState", new PlcConnectionState());
         SetProperty(home, "ChatRepository", new NullChatRepository());
         SetProperty(home, "HistoryState", new ConversationHistoryState(new NullChatRepository()));
         SetProperty(

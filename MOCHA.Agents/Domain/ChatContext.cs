@@ -13,6 +13,9 @@ public sealed record ChatContext(string ConversationId, IReadOnlyList<ChatTurn> 
     /// <summary>ユーザーID</summary>
     public string? UserId { get; init; }
 
+    /// <summary>PLC接続可否</summary>
+    public bool PlcOnline { get; init; } = true;
+
     /// <summary>
     /// 履歴なしのチャットコンテキスト生成
     /// </summary>
