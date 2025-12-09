@@ -97,6 +97,32 @@ public class PlcGatewayClientTests
     }
 
     /// <summary>
+    /// タイマデバイスをTSで送信することを確認
+    /// </summary>
+    [TestMethod]
+    public async Task 単体読み取り_タイマ指定をTSで送信する()
+    {
+        var handler = new StubHandler(async req =>
+        {
+            Assert.AreEqual(HttpMethod.Get, req.Method);
+            Assert.AreEqual("/api/read/TS/0/1", req.RequestUri!.AbsolutePath);
+
+            var payload = JsonSerializer.Serialize(new { values = new[] { 9 }, success = true });
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var client = new PlcGatewayClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8000") }, new DummyLogger());
+        var result = await client.ReadAsync(new DeviceReadRequest("T0", BaseUrl: null), CancellationToken.None);
+
+        Assert.IsTrue(result.Success);
+        CollectionAssert.AreEqual(new List<int> { 9 }, (System.Collections.ICollection)result.Values!);
+        Assert.AreEqual("TS0", result.Device);
+    }
+
+    /// <summary>
     /// plc_host をクエリに含めて送信することを確認
     /// </summary>
     [TestMethod]
@@ -160,6 +186,40 @@ public class PlcGatewayClientTests
         Assert.AreEqual("D100", result.Results[0].Device);
         Assert.IsFalse(result.Results[1].Success);
         Assert.AreEqual("fail", result.Results[1].Error);
+    }
+
+    /// <summary>
+    /// バッチ読み取り時にタイマ指定をTSへ正規化することを確認
+    /// </summary>
+    [TestMethod]
+    public async Task バッチ読み取り_タイマ指定を正規化して送信する()
+    {
+        var handler = new StubHandler(async req =>
+        {
+            Assert.AreEqual("/api/batch_read", req.RequestUri!.AbsolutePath);
+            var json = await req.Content!.ReadAsStringAsync();
+            StringAssert.Contains(json, "\"TS0\"");
+            Assert.IsFalse(json.Contains("\"T0\""));
+
+            var payload = JsonSerializer.Serialize(new
+            {
+                results = new[]
+                {
+                    new { device = "TS0", values = new[]{ 1 }, success = true, error = (string?)null }
+                }
+            });
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(payload, Encoding.UTF8, "application/json")
+            };
+        });
+
+        var client = new PlcGatewayClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8000") }, new DummyLogger());
+        var result = await client.ReadBatchAsync(new BatchReadRequest(new[] { "T0" }, BaseUrl: null), CancellationToken.None);
+
+        Assert.AreEqual(1, result.Results.Count);
+        Assert.AreEqual("TS0", result.Results[0].Device);
+        Assert.IsTrue(result.Results[0].Success);
     }
 
     private sealed class StubHandler : HttpMessageHandler

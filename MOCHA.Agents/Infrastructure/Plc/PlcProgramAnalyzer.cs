@@ -88,9 +88,20 @@ public sealed class PlcProgramAnalyzer
     /// </summary>
     public string GetComment(string dev, int address)
     {
-        return _store.TryGetComment($"{dev}{address}", out var comment)
-            ? comment ?? string.Empty
-            : string.Empty;
+        var key = $"{dev}{address}";
+        if (_store.TryGetComment(key, out var comment))
+        {
+            return comment ?? string.Empty;
+        }
+
+        // タイマはコメント登録がT表記の場合があるためフォールバック
+        if (string.Equals(dev, "TS", StringComparison.OrdinalIgnoreCase)
+            && _store.TryGetComment($"T{address}", out comment))
+        {
+            return comment ?? string.Empty;
+        }
+
+        return string.Empty;
     }
 
     private static bool ContainsDevice(string line, string token)
