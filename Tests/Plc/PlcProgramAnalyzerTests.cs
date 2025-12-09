@@ -53,4 +53,19 @@ public class PlcProgramAnalyzerTests
         CollectionAssert.Contains((System.Collections.ICollection)related, "X0");
         CollectionAssert.Contains((System.Collections.ICollection)related, "Y0");
     }
+
+    [TestMethod]
+    public void コメント取得_TS指定でTコメントを返す()
+    {
+        var store = new PlcDataStore();
+        store.SetComments(new Dictionary<string, string>
+        {
+            ["T0"] = "タイマコメント"
+        });
+
+        var analyzer = new PlcProgramAnalyzer(store);
+        var comment = analyzer.GetComment("TS", 0);
+
+        Assert.AreEqual("タイマコメント", comment);
+    }
 }

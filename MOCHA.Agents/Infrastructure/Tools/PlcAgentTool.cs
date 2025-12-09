@@ -8,6 +8,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MOCHA.Agents.Domain.Plc;
 
 namespace MOCHA.Agents.Infrastructure.Tools;
 
@@ -122,9 +123,10 @@ public sealed class PlcAgentTool
             // バッチ読み取り: devices の配列をそのまま投げる
             if (options.Devices.Count > 1)
             {
+                var specs = options.Devices.Select(d => DeviceAddress.Parse(d).ToSpec()).ToList();
                 var payload = new
                 {
-                    devices = options.Devices,
+                    devices = specs,
                     ip = options.Ip,
                     port = options.Port,
                     plc_host = options.PlcHost
@@ -148,8 +150,8 @@ public sealed class PlcAgentTool
             }
 
             // 単一読み取り
-            var (device, addr, length) = ParseDevice(options.Devices.First());
-            var path = $"api/read/{device}/{Uri.EscapeDataString(addr)}/{length}";
+            var address = DeviceAddress.Parse(options.Devices.First());
+            var path = $"api/read/{address.Device}/{Uri.EscapeDataString(address.Address)}/{address.Length}";
             var query = new List<string>();
             if (!string.IsNullOrWhiteSpace(options.PlcHost))
             {
@@ -185,7 +187,7 @@ public sealed class PlcAgentTool
                 ? string.Join(", ", singleBody.Values)
                 : "(no values)";
 
-            return $"{device}{addr} => {values}" + (singleBody.Success ?? true ? string.Empty : $" [error: {singleBody.Error}]");
+            return $"{address.Display} => {values}" + (singleBody.Success ?? true ? string.Empty : $" [error: {singleBody.Error}]");
         }
         catch (Exception ex)
         {
@@ -193,41 +195,6 @@ public sealed class PlcAgentTool
             return $"ゲートウェイ読み取りでエラー: {ex.Message}";
         }
     }
-
-    /// <summary>
-    /// デバイス指定の解析
-        /// </summary>
-        /// <param name="spec">デバイス指定文字列</param>
-        /// <returns>デバイス・アドレス・長さ</returns>
-        private static (string Device, string Address, int Length) ParseDevice(string spec)
-        {
-            var span = spec.AsSpan().Trim();
-            var colon = span.IndexOf(':');
-            var length = 1;
-            if (colon >= 0 && int.TryParse(span[(colon + 1)..], out var parsedLength) && parsedLength > 0)
-            {
-                length = parsedLength;
-                span = span[..colon];
-            }
-
-            var core = span.ToString();
-            if (string.IsNullOrWhiteSpace(core))
-            {
-                return ("D", "0", length);
-            }
-
-            var device = _devicePrefixes.FirstOrDefault(prefix => core.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                         ?? core[0].ToString().ToUpperInvariant();
-            var address = core.Length > device.Length ? core.Substring(device.Length) : "0";
-            if (string.IsNullOrWhiteSpace(address))
-            {
-                address = "0";
-            }
-
-            return (device.ToUpperInvariant(), address, length);
-        }
-
-        private static readonly string[] _devicePrefixes = { "ZR", "D", "W", "R", "X", "Y", "M" };
 
     private sealed record PlcAgentOptions
     {

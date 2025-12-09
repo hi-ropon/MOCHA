@@ -33,11 +33,11 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
     /// <inheritdoc />
     public async Task<DeviceReadResult> ReadAsync(DeviceReadRequest request, CancellationToken cancellationToken = default)
     {
-        var (device, address, length) = ParseDevice(request.Spec);
+        var address = DeviceAddress.Parse(request.Spec);
 
         try
         {
-            var uri = BuildUri(request.BaseUrl, $"api/read/{device}/{Uri.EscapeDataString(address)}/{length}");
+            var uri = BuildUri(request.BaseUrl, $"api/read/{address.Device}/{Uri.EscapeDataString(address.Address)}/{address.Length}");
             if (!string.IsNullOrWhiteSpace(request.Ip) || request.Port is not null || !string.IsNullOrWhiteSpace(request.PlcHost))
             {
                 var query = new List<string>();
@@ -68,15 +68,15 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
             var body = await response.Content.ReadFromJsonAsync<GatewayReadResponse>(cancellationToken: cancellationToken);
             if (body is null)
             {
-                return new DeviceReadResult($"{device}{address}", null, false, "空の応答を受信しました");
+                return new DeviceReadResult(address.Display, null, false, "空の応答を受信しました");
             }
 
-            return new DeviceReadResult($"{device}{address}", body.Values ?? Array.Empty<int>(), body.Success ?? true, body.Error);
+            return new DeviceReadResult(address.Display, body.Values ?? Array.Empty<int>(), body.Success ?? true, body.Error);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "PLC Gateway 読み取りに失敗しました。");
-            return new DeviceReadResult($"{device}{address}", null, false, ex.Message);
+            return new DeviceReadResult(address.Display, null, false, ex.Message);
         }
     }
 
@@ -91,7 +91,8 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         try
         {
             var uri = BuildUri(request.BaseUrl, "api/batch_read");
-            var payload = new GatewayBatchRequest(request.Specs, request.Ip, request.Port, request.PlcHost);
+            var specs = request.Specs.Select(s => DeviceAddress.Parse(s).ToSpec()).ToList();
+            var payload = new GatewayBatchRequest(specs, request.Ip, request.Port, request.PlcHost);
 
             _logger.LogInformation("PLC Gateway バッチ読み取りリクエスト: POST {Uri} payload={Payload}", uri, JsonSerializer.Serialize(payload, _serializerOptions));
 
@@ -138,44 +139,6 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
 
         return new Uri(path, UriKind.Relative);
     }
-
-    /// <summary>
-    /// デバイス指定をパース
-    /// </summary>
-    internal static (string Device, string Address, int Length) ParseDevice(string spec)
-    {
-        if (string.IsNullOrWhiteSpace(spec))
-        {
-            return ("D", "0", 1);
-        }
-
-        var span = spec.AsSpan().Trim();
-        var length = 1;
-        var colon = span.IndexOf(':');
-        if (colon >= 0 && int.TryParse(span[(colon + 1)..], out var parsedLength) && parsedLength > 0)
-        {
-            length = parsedLength;
-            span = span[..colon];
-        }
-
-        var core = span.ToString();
-        if (string.IsNullOrWhiteSpace(core))
-        {
-            return ("D", "0", length);
-        }
-
-        var device = _devicePrefixes.FirstOrDefault(prefix => core.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
-                     ?? core[0].ToString().ToUpperInvariant();
-        var address = core.Length > device.Length ? core.Substring(device.Length) : "0";
-        if (string.IsNullOrWhiteSpace(address))
-        {
-            address = "0";
-        }
-
-        return (device.ToUpperInvariant(), address, length);
-    }
-
-    private static readonly string[] _devicePrefixes = { "ZR", "D", "W", "R", "X", "Y", "M" };
 
     private sealed record GatewayReadResponse(
         int[]? Values,
