@@ -126,31 +126,17 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
         }
     }
 
-    private async Task<(IReadOnlyCollection<string> Roles, string? InstructionTemplate)> ResolveRoleContextAsync(
+    private async Task<(IReadOnlyCollection<string> Roles, string InstructionTemplate)> ResolveRoleContextAsync(
         string? userId,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return (Array.Empty<string>(), OrganizerInstructions.RestrictedTemplate);
-        }
-
-        var roles = await _roleProvider.GetRolesAsync(userId, cancellationToken) ?? Array.Empty<UserRoleId>();
-        if (roles.Count == 0)
-        {
-            return (Array.Empty<string>(), OrganizerInstructions.RestrictedTemplate);
-        }
+        var roles = string.IsNullOrWhiteSpace(userId)
+            ? Array.Empty<UserRoleId>()
+            : await _roleProvider.GetRolesAsync(userId, cancellationToken) ?? Array.Empty<UserRoleId>();
 
         var normalized = roles.Select(r => r.Value).ToArray();
-        var isPrivileged = roles.Any(IsPrivilegedRole);
-        return (normalized, isPrivileged ? null : OrganizerInstructions.RestrictedTemplate);
-    }
-
-    private static bool IsPrivilegedRole(UserRoleId role)
-    {
-        var value = role.Value;
-        return string.Equals(value, UserRoleId.Predefined.Administrator.Value, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(value, UserRoleId.Predefined.Developer.Value, StringComparison.OrdinalIgnoreCase);
+        var template = RoleInstructionComposer.Compose(OrganizerInstructions.Base, normalized);
+        return (normalized, template);
     }
 
     private static DomainChatTurn MapToDomainTurn(ChatMessage message)
