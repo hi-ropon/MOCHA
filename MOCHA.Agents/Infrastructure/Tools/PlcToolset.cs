@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -13,6 +14,7 @@ using Microsoft.Extensions.Logging;
 using MOCHA.Agents.Domain;
 using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Plc;
+using MOCHA.Agents.Application;
 
 namespace MOCHA.Agents.Infrastructure.Tools;
 
@@ -158,7 +160,7 @@ public sealed class PlcToolset
     /// <param name="note">補足情報</param>
     /// <param name="plcOnline">実機読み取り可否</param>
     /// <returns>ヒント文字列</returns>
-    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note, bool plcOnline)
+    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note, bool plcOnline, PlcAgentContext? connectionContext)
     {
         var sb = new StringBuilder();
         sb.AppendLine("登録済みPLCデータ概要");
@@ -182,12 +184,41 @@ public sealed class PlcToolset
             sb.AppendLine($"ゲートウェイオプション: {gatewayOptionsJson}");
         }
 
+        if (connectionContext is not null && !connectionContext.IsEmpty)
+        {
+            sb.AppendLine("[接続設定]");
+            var gatewayPort = connectionContext.GatewayPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
+            if (!string.IsNullOrWhiteSpace(connectionContext.GatewayHost))
+            {
+                sb.AppendLine($"- デフォルトゲートウェイ: {connectionContext.GatewayHost}:{gatewayPort}");
+            }
+
+            foreach (var unit in connectionContext.Units)
+            {
+                var ip = string.IsNullOrWhiteSpace(unit.IpAddress) ? "-" : unit.IpAddress;
+                var port = unit.Port?.ToString(CultureInfo.InvariantCulture) ?? "-";
+                var gw = FormatGateway(unit.GatewayHost, unit.GatewayPort);
+                sb.AppendLine($"- ユニット: {unit.Name} ip={ip} port={port}{gw}");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(note))
         {
             sb.AppendLine($"補足: {note}");
         }
 
         return sb.ToString().Trim();
+    }
+
+    private static string FormatGateway(string? host, int? port)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return string.Empty;
+        }
+
+        var text = port is not null ? $"{host}:{port.Value.ToString(CultureInfo.InvariantCulture)}" : host;
+        return $" gw={text}";
     }
 
     /// <summary>

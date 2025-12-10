@@ -49,6 +49,38 @@ public class PlcToolsetTests
     }
 
     /// <summary>
+    /// コンテキストヒントに接続設定を含める
+    /// </summary>
+    [TestMethod]
+    public void BuildContextHint_接続設定を含める()
+    {
+        var toolset = CreateToolset();
+        var connection = new PlcAgentContext(
+            "10.0.0.1",
+            8500,
+            new[]
+            {
+                new PlcAgentUnit(Guid.NewGuid(), "Unit-A", "192.168.0.10", 5000, "10.0.0.1", 8500),
+                new PlcAgentUnit(Guid.NewGuid(), "Unit-B", "192.168.0.11", 5001, "10.0.0.2", 8600)
+            });
+
+        var hint = toolset.BuildContextHint(
+            gatewayOptionsJson: "{\"ip\":\"10.0.0.3\"}",
+            plcUnitId: null,
+            plcUnitName: null,
+            enableFunctionBlocks: true,
+            note: "note",
+            plcOnline: true,
+            connectionContext: connection);
+
+        StringAssert.Contains(hint, "デフォルトゲートウェイ: 10.0.0.1:8500");
+        StringAssert.Contains(hint, "ユニット: Unit-A ip=192.168.0.10 port=5000 gw=10.0.0.1:8500");
+        StringAssert.Contains(hint, "ユニット: Unit-B ip=192.168.0.11 port=5001 gw=10.0.0.2:8600");
+        StringAssert.Contains(hint, "ゲートウェイオプション");
+        StringAssert.Contains(hint, "補足: note");
+    }
+
+    /// <summary>
     /// DMOVで使われているDレジスタは2ワードでゲートウェイに投げる
     /// </summary>
     [TestMethod]

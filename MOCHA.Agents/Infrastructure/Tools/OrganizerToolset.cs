@@ -25,6 +25,7 @@ public sealed class OrganizerToolset
     private readonly PlcAgentTool _plcAgentTool;
     private readonly PlcToolset _plcToolset;
     private readonly IPlcDataLoader _plcDataLoader;
+    private readonly IPlcAgentContextProvider _plcAgentContextProvider;
     private readonly AgentDelegationPolicy _delegationPolicy;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
@@ -49,6 +50,7 @@ public sealed class OrganizerToolset
     /// <param name="plcAgentTool">PLC エージェントツール</param>
     /// <param name="plcToolset">PLC 専用ツールセット</param>
     /// <param name="plcDataLoader">PLC データローダー</param>
+    /// <param name="plcAgentContextProvider">PLC エージェントコンテキスト</param>
     /// <param name="delegationPolicy">委譲ポリシー</param>
     /// <param name="logger">ロガー</param>
     public OrganizerToolset(
@@ -57,6 +59,7 @@ public sealed class OrganizerToolset
         PlcAgentTool plcAgentTool,
         PlcToolset plcToolset,
         IPlcDataLoader plcDataLoader,
+        IPlcAgentContextProvider plcAgentContextProvider,
         AgentDelegationPolicy delegationPolicy,
         ILogger<OrganizerToolset> logger)
     {
@@ -66,6 +69,7 @@ public sealed class OrganizerToolset
         _plcAgentTool = plcAgentTool;
         _plcToolset = plcToolset;
         _plcDataLoader = plcDataLoader;
+        _plcAgentContextProvider = plcAgentContextProvider;
         _delegationPolicy = delegationPolicy;
         _invokeIaiTool = AIFunctionFactory.Create(
             new Func<string, CancellationToken, Task<string>>(InvokeIaiAgentAsync),
@@ -294,12 +298,13 @@ public sealed class OrganizerToolset
             var parsedOptions = ParsePlcOptions(optionsJson);
             var unitId = parsedOptions.PlcUnitId is not null && Guid.TryParse(parsedOptions.PlcUnitId, out var guid) ? guid : (Guid?)null;
             await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
+            var connectionContext = await _plcAgentContextProvider.BuildAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, cancellationToken);
             var plcOnline = ctx?.ChatContext.PlcOnline ?? true;
             var delegationTools = BuildDelegationTools("plcAgent");
             var plcTools = _plcToolset.GetTools(plcOnline);
             var gatewayTools = plcOnline ? new[] { _plcGatewayTool } : Array.Empty<AITool>();
             var extraTools = plcTools.Concat(gatewayTools).Concat(delegationTools);
-            var plcHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note, plcOnline);
+            var plcHint = _plcToolset.BuildContextHint(parsedOptions.GatewayOptionsJson, parsedOptions.PlcUnitId, parsedOptions.PlcUnitName, parsedOptions.EnableFunctionBlocks, parsedOptions.Note, plcOnline, connectionContext);
             var contextHint = MergeContextHints(plcHint, BuildDelegationHint("plcAgent"));
             var result = await _manualAgentTool.RunAsync("plcAgent", question, extraTools, contextHint, cancellationToken);
             ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, result, true)));

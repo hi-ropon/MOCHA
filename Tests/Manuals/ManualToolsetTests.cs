@@ -10,6 +10,7 @@ using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
 using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Clients;
+using MOCHA.Agents.Infrastructure.Orchestration;
 using MOCHA.Agents.Infrastructure.Tools;
 using MOCHA.Agents.Infrastructure.Plc;
 
@@ -50,7 +51,7 @@ public class ManualToolsetTests
         var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcFaultTracer, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
-        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
+        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, new NullPlcAgentContextProvider(), policy, NullLogger<OrganizerToolset>.Instance);
 
         Assert.AreEqual(4, organizerToolset.All.Count);
     }

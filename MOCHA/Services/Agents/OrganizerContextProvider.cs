@@ -72,12 +72,6 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     {
         var sb = new StringBuilder();
 
-        var gateway = await _gatewaySettingRepository.GetAsync(userId, agentNumber, cancellationToken);
-        if (gateway is not null)
-        {
-            sb.AppendLine($"- ゲートウェイ: {gateway.Host}:{gateway.Port}");
-        }
-
         var pcSettings = await _pcSettingRepository.ListAsync(userId, agentNumber, cancellationToken);
         if (pcSettings.Count > 0)
         {
@@ -178,9 +172,7 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         var manufacturer = unit.Manufacturer;
         var model = string.IsNullOrWhiteSpace(unit.Model) ? string.Empty : $" {unit.Model}";
         var role = string.IsNullOrWhiteSpace(unit.Role) ? "役割未設定" : unit.Role;
-        var ip = string.IsNullOrWhiteSpace(unit.IpAddress) ? "-" : unit.IpAddress;
-        var port = unit.Port?.ToString(CultureInfo.InvariantCulture) ?? "-";
-        return $"- ユニット: {unit.Name} ({manufacturer}{model}) role={role} ip={ip} port={port}";
+        return $"- ユニット: {unit.Name} ({manufacturer}{model}) role={role}";
     }
 
     private string FormatPcLine(PcSetting pc)

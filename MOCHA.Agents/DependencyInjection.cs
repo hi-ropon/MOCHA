@@ -55,6 +55,7 @@ public static class DependencyInjection
         services.AddScoped<OrganizerToolset>();
         services.AddScoped<OrganizerInstructionBuilder>();
         services.AddScoped<IOrganizerContextProvider, NullOrganizerContextProvider>();
+        services.AddScoped<IPlcAgentContextProvider, NullPlcAgentContextProvider>();
         services.AddScoped<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 
         services.AddSingleton<ITaskAgent, PlcTaskAgent>();
