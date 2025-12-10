@@ -40,6 +40,7 @@ public static class DependencyInjection
         services.AddSingleton<IPlcDataStore, PlcDataStore>();
         services.AddSingleton<PlcProgramAnalyzer>();
         services.AddSingleton<PlcReasoner>();
+        services.AddSingleton<PlcFaultTracer>();
         services.AddSingleton<PlcManualService>();
         services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>(client =>
         {

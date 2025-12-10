@@ -47,7 +47,8 @@ public class AgentFrameworkOrchestratorTests
         var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
-        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var plcFaultTracer = new PlcFaultTracer(plcStore);
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcFaultTracer, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
         var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
@@ -103,7 +104,8 @@ public class AgentFrameworkOrchestratorTests
         var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
         var plcReasoner = new PlcReasoner();
         var plcManual = new PlcManualService(manualStore);
-        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var plcFaultTracer = new PlcFaultTracer(plcStore);
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcFaultTracer, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
         var tools = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);

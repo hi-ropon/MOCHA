@@ -25,6 +25,7 @@ public sealed class PlcToolset
     private readonly IPlcGatewayClient _gateway;
     private readonly PlcProgramAnalyzer _programAnalyzer;
     private readonly PlcReasoner _reasoner;
+    private readonly PlcFaultTracer _faultTracer;
     private readonly PlcManualService _manuals;
     private readonly ILogger<PlcToolset> _logger;
     private IReadOnlyList<AITool>? _toolsWithoutGatewayReads;
@@ -67,6 +68,7 @@ public sealed class PlcToolset
     /// <param name="gateway">PLCゲートウェイクライアント</param>
     /// <param name="programAnalyzer">プログラム解析器</param>
     /// <param name="reasoner">デバイス推論器</param>
+    /// <param name="faultTracer">異常コイルトレーサー</param>
     /// <param name="manuals">PLCマニュアルサービス</param>
     /// <param name="logger">ロガー</param>
     public PlcToolset(
@@ -74,6 +76,7 @@ public sealed class PlcToolset
         IPlcGatewayClient gateway,
         PlcProgramAnalyzer programAnalyzer,
         PlcReasoner reasoner,
+        PlcFaultTracer faultTracer,
         PlcManualService manuals,
         ILogger<PlcToolset> logger)
     {
@@ -81,6 +84,7 @@ public sealed class PlcToolset
         _gateway = gateway;
         _programAnalyzer = programAnalyzer;
         _reasoner = reasoner;
+        _faultTracer = faultTracer;
         _manuals = manuals;
         _logger = logger;
 
@@ -136,7 +140,11 @@ public sealed class PlcToolset
 
             AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchFunctionBlocksAsync),
                 name: "search_function_blocks",
-                description: "キーワードでファンクションブロックを検索します。")
+                description: "キーワードでファンクションブロックを検索します。"),
+
+            AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(TraceErrorCoilsAsync),
+                name: "trace_error_coil",
+                description: "コメントに異常/ERRを含むLコイルをOUT命令から追跡し関連接点を返します。")
         };
     }
 
@@ -384,6 +392,28 @@ public sealed class PlcToolset
         catch (Exception ex)
         {
             _logger.LogError(ex, "search_function_blocks 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// エラーコメント付きLコイルをトレース
+    /// </summary>
+    private Task<string> TraceErrorCoilsAsync(CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("trace_error_coil", "{}");
+        EmitRequested(call);
+
+        try
+        {
+            var result = _faultTracer.TraceErrorCoils();
+            EmitCompleted(call, result, true);
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "trace_error_coil 実行に失敗しました。");
             EmitCompleted(call, ex.Message, false, ex.Message);
             return Task.FromResult(ex.Message);
         }

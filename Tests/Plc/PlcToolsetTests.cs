@@ -63,8 +63,9 @@ public class PlcToolsetTests
         var gateway = new CaptureGateway();
         var analyzer = new PlcProgramAnalyzer(store);
         var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
         var method = typeof(PlcToolset).GetMethod("ReadValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(method);
 
@@ -89,8 +90,9 @@ public class PlcToolsetTests
         var gateway = new CaptureGateway();
         var analyzer = new PlcProgramAnalyzer(store);
         var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
         var method = typeof(PlcToolset).GetMethod("ReadMultipleValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(method);
 
@@ -106,8 +108,9 @@ public class PlcToolsetTests
         var gateway = new DummyGateway();
         var analyzer = new PlcProgramAnalyzer(store);
         var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        return new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+        return new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
     }
 
     private sealed class CaptureGateway : IPlcGatewayClient

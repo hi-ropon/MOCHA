@@ -27,4 +27,14 @@ public class PlcReasonerTests
         StringAssert.Contains(json, "Y1");
         StringAssert.Contains(json, "M10");
     }
+
+    [TestMethod]
+    public void 複数推定_Lコイルも抽出する()
+    {
+        var reasoner = new PlcReasoner();
+        var json = reasoner.InferMultiple("異常はL100かL200で出ます");
+
+        StringAssert.Contains(json, "L100");
+        StringAssert.Contains(json, "L200");
+    }
 }
