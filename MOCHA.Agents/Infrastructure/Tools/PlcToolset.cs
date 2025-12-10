@@ -518,14 +518,16 @@ public sealed class PlcToolset
     /// <returns>読み取り結果</returns>
     private async Task<string> ReadValuesAsync(string spec, string ip, int port, int timeoutSeconds, string? baseUrl, CancellationToken cancellationToken)
     {
-        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
+        var address = NormalizeAddress(DeviceAddress.Parse(spec));
+        var normalizedSpec = address.ToSpec();
+        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec = normalizedSpec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
         EmitRequested(call);
 
         try
         {
             var result = await _gateway.ReadAsync(
                 new DeviceReadRequest(
-                    spec,
+                    normalizedSpec,
                     string.IsNullOrWhiteSpace(ip) ? null : ip,
                     port <= 0 ? null : port,
                     PlcHost: null,
@@ -554,13 +556,14 @@ public sealed class PlcToolset
     /// <returns>読み取り結果</returns>
     private async Task<string> ReadMultipleValuesAsync(IEnumerable<string> specs, string? baseUrl, CancellationToken cancellationToken)
     {
-        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs, baseUrl }, _serializerOptions));
+        var normalizedSpecs = specs.Select(s => NormalizeAddress(DeviceAddress.Parse(s)).ToSpec()).ToList();
+        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs = normalizedSpecs, baseUrl }, _serializerOptions));
         EmitRequested(call);
 
         try
         {
             var result = await _gateway.ReadBatchAsync(
-                new BatchReadRequest(specs.ToList(), BaseUrl: baseUrl),
+                new BatchReadRequest(normalizedSpecs, BaseUrl: baseUrl),
                 cancellationToken);
             var payload = JsonSerializer.Serialize(result, _serializerOptions);
             EmitCompleted(call, payload, string.IsNullOrEmpty(result.Error));
@@ -643,6 +646,40 @@ public sealed class PlcToolset
             EmitCompleted(call, ex.Message, false, ex.Message);
             return ex.Message;
         }
+    }
+
+    /// <summary>
+    /// 読み取り用にデバイス指定を正規化
+    /// </summary>
+    /// <param name="address">読み取り対象デバイス</param>
+    /// <returns>長さ推論済みデバイス</returns>
+    private DeviceAddress NormalizeAddress(DeviceAddress address)
+    {
+        if (address.Length > 1)
+        {
+            return address;
+        }
+
+        if (!IsWordDevice(address.Device) || !int.TryParse(address.Address, out var parsedAddress))
+        {
+            return address;
+        }
+
+        var dataType = _programAnalyzer.InferDeviceDataType(address.Device, parsedAddress);
+        var inferredLength = dataType switch
+        {
+            DeviceDataType.DoubleWord => 2,
+            DeviceDataType.Float => 2,
+            _ => address.Length
+        };
+
+        return inferredLength != address.Length ? address.WithLength(inferredLength) : address;
+    }
+
+    private static bool IsWordDevice(string device)
+    {
+        return string.Equals(device, "D", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(device, "W", StringComparison.OrdinalIgnoreCase);
     }
 
     /// <summary>

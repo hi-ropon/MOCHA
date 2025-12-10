@@ -68,4 +68,46 @@ public class PlcProgramAnalyzerTests
 
         Assert.AreEqual("タイマコメント", comment);
     }
+
+    /// <summary>
+    /// DMOVが使われているDレジスタはダブルワードとして判定する
+    /// </summary>
+    [TestMethod]
+    public void InferDeviceDataType_DMOV使用時_ダブルワードを返す()
+    {
+        var store = new PlcDataStore();
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string>
+            {
+                "\"0\"\t\"\"\t\"DMOV\"\t\"D100\""
+            })
+        });
+
+        var analyzer = new PlcProgramAnalyzer(store);
+        var result = analyzer.InferDeviceDataType("D", 100);
+
+        Assert.AreEqual(DeviceDataType.DoubleWord, result);
+    }
+
+    /// <summary>
+    /// 浮動小数演算が使われているDレジスタは浮動小数として判定する
+    /// </summary>
+    [TestMethod]
+    public void InferDeviceDataType_EMOV使用時_浮動小数を返す()
+    {
+        var store = new PlcDataStore();
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string>
+            {
+                "\"0\"\t\"\"\t\"EMOV\"\t\"D200\""
+            })
+        });
+
+        var analyzer = new PlcProgramAnalyzer(store);
+        var result = analyzer.InferDeviceDataType("D", 200);
+
+        Assert.AreEqual(DeviceDataType.Float, result);
+    }
 }

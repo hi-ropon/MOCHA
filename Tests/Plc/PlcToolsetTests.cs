@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -47,6 +48,58 @@ public class PlcToolsetTests
         Assert.IsFalse(tools.Any(t => string.Equals(t.Name, "read_multiple_plc_values", StringComparison.OrdinalIgnoreCase)));
     }
 
+    /// <summary>
+    /// DMOVで使われているDレジスタは2ワードでゲートウェイに投げる
+    /// </summary>
+    [TestMethod]
+    public async Task ReadValuesAsync_DMOV使用時_2ワードを指定する()
+    {
+        var store = new PlcDataStore();
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string> { "\"0\"\t\"\"\t\"DMOV\"\t\"D500\"" })
+        });
+
+        var gateway = new CaptureGateway();
+        var analyzer = new PlcProgramAnalyzer(store);
+        var reasoner = new PlcReasoner();
+        var manuals = new PlcManualService(new DummyManualStore());
+        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+        var method = typeof(PlcToolset).GetMethod("ReadValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+
+        var task = (Task<string>)method!.Invoke(toolset, new object?[] { "D500", string.Empty, 0, 0, null, CancellationToken.None })!;
+        await task;
+
+        Assert.AreEqual("D500:2", gateway.LastRequest?.Spec);
+    }
+
+    /// <summary>
+    /// 浮動小数演算で使われているDレジスタも2ワードでバッチ読み取りする
+    /// </summary>
+    [TestMethod]
+    public async Task ReadMultipleValuesAsync_EMOV使用時_2ワードを指定する()
+    {
+        var store = new PlcDataStore();
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string> { "\"0\"\t\"\"\t\"EMOV\"\t\"D600\"" })
+        });
+
+        var gateway = new CaptureGateway();
+        var analyzer = new PlcProgramAnalyzer(store);
+        var reasoner = new PlcReasoner();
+        var manuals = new PlcManualService(new DummyManualStore());
+        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+        var method = typeof(PlcToolset).GetMethod("ReadMultipleValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+
+        var task = (Task<string>)method!.Invoke(toolset, new object?[] { new List<string> { "D600" }, null, CancellationToken.None })!;
+        await task;
+
+        CollectionAssert.Contains((System.Collections.ICollection)gateway.LastBatchSpecs!, "D600:2");
+    }
+
     private static PlcToolset CreateToolset()
     {
         var store = new PlcDataStore();
@@ -55,6 +108,25 @@ public class PlcToolsetTests
         var reasoner = new PlcReasoner();
         var manuals = new PlcManualService(new DummyManualStore());
         return new PlcToolset(store, gateway, analyzer, reasoner, manuals, NullLogger<PlcToolset>.Instance);
+    }
+
+    private sealed class CaptureGateway : IPlcGatewayClient
+    {
+        public DeviceReadRequest? LastRequest { get; private set; }
+
+        public IReadOnlyList<string>? LastBatchSpecs { get; private set; }
+
+        public Task<DeviceReadResult> ReadAsync(DeviceReadRequest request, CancellationToken cancellationToken = default)
+        {
+            LastRequest = request;
+            return Task.FromResult(new DeviceReadResult(request.Spec, Array.Empty<int>(), true, null));
+        }
+
+        public Task<BatchReadResult> ReadBatchAsync(BatchReadRequest request, CancellationToken cancellationToken = default)
+        {
+            LastBatchSpecs = request.Specs;
+            return Task.FromResult(new BatchReadResult(Array.Empty<DeviceReadResult>(), null));
+        }
     }
 
     private sealed class DummyGateway : IPlcGatewayClient
