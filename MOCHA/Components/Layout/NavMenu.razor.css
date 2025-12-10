@@ -1299,7 +1299,7 @@ input[type="file"].plc-file-input {
     display: inline-flex;
     align-items: center;
     width: 56px;
-    height: 30px;
+    height: 22px
 }
 
 .plc-switch input {
@@ -1319,10 +1319,10 @@ input[type="file"].plc-file-input {
 
 .plc-switch-thumb {
     position: absolute;
-    height: 22px;
-    width: 22px;
-    left: 5px;
-    bottom: 4px;
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 3px;
     background: var(--bubble-bg);
     border-radius: 50%;
     box-shadow: var(--soft-shadow);
@@ -1336,7 +1336,7 @@ input[type="file"].plc-file-input {
 }
 
 .plc-switch input:checked + .plc-switch-track + .plc-switch-thumb {
-    transform: translateX(22px);
+    transform: translateX(32px);
     background: var(--glass-bg);
 }
 
