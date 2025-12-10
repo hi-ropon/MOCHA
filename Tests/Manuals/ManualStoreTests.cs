@@ -54,4 +54,23 @@ public class ManualStoreTests
         Assert.IsNotNull(content);
         Assert.IsTrue(content.Content.Length > 0);
     }
+
+    /// <summary>
+    /// 半角コメントインデックスを全角クエリで検索できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task 半角コメントインデックスを全角クエリで検索できる()
+    {
+        var options = Options.Create(new ManualStoreOptions
+        {
+            BasePath = "../../../TestData/Manuals",
+            AgentFolders = new() { ["plcAgent"] = "Plc" }
+        });
+
+        var store = new FileManualStore(options, NullLogger<FileManualStore>.Instance);
+
+        var hits = await store.SearchAsync("plcAgent", "インターロック", default);
+
+        Assert.IsTrue(hits.Count > 0);
+    }
 }

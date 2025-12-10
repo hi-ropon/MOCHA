@@ -214,7 +214,7 @@ public sealed class FileManualStore : IManualStore
     private static List<string> SplitTokens(string query)
     {
         return Regex.Matches(query ?? string.Empty, @"[\p{L}\p{N}\-_\.]+")
-            .Select(m => m.Value.ToLowerInvariant())
+            .Select(m => NormalizeForSearch(m.Value))
             .Where(s => s.Length > 1)
             .Distinct()
             .ToList();
@@ -228,11 +228,11 @@ public sealed class FileManualStore : IManualStore
     /// <returns>スコア</returns>
     private static double Score(string text, IReadOnlyCollection<string> tokens)
     {
-        var lowered = text.ToLowerInvariant();
+        var normalized = NormalizeForSearch(text);
         var score = 0.0;
         foreach (var token in tokens)
         {
-            if (lowered.Contains(token, StringComparison.OrdinalIgnoreCase))
+            if (normalized.Contains(token, StringComparison.Ordinal))
             {
                 score += 1;
             }
@@ -250,5 +250,22 @@ public sealed class FileManualStore : IManualStore
         var trimmed = line.TrimStart('-', ' ');
         var colon = trimmed.IndexOf(':');
         return colon > 0 ? trimmed[..colon].Trim() : trimmed;
+    }
+
+    /// <summary>
+    /// 検索用に文字列を正規化
+    /// </summary>
+    /// <param name="text">対象テキスト</param>
+    /// <returns>正規化済み文字列</returns>
+    private static string NormalizeForSearch(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        return text
+            .Normalize(NormalizationForm.FormKC)
+            .ToLowerInvariant();
     }
 }
