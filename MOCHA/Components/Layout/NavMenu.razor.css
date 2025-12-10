@@ -1311,9 +1311,9 @@ input[type="file"].plc-file-input {
 .plc-switch-track {
     position: absolute;
     inset: 0;
-    background: var(--panel-soft);
+    background: var(--plc-status-off);
     border-radius: 999px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--plc-status-off-border);
     transition: all 0.2s ease;
 }
 
@@ -1330,9 +1330,9 @@ input[type="file"].plc-file-input {
 }
 
 .plc-switch input:checked + .plc-switch-track {
-    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
-    border-color: var(--cta-border);
-    box-shadow: 0 6px 16px rgba(23, 154, 214, 0.25);
+    background: linear-gradient(135deg, var(--plc-status-on-start), var(--plc-status-on-end));
+    border-color: var(--plc-status-on-border);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
 .plc-switch input:checked + .plc-switch-track + .plc-switch-thumb {

@@ -17,6 +17,11 @@
     --cta-end: #ffe7a8;
     --cta-border: #f1d47a;
     --cta-text: #7d5200;
+    --plc-status-off: #d9e2ec;
+    --plc-status-off-border: #9aa6b8;
+    --plc-status-on-start: #34d399;
+    --plc-status-on-end: #059669;
+    --plc-status-on-border: #047857;
     --glass-bg: rgba(255, 255, 255, 0.28);
     --glass-border: rgba(219, 227, 242, 0.55);
     --glass-shadow: 0 16px 34px rgba(63, 94, 134, 0.22);
@@ -44,6 +49,11 @@
     --cta-end: #243859;
     --cta-border: #2f4d7a;
     --cta-text: #e2e8f0;
+    --plc-status-off: #1e293b;
+    --plc-status-off-border: #475569;
+    --plc-status-on-start: #6ee7b7;
+    --plc-status-on-end: #10b981;
+    --plc-status-on-border: #059669;
     --glass-bg: rgba(255, 255, 255, 0.08);
     --glass-border: rgba(255, 255, 255, 0.2);
     --glass-shadow: 0 20px 46px rgba(0, 0, 0, 0.55);
