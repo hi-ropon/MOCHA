@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace MOCHA.Agents.Domain;
 
@@ -15,6 +16,12 @@ public sealed record ChatContext(string ConversationId, IReadOnlyList<ChatTurn> 
 
     /// <summary>PLC接続可否</summary>
     public bool PlcOnline { get; init; } = true;
+
+    /// <summary>ユーザーに紐づくロール一覧</summary>
+    public IReadOnlyCollection<string> UserRoles { get; init; } = Array.Empty<string>();
+
+    /// <summary>優先的に使うテンプレート文字列</summary>
+    public string? InstructionTemplate { get; init; }
 
     /// <summary>
     /// 履歴なしのチャットコンテキスト生成

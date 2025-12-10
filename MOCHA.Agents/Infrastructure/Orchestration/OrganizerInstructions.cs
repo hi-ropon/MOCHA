@@ -49,6 +49,18 @@ public static class OrganizerInstructions
         """;
 
     /// <summary>
+    /// 一般ユーザー向けの制限付きテンプレート
+    /// </summary>
+    public static string RestrictedTemplate => Template +
+        """
+
+        [アクセス制限モード]
+        - Administrator や Developer 以外のユーザーには危険操作や設定変更を直接指示せず、必要なら冒頭で「管理者に相談してください」と明記する
+        - PLC の書き換えや装置停止につながる推論は避け、一次切り分けや確認手順、参照すべき資料までを整理して伝える
+        - 権限外と判断した内容は回答内で制約理由を説明し、管理者/開発担当に引き継ぐための質問事項やログ収集ポイントを列挙する
+        """;
+
+    /// <summary>
     /// コンテキストなしの既定プロンプト
     /// </summary>
     public static string Default { get; } = Template
