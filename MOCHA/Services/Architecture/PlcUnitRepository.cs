@@ -89,21 +89,20 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PlcUnit>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PlcUnit>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableIfMissingAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Array.Empty<PlcUnit>();
         }
 
-        var normalizedUserId = userId.Trim();
         var normalizedAgent = agentNumber.Trim();
 
         try
         {
             var list = await _dbContext.PlcUnits
-                .Where(x => x.UserId == normalizedUserId && x.AgentNumber == normalizedAgent)
+                .Where(x => x.AgentNumber == normalizedAgent)
                 .ToListAsync(cancellationToken);
 
             return list

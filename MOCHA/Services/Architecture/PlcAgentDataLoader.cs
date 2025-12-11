@@ -43,7 +43,8 @@ internal sealed class PlcAgentDataLoader : IPlcDataLoader
             return;
         }
 
-        var units = await _repository.ListAsync(userId, agentNumber, cancellationToken);
+        var normalizedAgent = agentNumber.Trim();
+        var units = await _repository.ListAsync(normalizedAgent, cancellationToken);
         if (plcUnitId is not null)
         {
             units = units.Where(u => u.Id == plcUnitId.Value).ToList();

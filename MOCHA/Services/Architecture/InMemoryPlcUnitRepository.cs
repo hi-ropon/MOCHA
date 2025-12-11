@@ -51,16 +51,21 @@ internal sealed class InMemoryPlcUnitRepository : IPlcUnitRepository
     }
 
     /// <summary>
-    /// ユーザー・エージェントで絞り込んだユニット一覧取得
+    /// エージェント単位で絞り込んだユニット一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>ユニット一覧</returns>
-    public Task<IReadOnlyList<PlcUnit>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PlcUnit>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(agentNumber))
+        {
+            return Task.FromResult<IReadOnlyList<PlcUnit>>(Array.Empty<PlcUnit>());
+        }
+
+        var normalizedAgent = agentNumber.Trim();
         var result = _store.Values
-            .Where(u => u.UserId == userId && u.AgentNumber == agentNumber)
+            .Where(u => string.Equals(u.AgentNumber, normalizedAgent, StringComparison.Ordinal))
             .OrderBy(u => u.CreatedAt)
             .ToList();
 

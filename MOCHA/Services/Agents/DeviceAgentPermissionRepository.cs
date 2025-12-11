@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 
@@ -8,15 +13,15 @@ namespace MOCHA.Services.Agents;
 /// </summary>
 internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRepository
 {
-    private readonly IChatDbContext _dbContext;
+    private readonly IDbContextFactory<ChatDbContext> _dbContextFactory;
 
     /// <summary>
-    /// DbContext 注入によるリポジトリ初期化
+    /// DbContext ファクトリ注入によるリポジトリ初期化
     /// </summary>
-    /// <param name="dbContext">チャット用 DbContext</param>
-    public DeviceAgentPermissionRepository(IChatDbContext dbContext)
+    /// <param name="dbContextFactory">チャット用 DbContext ファクトリ</param>
+    public DeviceAgentPermissionRepository(IDbContextFactory<ChatDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
     }
 
     /// <summary>
@@ -33,7 +38,8 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
 
         try
         {
-            var list = await _dbContext.DeviceAgentPermissions
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var list = await db.DeviceAgentPermissions
                 .Where(x => x.UserObjectId == userId)
                 .Select(x => x.AgentNumber)
                 .ToListAsync(cancellationToken);
@@ -68,7 +74,8 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
 
         try
         {
-            var existing = await _dbContext.DeviceAgentPermissions
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var existing = await db.DeviceAgentPermissions
                 .Where(x => x.UserObjectId == userId)
                 .ToListAsync(cancellationToken);
 
@@ -76,7 +83,7 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
             var toRemove = existing.Where(x => !normalized.Contains(x.AgentNumber)).ToList();
             if (toRemove.Count > 0)
             {
-                _dbContext.DeviceAgentPermissions.RemoveRange(toRemove);
+                db.DeviceAgentPermissions.RemoveRange(toRemove);
             }
 
             foreach (var number in normalized)
@@ -86,7 +93,7 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
                     continue;
                 }
 
-                _dbContext.DeviceAgentPermissions.Add(new DeviceAgentPermissionEntity
+                db.DeviceAgentPermissions.Add(new DeviceAgentPermissionEntity
                 {
                     UserObjectId = userId,
                     AgentNumber = number,
@@ -94,7 +101,7 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
                 });
             }
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
         }
         catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgentPermissions"))
         {
@@ -119,6 +126,12 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgentPermissions_UserObjectId_AgentNumber ON DeviceAgentPermissions(UserObjectId, AgentNumber);
         """;
 
-        await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+        await using var db = await CreateDbContextAsync(cancellationToken);
+        await db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+    }
+
+    private Task<ChatDbContext> CreateDbContextAsync(CancellationToken cancellationToken)
+    {
+        return _dbContextFactory.CreateDbContextAsync(cancellationToken);
     }
 }

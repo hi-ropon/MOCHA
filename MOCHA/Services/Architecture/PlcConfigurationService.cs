@@ -36,7 +36,7 @@ internal sealed class PlcConfigurationService
     }
 
     /// <summary>
-    /// ユーザーとエージェントのユニット一覧取得
+    /// エージェント単位のユニット一覧取得
     /// </summary>
     /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
@@ -49,7 +49,8 @@ internal sealed class PlcConfigurationService
             return Task.FromResult<IReadOnlyList<PlcUnit>>(Array.Empty<PlcUnit>());
         }
 
-        return _repository.ListAsync(userId, agentNumber, cancellationToken);
+        var normalizedAgent = agentNumber.Trim();
+        return _repository.ListAsync(normalizedAgent, cancellationToken);
     }
 
     /// <summary>

@@ -92,7 +92,8 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
             }
         }
 
-        var units = await _plcUnitRepository.ListAsync(userId, agentNumber, cancellationToken);
+        var normalizedAgent = agentNumber.Trim();
+        var units = await _plcUnitRepository.ListAsync(normalizedAgent, cancellationToken);
         if (units.Count > 0)
         {
             var orderedPlc = units
