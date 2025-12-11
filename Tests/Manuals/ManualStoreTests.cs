@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -53,5 +55,43 @@ public class ManualStoreTests
 
         Assert.IsNotNull(content);
         Assert.IsTrue(content.Content.Length > 0);
+    }
+
+    /// <summary>
+    /// 半角コメントインデックスを全角クエリで検索できる確認
+    /// </summary>
+    [TestMethod]
+    public async Task 半角コメントインデックスを全角クエリで検索できる()
+    {
+        var options = Options.Create(new ManualStoreOptions
+        {
+            BasePath = "../../../TestData/Manuals",
+            AgentFolders = new() { ["plcAgent"] = "Plc" }
+        });
+
+        var store = new FileManualStore(options, NullLogger<FileManualStore>.Instance);
+
+        var hits = await store.SearchAsync("plcAgent", "インターロック", default);
+
+        Assert.IsTrue(hits.Count > 0);
+    }
+
+    /// <summary>
+    /// PLC目次検索で対応ページパスが返却される確認
+    /// </summary>
+    [TestMethod]
+    public async Task PLC目次検索_インターロック_ページファイル返却()
+    {
+        var options = Options.Create(new ManualStoreOptions
+        {
+            BasePath = "../../../TestData/Manuals",
+            AgentFolders = new() { ["plcAgent"] = "Plc" }
+        });
+
+        var store = new FileManualStore(options, NullLogger<FileManualStore>.Instance);
+
+        var hits = await store.SearchAsync("plcAgent", "インターロック", default);
+
+        Assert.IsTrue(hits.Any(h => h.RelativePath.EndsWith("page10.txt", StringComparison.OrdinalIgnoreCase)));
     }
 }

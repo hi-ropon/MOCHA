@@ -14,7 +14,7 @@ public class PlcProgramAnalyzerTests
     [TestMethod]
     public void 指定デバイス周辺行を取得できる()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetPrograms(new[]
         {
             new ProgramFile("main", new List<string>
@@ -36,7 +36,7 @@ public class PlcProgramAnalyzerTests
     [TestMethod]
     public void 関連デバイスを抽出できる()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetPrograms(new[]
         {
             new ProgramFile("main", new List<string>
@@ -57,7 +57,7 @@ public class PlcProgramAnalyzerTests
     [TestMethod]
     public void コメント取得_TS指定でTコメントを返す()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["T0"] = "タイマコメント"
@@ -67,5 +67,47 @@ public class PlcProgramAnalyzerTests
         var comment = analyzer.GetComment("TS", 0);
 
         Assert.AreEqual("タイマコメント", comment);
+    }
+
+    /// <summary>
+    /// DMOVが使われているDレジスタはダブルワードとして判定する
+    /// </summary>
+    [TestMethod]
+    public void InferDeviceDataType_DMOV使用時_ダブルワードを返す()
+    {
+        var store = new PlcDataStore(new TabularProgramParser());
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string>
+            {
+                "\"0\"\t\"\"\t\"DMOV\"\t\"D100\""
+            })
+        });
+
+        var analyzer = new PlcProgramAnalyzer(store);
+        var result = analyzer.InferDeviceDataType("D", 100);
+
+        Assert.AreEqual(DeviceDataType.DoubleWord, result);
+    }
+
+    /// <summary>
+    /// 浮動小数演算が使われているDレジスタは浮動小数として判定する
+    /// </summary>
+    [TestMethod]
+    public void InferDeviceDataType_EMOV使用時_浮動小数を返す()
+    {
+        var store = new PlcDataStore(new TabularProgramParser());
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("main", new List<string>
+            {
+                "\"0\"\t\"\"\t\"EMOV\"\t\"D200\""
+            })
+        });
+
+        var analyzer = new PlcProgramAnalyzer(store);
+        var result = analyzer.InferDeviceDataType("D", 200);
+
+        Assert.AreEqual(DeviceDataType.Float, result);
     }
 }

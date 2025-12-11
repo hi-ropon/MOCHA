@@ -233,7 +233,9 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
 
     private async Task<AgentHandle> CreateAgentAsync(ChatContext context, CancellationToken cancellationToken)
     {
-        var baseTemplate = _options.Instructions ?? OrganizerInstructions.Template;
+        var baseTemplate = !string.IsNullOrWhiteSpace(context.InstructionTemplate)
+            ? context.InstructionTemplate!
+            : _options.Instructions ?? OrganizerInstructions.Template;
         var instructions = await _instructionBuilder.BuildAsync(baseTemplate, context.UserId, context.AgentNumber, cancellationToken);
         _logger.LogInformation("Using agent instructions: {Instructions}", instructions);
 

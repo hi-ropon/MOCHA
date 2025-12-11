@@ -1,7 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Agents;
-using Microsoft.Data.Sqlite;
 
 namespace MOCHA.Services.Agents;
 
@@ -10,15 +12,20 @@ namespace MOCHA.Services.Agents;
 /// </summary>
 internal sealed class DeviceAgentRepository : IDeviceAgentRepository
 {
-    private readonly IChatDbContext _dbContext;
+    private readonly IDbContextFactory<ChatDbContext> _dbContextFactory;
 
     /// <summary>
-    /// DbContext を受け取りリポジトリを初期化する
+    /// DbContext ファクトリを受け取りリポジトリを初期化する
     /// </summary>
-    /// <param name="dbContext">チャット用 DbContext</param>
-    public DeviceAgentRepository(IChatDbContext dbContext)
+    /// <param name="dbContextFactory">チャット用 DbContext ファクトリ</param>
+    public DeviceAgentRepository(IDbContextFactory<ChatDbContext> dbContextFactory)
     {
-        _dbContext = dbContext;
+        _dbContextFactory = dbContextFactory;
+    }
+
+    private async Task<ChatDbContext> CreateDbContextAsync(CancellationToken cancellationToken)
+    {
+        return await _dbContextFactory.CreateDbContextAsync(cancellationToken);
     }
 
     /// <summary>
@@ -31,7 +38,8 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     {
         try
         {
-            var list = await _dbContext.DeviceAgents
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var list = await db.DeviceAgents
                 .Where(x => x.UserObjectId == userId)
                 .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
                 .ToListAsync(cancellationToken);
@@ -40,16 +48,10 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
                 .OrderBy(x => x.CreatedAt)
                 .ToList();
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgents"))
         {
             await EnsureTableAsync(cancellationToken);
-            var list = await _dbContext.DeviceAgents
-                .Where(x => x.UserObjectId == userId)
-                .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
-                .ToListAsync(cancellationToken);
-            return list
-                .OrderBy(x => x.CreatedAt)
-                .ToList();
+            return await GetAsync(userId, cancellationToken);
         }
     }
 
@@ -61,7 +63,8 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     {
         try
         {
-            var list = await _dbContext.DeviceAgents
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var list = await db.DeviceAgents
                 .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
                 .ToListAsync(cancellationToken);
 
@@ -70,7 +73,7 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
                 .DistinctBy(x => x.Number, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgents"))
         {
             await EnsureTableAsync(cancellationToken);
             return await GetAllAsync(cancellationToken);
@@ -97,7 +100,8 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
 
         try
         {
-            var list = await _dbContext.DeviceAgents
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var list = await db.DeviceAgents
                 .Where(x => normalized.Contains(x.Number))
                 .Select(x => new DeviceAgentProfile(x.Number, x.Name, x.CreatedAt))
                 .ToListAsync(cancellationToken);
@@ -107,7 +111,7 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
                 .DistinctBy(x => x.Number, StringComparer.OrdinalIgnoreCase)
                 .ToList();
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgents"))
         {
             await EnsureTableAsync(cancellationToken);
             return await GetByNumbersAsync(normalized, cancellationToken);
@@ -126,7 +130,8 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     {
         try
         {
-            var existing = await _dbContext.DeviceAgents
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var existing = await db.DeviceAgents
                 .FirstOrDefaultAsync(x => x.UserObjectId == userId && x.Number == number, cancellationToken);
 
             if (existing is null)
@@ -138,17 +143,17 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
                     Name = name,
                     CreatedAt = DateTimeOffset.UtcNow
                 };
-                _dbContext.DeviceAgents.Add(existing);
+                db.DeviceAgents.Add(existing);
             }
             else
             {
                 existing.Name = name;
             }
 
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            await db.SaveChangesAsync(cancellationToken);
             return new DeviceAgentProfile(existing.Number, existing.Name, existing.CreatedAt);
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgents"))
         {
             await EnsureTableAsync(cancellationToken);
             return await UpsertAsync(userId, number, name, cancellationToken);
@@ -165,7 +170,8 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
     {
         try
         {
-            var entity = await _dbContext.DeviceAgents
+            await using var db = await CreateDbContextAsync(cancellationToken);
+            var entity = await db.DeviceAgents
                 .FirstOrDefaultAsync(x => x.UserObjectId == userId && x.Number == number, cancellationToken);
 
             if (entity is null)
@@ -173,10 +179,10 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
                 return;
             }
 
-            _dbContext.DeviceAgents.Remove(entity);
-            await _dbContext.SaveChangesAsync(cancellationToken);
+            db.DeviceAgents.Remove(entity);
+            await db.SaveChangesAsync(cancellationToken);
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgents", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgents"))
         {
             await EnsureTableAsync(cancellationToken);
         }
@@ -199,6 +205,7 @@ internal sealed class DeviceAgentRepository : IDeviceAgentRepository
             CREATE UNIQUE INDEX IF NOT EXISTS IX_DeviceAgents_UserObjectId_Number ON DeviceAgents(UserObjectId, Number);
         """;
 
-        await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+        await using var db = await CreateDbContextAsync(cancellationToken);
+        await db.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
     }
 }

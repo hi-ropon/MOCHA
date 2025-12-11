@@ -1,50 +1,80 @@
-# データベーステーブル図
+# データベーススキーマ
 
-以下は SQLite 上で初期化される主要テーブルの構造とリレーションを示した図です。
+MOCHA は EF Core の `ChatDbContext` で上記のエンティティを管理し、PostgreSQL など任意の `ConnectionStrings:ChatDb` にマッピングされる。テーブルごとの主キー/制約・インデックスを OnModelCreating で定義し、チャット履歴／添付／図面／構成データを効率よく参照できるようにしている。
+
+## ER 図（主要リレーション）
 
 ```mermaid
 erDiagram
-    Conversations {
-        TEXT Id PK "会話ID"
-        TEXT UserObjectId "ユーザー ObjectId"
-        TEXT Title "会話タイトル"
-        TEXT AgentNumber "紐づくエージェント番号 (NULL可)"
-        TEXT UpdatedAt "更新日時(ISO文字列)"
-    }
-
-    Messages {
-        INTEGER Id PK "メッセージID (AUTOINCREMENT)"
-        TEXT ConversationId FK "会話ID"
-        TEXT UserObjectId "ユーザー ObjectId"
-        TEXT Role "role(system/user/assistant等)"
-        TEXT Content "本文"
-        TEXT CreatedAt "作成日時(ISO文字列)"
-    }
-
-    UserRoles {
-        INTEGER Id PK "ID (AUTOINCREMENT)"
-        TEXT UserId "ユーザーID"
-        TEXT Role "ロール名"
-        TEXT CreatedAt "作成日時(ISO文字列)"
-    }
-
-    DeviceAgents {
-        INTEGER Id PK "ID (AUTOINCREMENT)"
-        TEXT UserObjectId "ユーザー ObjectId"
-        TEXT Number "エージェント番号"
-        TEXT Name "エージェント名"
-        TEXT CreatedAt "作成日時(ISO文字列)"
-    }
-
-    Conversations ||--o{ Messages : "ConversationId"
+    ChatConversations ||--o{ ChatMessages : ""
+    ChatMessages ||--o{ ChatAttachments : ""
+    ChatConversations ||--o{ FeedbackEntity : ""
 ```
 
-## インデックスとキー
-- `Conversations`: `PK(Id)`, `IX_Conversations_UserObjectId_UpdatedAt`, `IX_Conversations_UserObjectId_AgentNumber_UpdatedAt`
-- `Messages`: `PK(Id)`, `FK(ConversationId -> Conversations.Id ON DELETE CASCADE)`, `IX_Messages_ConversationId`, `IX_Messages_UserObjectId_CreatedAt`
-- `UserRoles`: `PK(Id)`, `UNIQUE(UserId, Role)` (`IX_UserRoles_UserId_Role`)
-- `DeviceAgents`: `PK(Id)`, `UNIQUE(UserObjectId, Number)` (`IX_DeviceAgents_UserObjectId_Number`)
+## 会話・メッセージ関連
 
-## 備考
-- `Conversations.AgentNumber` はエージェント紐づけ用の任意列で、`DeviceAgents` とはユーザーごとの `(UserObjectId, Number)` で論理的に対応します（外部キー制約はなし）。
-- いずれの日時も ISO 文字列として保存されます（SQLite の TEXT）。
+- `ChatConversations`
+  - 列: `Id`（PK, TEXT）、`UserObjectId`（TEXT）、`Title`（最大 200 文字）、`AgentNumber`（最大 100 文字, NULL 可）、`UpdatedAt`（DateTimeOffset）
+  - 制約: `Messages` との 1 対多（on delete cascade）
+  - インデックス: `(UserObjectId, UpdatedAt)`、`(UserObjectId, AgentNumber, UpdatedAt)`
+
+- `ChatMessages`
+  - 列: `Id`（PK, INTEGER 自動増分）、`ConversationId`（FK）、`UserObjectId`、`Role`（最大 50 文字）、`Content`（TEXT）、`CreatedAt`
+  - 制約: `ChatConversations` との FK（削除時 cascade）
+  - インデックス: `ConversationId`、`(UserObjectId, CreatedAt)`
+
+- `ChatAttachments`
+  - 列: `Id`（PK, TEXT）、`MessageId`（FK）、`ConversationId`、`UserObjectId`、`FileName`（最大 260 文字）、`ContentType`（最大 100 文字）、`Size`、`ThumbSmallBase64`、`ThumbMediumBase64`、`CreatedAt`
+  - 制約: `ChatMessages` との FK（削除時 cascade）
+  - インデックス: `MessageId`
+
+- `FeedbackEntity`
+  - 列: `Id`（PK）、`ConversationId`、`MessageIndex`、`UserObjectId`、`Rating`（最大 20 文字）、`Comment`（最大 1000 文字）、`CreatedAt`
+  - 制約: `ConversationId` + `MessageIndex` + `UserObjectId` の複合一意制約
+  - インデックス: `(UserObjectId, CreatedAt)`
+
+## ロール・装置エージェント
+
+- `UserRoles`
+  - 列: `Id`（PK）、`UserId`、`Role`、`CreatedAt`
+  - 制約: `(UserId, Role)` の UNIQUE（同じロールの重複防止）
+
+- `DeviceAgents`
+  - 列: `Id`（PK）、`UserObjectId`、`Number`、`Name`、`CreatedAt`
+  - 制約: `(UserObjectId, Number)` の UNIQUE（ユーザーごとのエージェント番号は一意）
+
+- `DeviceAgentPermissions`
+  - 列: `Id`（PK）、`UserObjectId`、`AgentNumber`、`CreatedAt`
+  - 制約: `(UserObjectId, AgentNumber)` の UNIQUE（利用許可の重複防止）
+
+- `DevUserEntity`
+  - 列: `Id`（PK）、`Email`（必須）、`DisplayName`、`PasswordHash`（必須）、`CreatedAt`
+  - 制約: `Email` に UNIQUE（開発用ログインの一意性）
+
+## 図面・構成情報
+
+- `DrawingDocumentEntity`
+  - 列: `Id`（PK, UUID）、`UserId`、`AgentNumber`、`FileName`、`ContentType`、`FileSize`、`Description`、`RelativePath`、`StorageRoot`、`CreatedAt`、`UpdatedAt`
+  - インデックス: `(UserId, AgentNumber, CreatedAt)`（ユーザー＋エージェントで新しい順に検索）
+
+- `PcSettingEntity`
+  - 列: `Id`（PK, UUID）、`UserId`、`AgentNumber`、`Os`、`Role`、`RepositoryUrlsJson`（TEXT）、`CreatedAt`、`UpdatedAt`
+  - インデックス: `(UserId, AgentNumber, CreatedAt)`
+
+- `PlcUnitEntity`
+  - 列: `Id`（PK, UUID）、`UserId`、`AgentNumber`、`Name`、`Manufacturer`、`Model`、`Role`、`IpAddress`、`Port`、`GatewayHost`、`GatewayPort`、`CommentFileJson`、`ProgramFilesJson`、`ModulesJson`、`FunctionBlocksJson`、`ProgramDescription`、`CreatedAt`、`UpdatedAt`
+  - インデックス: `(UserId, AgentNumber, CreatedAt)`
+
+- `GatewaySettingEntity`
+  - 列: `Id`（PK, UUID）、`UserId`、`AgentNumber`、`Host`、`Port`、`UpdatedAt`
+  - インデックス: `(UserId, AgentNumber)`
+
+- `UnitConfigurationEntity`
+  - 列: `Id`（PK, UUID）、`UserId`、`AgentNumber`、`Name`、`Description`、`DevicesJson`（TEXT）、`CreatedAt`、`UpdatedAt`
+  - インデックス: `(UserId, AgentNumber, CreatedAt)`
+
+## 運用上の補足
+
+- 全テーブルで `UserId`/`UserObjectId` を軸にしたインデックスを張ることで、認証ユーザー単位のアクセスを高速化。
+- `UpdatedAt`/`CreatedAt` による降順ソートを想定した複合インデックスを会話・図面・構成系で共通化。
+- メッセージ・添付・フィードバックの削除は会話の cascade により連鎖し、履歴削除時の一貫性を維持。

@@ -45,6 +45,16 @@ public sealed class DeviceAddress
     }
 
     /// <summary>
+    /// 読み取り長を変更したデバイスを生成
+    /// </summary>
+    /// <param name="length">読み取り長</param>
+    /// <returns>長さを反映したデバイス</returns>
+    public DeviceAddress WithLength(int length)
+    {
+        return new DeviceAddress(Device, Address, length);
+    }
+
+    /// <summary>
     /// デバイス指定の解析
     /// </summary>
     /// <param name="spec">デバイス指定</param>

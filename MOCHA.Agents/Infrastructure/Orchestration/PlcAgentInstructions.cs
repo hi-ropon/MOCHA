@@ -25,7 +25,7 @@ public static class PlcAgentInstructions
 
         【ルール】
         - 強制ON/OFFの指示は出さないでください。
-        - 調査するデバイスが分からない時は、まずget_commnentやprogram_linesで手がかりを探してください。
+        - まず、search_comment_devices を実行して、program_linesで手がかりを探してください。
         - ビットの信号はON/OFFで表現して回答してください。
 
         【ラダー図出力ルール】
@@ -51,9 +51,9 @@ public static class PlcAgentInstructions
 
         【ツール選択ガイド】
         - マニュアル/命令: search_manual, search_instruction, get_command_overview（必要に応じ read_manual で根拠を読む）
-        - プログラム解析: program_lines, related_devices, get_comment
-        - デバイス推定: reasoning_multiple_devices（推奨）、reasoning_device
-        - 実機値読み取り: read_multiple_plc_values（推奨）, read_plc_values（devices/IP/port/timeout を渡す）
+        - プログラム解析: program_lines, related_devices, get_comment, search_comment_devices
+        - デバイス推定: reasoning_multiple_devices,reasoning_device
+        - 実機値読み取り: read_multiple_plc_values, read_plc_values（devices/IP/port/timeout を渡す）
 
         【回答スタイル】
         - 先頭で1-2文の結論を述べ、その後に根拠や確認手順を箇条書き

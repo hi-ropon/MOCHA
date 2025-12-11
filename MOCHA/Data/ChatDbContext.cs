@@ -61,7 +61,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
         {
             builder.HasKey(x => x.Id);
             builder.Property(x => x.Role).HasMaxLength(50);
-            builder.Property(x => x.Content).HasMaxLength(4000);
+            builder.Property(x => x.Content).HasColumnType("TEXT");
             builder.Property(x => x.UserObjectId).HasMaxLength(200);
             builder.HasIndex(x => x.ConversationId);
             builder.HasIndex(x => new { x.UserObjectId, x.CreatedAt });

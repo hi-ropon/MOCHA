@@ -24,7 +24,7 @@ public class PlcDataStoreTests
         {
             await File.WriteAllTextAsync(path, "device,comment\nD100,ポンプ起動\nM10,警報", CancellationToken.None);
 
-            var store = new PlcDataStore();
+            var store = new PlcDataStore(new TabularProgramParser());
             await store.LoadCommentsAsync(path, CancellationToken.None);
 
             Assert.IsTrue(store.TryGetComment("D100", out var comment));
@@ -49,12 +49,12 @@ public class PlcDataStoreTests
         {
             await File.WriteAllTextAsync(programPath, "0\tLD X0\n1\tAND M10\n2\tOUT Y0", CancellationToken.None);
 
-            var store = new PlcDataStore();
+            var store = new PlcDataStore(new TabularProgramParser());
             await store.LoadProgramsAsync(new[] { programPath }, CancellationToken.None);
 
             Assert.IsTrue(store.Programs.TryGetValue(Path.GetFileName(programPath), out var lines));
             Assert.AreEqual(3, lines.Count);
-            StringAssert.Contains(lines[1], "AND M10");
+            StringAssert.Contains(lines[1].Raw, "AND M10");
         }
         finally
         {
@@ -68,7 +68,7 @@ public class PlcDataStoreTests
     [TestMethod]
     public void ファンクションブロックを設定_取得できる()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         var fb = new FunctionBlockData("Start", "Start", "device,comment\nX0,開始", "line,instruction\n0000,LD X0");
         store.SetFunctionBlocks(new[] { fb });
 

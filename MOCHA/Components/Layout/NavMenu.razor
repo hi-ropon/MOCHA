@@ -750,7 +750,7 @@
                 </div>
                 <div class="field">
                     <label>ユニット説明</label>
-                    <textarea class="agent-input drawing-description"
+                    <textarea class="agent-input drawing-description unit-description scrollable-description"
                               rows="2"
                               placeholder="ユニットの概要や役割"
                               @bind="_unitDescription"></textarea>
@@ -878,7 +878,7 @@
 
                 <div class="field">
                     <label>プログラム構成説明</label>
-                    <textarea class="agent-input drawing-description"
+                    <textarea class="agent-input drawing-description plc-program-description scrollable-description"
                               rows="3"
                               maxlength="@PlcUnitDraft.ProgramDescriptionMaxLength"
                               placeholder="主要プログラムやサブルーチン、FB構成のメモ"

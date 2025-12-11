@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Architecture;
@@ -42,13 +41,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "PlcUnits"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "PlcUnits"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PlcUnits"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -72,12 +65,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "PlcUnits"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            return false;
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "PlcUnits"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PlcUnits"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return false;
@@ -93,7 +81,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             var entity = await _dbContext.PlcUnits.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             return entity is null ? null : ToModel(entity);
         }
-        catch (SqliteException ex) when (IsMissingTable(ex, "PlcUnits"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PlcUnits"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return null;
@@ -101,21 +89,20 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PlcUnit>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PlcUnit>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableIfMissingAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Array.Empty<PlcUnit>();
         }
 
-        var normalizedUserId = userId.Trim();
         var normalizedAgent = agentNumber.Trim();
 
         try
         {
             var list = await _dbContext.PlcUnits
-                .Where(x => x.UserId == normalizedUserId && x.AgentNumber == normalizedAgent)
+                .Where(x => x.AgentNumber == normalizedAgent)
                 .ToListAsync(cancellationToken);
 
             return list
@@ -123,7 +110,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
                 .Select(ToModel)
                 .ToList();
         }
-        catch (SqliteException ex) when (IsMissingTable(ex, "PlcUnits"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PlcUnits"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return Array.Empty<PlcUnit>();
@@ -167,13 +154,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "PlcUnits"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity!);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "PlcUnits"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PlcUnits"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -327,20 +308,4 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
     }
 
-    private static bool IsMissingTable(Exception exception, string tableName)
-    {
-        if (exception is SqliteException sqliteEx)
-        {
-            return sqliteEx.SqliteErrorCode == 1
-                   && sqliteEx.Message.Contains(tableName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (exception is DbUpdateException updateEx && updateEx.InnerException is SqliteException inner)
-        {
-            return inner.SqliteErrorCode == 1
-                   && inner.Message.Contains(tableName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 }

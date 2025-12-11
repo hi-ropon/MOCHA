@@ -1,3 +1,7 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
@@ -15,6 +19,8 @@ public sealed class FileManualStore : IManualStore
 {
     private readonly ManualStoreOptions _options;
     private readonly ILogger<FileManualStore> _logger;
+    private static readonly Regex _bulletLineRegex = new(@"^[\-\*\+]\s*(.+)", RegexOptions.Compiled);
+    private static readonly Regex _pageNumberRegex = new(@"p(?:age)?\.?\s*(\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
     /// <summary>
     /// オプションとロガー注入による初期化
@@ -55,7 +61,9 @@ public sealed class FileManualStore : IManualStore
         var hits = new List<ManualHit>();
         foreach (var indexFile in Directory.EnumerateFiles(root, "index.*", SearchOption.AllDirectories))
         {
-            var relative = Path.GetRelativePath(root, indexFile);
+            var relativeIndex = Path.GetRelativePath(root, indexFile);
+            var indexDirectory = Path.GetDirectoryName(indexFile) ?? root;
+            var pageMap = BuildPageMap(root, indexDirectory);
             string content;
             try
             {
@@ -69,21 +77,24 @@ public sealed class FileManualStore : IManualStore
 
             foreach (var line in content.Split('\n', StringSplitOptions.RemoveEmptyEntries))
             {
-                var trimmed = line.Trim();
-                if (!trimmed.StartsWith("-"))
+                var entry = ParseIndexEntry(line);
+                if (entry is null)
                 {
                     continue;
                 }
 
-                var score = Score(trimmed, tokens);
+                var score = Score(entry.Text, tokens);
                 if (score <= 0)
                 {
                     continue;
                 }
 
-                var title = ExtractTitle(trimmed);
-                var combinedScore = score + Score(relative, tokens);
-                hits.Add(new ManualHit(title, relative, combinedScore));
+                var title = ExtractTitle(entry.Text);
+                var relativePath = entry.PageNumber is int pageNumber && pageMap.TryGetValue(pageNumber, out var pagePath)
+                    ? pagePath
+                    : relativeIndex;
+                var combinedScore = score + Score(relativePath, tokens);
+                hits.Add(new ManualHit(title, relativePath, combinedScore));
             }
         }
 
@@ -214,7 +225,7 @@ public sealed class FileManualStore : IManualStore
     private static List<string> SplitTokens(string query)
     {
         return Regex.Matches(query ?? string.Empty, @"[\p{L}\p{N}\-_\.]+")
-            .Select(m => m.Value.ToLowerInvariant())
+            .Select(m => NormalizeForSearch(m.Value))
             .Where(s => s.Length > 1)
             .Distinct()
             .ToList();
@@ -228,15 +239,42 @@ public sealed class FileManualStore : IManualStore
     /// <returns>スコア</returns>
     private static double Score(string text, IReadOnlyCollection<string> tokens)
     {
-        var lowered = text.ToLowerInvariant();
-        var score = 0.0;
+        if (tokens.Count == 0)
+        {
+            return 0;
+        }
+
+        var normalized = NormalizeForSearch(text);
+        var entryTokens = SplitTokens(normalized);
+        double score = 0;
         foreach (var token in tokens)
         {
-            if (lowered.Contains(token, StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrEmpty(token))
+            {
+                continue;
+            }
+
+            if (normalized.Contains(token, StringComparison.Ordinal))
             {
                 score += 1;
+                continue;
+            }
+
+            var bestFuzzy = entryTokens
+                .Select(entryToken => GetFuzzyScore(entryToken, token))
+                .DefaultIfEmpty(0.0)
+                .Max();
+
+            if (bestFuzzy >= 0.7)
+            {
+                score += 0.6;
+            }
+            else if (bestFuzzy > 0)
+            {
+                score += bestFuzzy * 0.5;
             }
         }
+
         return score;
     }
 
@@ -247,8 +285,163 @@ public sealed class FileManualStore : IManualStore
     /// <returns>抽出タイトル</returns>
     private static string ExtractTitle(string line)
     {
-        var trimmed = line.TrimStart('-', ' ');
+        var trimmed = line.Trim();
+        while (trimmed.StartsWith("#", StringComparison.Ordinal))
+        {
+            trimmed = trimmed[1..].TrimStart();
+        }
+
+        trimmed = trimmed.TrimStart('-', ' ');
         var colon = trimmed.IndexOf(':');
-        return colon > 0 ? trimmed[..colon].Trim() : trimmed;
+        trimmed = colon > 0 ? trimmed[..colon].Trim() : trimmed;
+
+        var pageMatch = _pageNumberRegex.Match(trimmed);
+        if (pageMatch.Success)
+        {
+            trimmed = trimmed[..pageMatch.Index].TrimEnd(' ', '(', ')', ':', '-');
+        }
+
+        return string.IsNullOrEmpty(trimmed) ? line.Trim() : trimmed;
     }
+
+    /// <summary>
+    /// 検索用に文字列を正規化
+    /// </summary>
+    /// <param name="text">対象テキスト</param>
+    /// <returns>正規化済み文字列</returns>
+    private static string NormalizeForSearch(string text)
+    {
+        if (string.IsNullOrEmpty(text))
+        {
+            return string.Empty;
+        }
+
+        return text
+            .Normalize(NormalizationForm.FormKC)
+            .ToLowerInvariant();
+    }
+
+    private static IndexEntry? ParseIndexEntry(string line)
+    {
+        var trimmed = line.Trim();
+        if (string.IsNullOrEmpty(trimmed))
+        {
+            return null;
+        }
+
+        var match = _bulletLineRegex.Match(trimmed);
+        if (!match.Success)
+        {
+            return null;
+        }
+
+        var text = match.Groups[1].Value.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            return null;
+        }
+
+        var pageNumber = TryExtractPageNumber(text, out var page) ? page : (int?)null;
+        return new IndexEntry(text, pageNumber);
+    }
+
+    private static Dictionary<int, string> BuildPageMap(string root, string indexDirectory)
+    {
+        var map = new Dictionary<int, string>();
+        foreach (var file in Directory.EnumerateFiles(indexDirectory, "*page*.txt", SearchOption.AllDirectories))
+        {
+            if (!TryExtractPageNumber(Path.GetFileName(file), out var pageNumber))
+            {
+                continue;
+            }
+
+            if (map.ContainsKey(pageNumber))
+            {
+                continue;
+            }
+
+            var relative = Path.GetRelativePath(root, file);
+            map[pageNumber] = relative;
+        }
+
+        return map;
+    }
+
+    private static bool TryExtractPageNumber(string text, out int page)
+    {
+        var match = _pageNumberRegex.Match(text);
+        if (!match.Success)
+        {
+            page = 0;
+            return false;
+        }
+
+        return int.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out page);
+    }
+
+    private static double GetFuzzyScore(string source, string target)
+    {
+        if (string.Equals(source, target, StringComparison.Ordinal))
+        {
+            return 1;
+        }
+
+        if (source.Length == 0 || target.Length == 0)
+        {
+            return 0;
+        }
+
+        var max = Math.Max(source.Length, target.Length);
+        if (max == 0)
+        {
+            return 0;
+        }
+
+        var distance = ComputeLevenshteinDistance(source, target);
+        var similarity = 1.0 - (double)distance / max;
+        return similarity > 0 ? similarity : 0;
+    }
+
+    private static int ComputeLevenshteinDistance(string source, string target)
+    {
+        var sourceLength = source.Length;
+        var targetLength = target.Length;
+
+        if (sourceLength == 0)
+        {
+            return targetLength;
+        }
+
+        if (targetLength == 0)
+        {
+            return sourceLength;
+        }
+
+        var previous = new int[targetLength + 1];
+        for (var j = 0; j <= targetLength; j++)
+        {
+            previous[j] = j;
+        }
+
+        for (var i = 1; i <= sourceLength; i++)
+        {
+            var current = new int[targetLength + 1];
+            current[0] = i;
+            var sourceChar = source[i - 1];
+            for (var j = 1; j <= targetLength; j++)
+            {
+                var cost = sourceChar == target[j - 1] ? 0 : 1;
+                var insertion = current[j - 1] + 1;
+                var deletion = previous[j] + 1;
+                var substitution = previous[j - 1] + cost;
+                current[j] = Math.Min(Math.Min(insertion, deletion), substitution);
+            }
+
+            previous = current;
+        }
+
+        return previous[targetLength];
+    }
+
+    private sealed record IndexEntry(string Text, int? PageNumber);
 }

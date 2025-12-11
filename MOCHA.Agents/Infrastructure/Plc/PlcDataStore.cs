@@ -16,12 +16,24 @@ namespace MOCHA.Agents.Infrastructure.Plc;
 /// </summary>
 public sealed class PlcDataStore : IPlcDataStore
 {
+    private readonly ITabularProgramParser _programParser;
     private readonly ConcurrentDictionary<string, string> _comments = new();
-    private readonly ConcurrentDictionary<string, IReadOnlyList<string>> _programs = new();
+    private readonly ConcurrentDictionary<string, IReadOnlyList<ProgramLine>> _programs = new();
     private readonly ConcurrentDictionary<string, FunctionBlockData> _functionBlocks = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>
+    /// パーサ注入による初期化
+    /// </summary>
+    /// <param name="programParser">プログラム行パーサ</param>
+    public PlcDataStore(ITabularProgramParser programParser)
+    {
+        _programParser = programParser ?? throw new ArgumentNullException(nameof(programParser));
+    }
+
     /// <inheritdoc />
-    public IReadOnlyDictionary<string, IReadOnlyList<string>> Programs => _programs;
+    public IReadOnlyDictionary<string, IReadOnlyList<ProgramLine>> Programs => _programs;
+    /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> Comments => _comments;
     /// <inheritdoc />
     public IReadOnlyCollection<FunctionBlockData> FunctionBlocks => _functionBlocks.Values.ToList();
 
@@ -60,7 +72,13 @@ public sealed class PlcDataStore : IPlcDataStore
                 continue;
             }
 
-            _programs[program.Name] = program.Lines.ToList();
+            var parsedLines = new List<ProgramLine>();
+            foreach (var line in program.Lines ?? Array.Empty<string>())
+            {
+                parsedLines.Add(_programParser.Parse(line));
+            }
+
+            _programs[program.Name] = parsedLines;
         }
     }
 

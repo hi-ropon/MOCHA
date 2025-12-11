@@ -9,15 +9,15 @@ namespace MOCHA.Services.Auth;
 /// </summary>
 internal sealed class DbUserRoleProvider : IUserRoleProvider
 {
-    private readonly ChatDbContext _db;
+    private readonly IDbContextFactory<ChatDbContext> _dbFactory;
 
     /// <summary>
-    /// DbContext を受け取りプロバイダーを初期化する
+    /// DbContext ファクトリを受け取って初期化する
     /// </summary>
-    /// <param name="db">チャット用 DbContext</param>
-    public DbUserRoleProvider(ChatDbContext db)
+    /// <param name="dbFactory">チャット用 DbContext ファクトリ</param>
+    public DbUserRoleProvider(IDbContextFactory<ChatDbContext> dbFactory)
     {
-        _db = db;
+        _dbFactory = dbFactory;
     }
 
     /// <summary>
@@ -28,7 +28,8 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
     /// <returns>ロール一覧</returns>
     public async Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default)
     {
-        var roles = await _db.UserRoles
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var roles = await db.UserRoles
             .Where(r => r.UserId == userId)
             .Select(r => r.Role)
             .ToListAsync(cancellationToken);
@@ -45,7 +46,8 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
     public async Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
     {
         var normalized = role.Value;
-        var exists = await _db.UserRoles.AnyAsync(
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var exists = await db.UserRoles.AnyAsync(
             r => r.UserId == userId && r.Role == normalized,
             cancellationToken);
 
@@ -54,14 +56,14 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
             return;
         }
 
-        _db.UserRoles.Add(new UserRoleEntity
+        db.UserRoles.Add(new UserRoleEntity
         {
             UserId = userId,
             Role = normalized,
             CreatedAt = DateTimeOffset.UtcNow
         });
 
-        await _db.SaveChangesAsync(cancellationToken);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -73,7 +75,8 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
     public async Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
     {
         var normalized = role.Value;
-        var entities = await _db.UserRoles
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        var entities = await db.UserRoles
             .Where(r => r.UserId == userId && r.Role == normalized)
             .ToListAsync(cancellationToken);
 
@@ -82,8 +85,8 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
             return;
         }
 
-        _db.UserRoles.RemoveRange(entities);
-        await _db.SaveChangesAsync(cancellationToken);
+        db.UserRoles.RemoveRange(entities);
+        await db.SaveChangesAsync(cancellationToken);
     }
 
     /// <summary>
@@ -96,7 +99,8 @@ internal sealed class DbUserRoleProvider : IUserRoleProvider
     public async Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
     {
         var normalized = UserRoleId.From(role).Value;
-        return await _db.UserRoles.AnyAsync(
+        await using var db = await _dbFactory.CreateDbContextAsync(cancellationToken);
+        return await db.UserRoles.AnyAsync(
             r => r.UserId == userId && r.Role == normalized,
             cancellationToken);
     }

@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -13,6 +15,7 @@ using Microsoft.Extensions.Logging;
 using MOCHA.Agents.Domain;
 using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Plc;
+using MOCHA.Agents.Application;
 
 namespace MOCHA.Agents.Infrastructure.Tools;
 
@@ -24,7 +27,9 @@ public sealed class PlcToolset
     private readonly IPlcDataStore _store;
     private readonly IPlcGatewayClient _gateway;
     private readonly PlcProgramAnalyzer _programAnalyzer;
+    private readonly PlcCommentSearchService _commentSearch;
     private readonly PlcReasoner _reasoner;
+    private readonly PlcFaultTracer _faultTracer;
     private readonly PlcManualService _manuals;
     private readonly ILogger<PlcToolset> _logger;
     private IReadOnlyList<AITool>? _toolsWithoutGatewayReads;
@@ -67,20 +72,25 @@ public sealed class PlcToolset
     /// <param name="gateway">PLCゲートウェイクライアント</param>
     /// <param name="programAnalyzer">プログラム解析器</param>
     /// <param name="reasoner">デバイス推論器</param>
+    /// <param name="faultTracer">異常コイルトレーサー</param>
     /// <param name="manuals">PLCマニュアルサービス</param>
     /// <param name="logger">ロガー</param>
     public PlcToolset(
         IPlcDataStore store,
         IPlcGatewayClient gateway,
         PlcProgramAnalyzer programAnalyzer,
+        PlcCommentSearchService commentSearch,
         PlcReasoner reasoner,
+        PlcFaultTracer faultTracer,
         PlcManualService manuals,
         ILogger<PlcToolset> logger)
     {
         _store = store;
         _gateway = gateway;
         _programAnalyzer = programAnalyzer;
+        _commentSearch = commentSearch;
         _reasoner = reasoner;
+        _faultTracer = faultTracer;
         _manuals = manuals;
         _logger = logger;
 
@@ -97,6 +107,10 @@ public sealed class PlcToolset
             AIFunctionFactory.Create(new Func<string, int, CancellationToken, Task<string>>(GetCommentAsync),
                 name: "get_comment",
                 description: "デバイスコメントを取得します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchCommentsAsync),
+                name: "search_comment_devices",
+                description: "質問文をコメントに対して全文検索し関連デバイス候補を返します。"),
 
             AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(InferDeviceAsync),
                 name: "reasoning_device",
@@ -136,7 +150,11 @@ public sealed class PlcToolset
 
             AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchFunctionBlocksAsync),
                 name: "search_function_blocks",
-                description: "キーワードでファンクションブロックを検索します。")
+                description: "キーワードでファンクションブロックを検索します。"),
+
+            AIFunctionFactory.Create(new Func<CancellationToken, Task<string>>(TraceErrorCoilsAsync),
+                name: "trace_error_coil",
+                description: "コメントに異常/ERRを含むLコイルをOUT命令から追跡し関連接点を返します。")
         };
     }
 
@@ -150,19 +168,43 @@ public sealed class PlcToolset
     /// <param name="note">補足情報</param>
     /// <param name="plcOnline">実機読み取り可否</param>
     /// <returns>ヒント文字列</returns>
-    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note, bool plcOnline)
+    public string BuildContextHint(string? gatewayOptionsJson, string? plcUnitId, string? plcUnitName, bool enableFunctionBlocks, string? note, bool plcOnline, PlcAgentContext? connectionContext)
     {
         var sb = new StringBuilder();
         sb.AppendLine("登録済みPLCデータ概要");
-        sb.AppendLine($"- プログラムファイル: {_store.Programs.Count}");
-        sb.AppendLine($"- ファンクションブロック: {_store.FunctionBlocks.Count} ({(enableFunctionBlocks ? "enabled" : "disabled")})");
-        sb.AppendLine($"- 実機接続: {(plcOnline ? "オンライン" : "オフライン（read_plc_values/read_multiple_plc_values は無効）")}");
-
-        if (_store.FunctionBlocks.Count > 0)
+        sb.AppendLine("- プログラムファイル:");
+        var programNames = _store.Programs.Keys
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (programNames.Count > 0)
         {
-            var names = string.Join(", ", _store.FunctionBlocks.Take(5).Select(f => f.Name));
-            sb.AppendLine($"  例: {names}");
+            foreach (var programName in programNames)
+            {
+                sb.AppendLine($"  - {programName}");
+            }
         }
+        else
+        {
+            sb.AppendLine("  - なし");
+        }
+
+        sb.AppendLine($"- ファンクションブロック: {(enableFunctionBlocks ? "enabled" : "disabled")}");
+        var functionBlockNames = _store.FunctionBlocks
+            .Select(block => block.Name)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (functionBlockNames.Count > 0)
+        {
+            foreach (var blockName in functionBlockNames)
+            {
+                sb.AppendLine($"  - {blockName}");
+            }
+        }
+        else
+        {
+            sb.AppendLine("  - なし");
+        }
+        sb.AppendLine($"- 実機接続: {(plcOnline ? "オンライン" : "オフライン（read_plc_values/read_multiple_plc_values は無効）")}");
 
         if (!string.IsNullOrWhiteSpace(plcUnitId) || !string.IsNullOrWhiteSpace(plcUnitName))
         {
@@ -174,12 +216,41 @@ public sealed class PlcToolset
             sb.AppendLine($"ゲートウェイオプション: {gatewayOptionsJson}");
         }
 
+        if (connectionContext is not null && !connectionContext.IsEmpty)
+        {
+            sb.AppendLine("[接続設定]");
+            var gatewayPort = connectionContext.GatewayPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
+            if (!string.IsNullOrWhiteSpace(connectionContext.GatewayHost))
+            {
+                sb.AppendLine($"- デフォルトゲートウェイ: {connectionContext.GatewayHost}:{gatewayPort}");
+            }
+
+            foreach (var unit in connectionContext.Units)
+            {
+                var ip = string.IsNullOrWhiteSpace(unit.IpAddress) ? "-" : unit.IpAddress;
+                var port = unit.Port?.ToString(CultureInfo.InvariantCulture) ?? "-";
+                var gw = FormatGateway(unit.GatewayHost, unit.GatewayPort);
+                sb.AppendLine($"- ユニット: {unit.Name} ip={ip} port={port}{gw}");
+            }
+        }
+
         if (!string.IsNullOrWhiteSpace(note))
         {
             sb.AppendLine($"補足: {note}");
         }
 
         return sb.ToString().Trim();
+    }
+
+    private static string FormatGateway(string? host, int? port)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return string.Empty;
+        }
+
+        var text = port is not null ? $"{host}:{port.Value.ToString(CultureInfo.InvariantCulture)}" : host;
+        return $" gw={text}";
     }
 
     /// <summary>
@@ -270,6 +341,42 @@ public sealed class PlcToolset
         catch (Exception ex)
         {
             _logger.LogError(ex, "get_comment 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// コメント横断検索
+    /// </summary>
+    private Task<string> SearchCommentsAsync(string question, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("search_comment_devices", JsonSerializer.Serialize(new { question }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            var results = _commentSearch.Search(question, 10);
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                question,
+                matchCount = results.Count,
+                results = results.Select(r => new
+                {
+                    device = r.Device,
+                    comment = r.Comment,
+                    score = Math.Round(r.Score, 2, MidpointRounding.AwayFromZero),
+                    matchedTerms = r.MatchedTerms
+                })
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "search_comment_devices 実行に失敗しました。");
             EmitCompleted(call, ex.Message, false, ex.Message);
             return Task.FromResult(ex.Message);
         }
@@ -389,6 +496,28 @@ public sealed class PlcToolset
         }
     }
 
+    /// <summary>
+    /// エラーコメント付きLコイルをトレース
+    /// </summary>
+    private Task<string> TraceErrorCoilsAsync(CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("trace_error_coil", "{}");
+        EmitRequested(call);
+
+        try
+        {
+            var result = _faultTracer.TraceErrorCoils();
+            EmitCompleted(call, result, true);
+            return Task.FromResult(result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "trace_error_coil 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
     private static IReadOnlyCollection<Dictionary<string, string>> ParseLabels(string content)
     {
         var rows = ParseCsv(content);
@@ -501,7 +630,8 @@ public sealed class PlcToolset
     {
         var call = new ToolCall("reasoning_multiple_devices", JsonSerializer.Serialize(new { query }, _serializerOptions));
         EmitRequested(call);
-        var result = _reasoner.InferMultiple(query);
+        var programContexts = BuildProgramContexts(query);
+        var result = _reasoner.InferMultiple(query, programContexts);
         EmitCompleted(call, result, true);
         return Task.FromResult(result);
     }
@@ -518,14 +648,16 @@ public sealed class PlcToolset
     /// <returns>読み取り結果</returns>
     private async Task<string> ReadValuesAsync(string spec, string ip, int port, int timeoutSeconds, string? baseUrl, CancellationToken cancellationToken)
     {
-        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
+        var address = NormalizeAddress(DeviceAddress.Parse(spec));
+        var normalizedSpec = address.ToSpec();
+        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec = normalizedSpec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
         EmitRequested(call);
 
         try
         {
             var result = await _gateway.ReadAsync(
                 new DeviceReadRequest(
-                    spec,
+                    normalizedSpec,
                     string.IsNullOrWhiteSpace(ip) ? null : ip,
                     port <= 0 ? null : port,
                     PlcHost: null,
@@ -554,13 +686,14 @@ public sealed class PlcToolset
     /// <returns>読み取り結果</returns>
     private async Task<string> ReadMultipleValuesAsync(IEnumerable<string> specs, string? baseUrl, CancellationToken cancellationToken)
     {
-        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs, baseUrl }, _serializerOptions));
+        var normalizedSpecs = specs.Select(s => NormalizeAddress(DeviceAddress.Parse(s)).ToSpec()).ToList();
+        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs = normalizedSpecs, baseUrl }, _serializerOptions));
         EmitRequested(call);
 
         try
         {
             var result = await _gateway.ReadBatchAsync(
-                new BatchReadRequest(specs.ToList(), BaseUrl: baseUrl),
+                new BatchReadRequest(normalizedSpecs, BaseUrl: baseUrl),
                 cancellationToken);
             var payload = JsonSerializer.Serialize(result, _serializerOptions);
             EmitCompleted(call, payload, string.IsNullOrEmpty(result.Error));
@@ -646,6 +779,40 @@ public sealed class PlcToolset
     }
 
     /// <summary>
+    /// 読み取り用にデバイス指定を正規化
+    /// </summary>
+    /// <param name="address">読み取り対象デバイス</param>
+    /// <returns>長さ推論済みデバイス</returns>
+    private DeviceAddress NormalizeAddress(DeviceAddress address)
+    {
+        if (address.Length > 1)
+        {
+            return address;
+        }
+
+        if (!IsWordDevice(address.Device) || !int.TryParse(address.Address, out var parsedAddress))
+        {
+            return address;
+        }
+
+        var dataType = _programAnalyzer.InferDeviceDataType(address.Device, parsedAddress);
+        var inferredLength = dataType switch
+        {
+            DeviceDataType.DoubleWord => 2,
+            DeviceDataType.Float => 2,
+            _ => address.Length
+        };
+
+        return inferredLength != address.Length ? address.WithLength(inferredLength) : address;
+    }
+
+    private static bool IsWordDevice(string device)
+    {
+        return string.Equals(device, "D", StringComparison.OrdinalIgnoreCase) ||
+               string.Equals(device, "W", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
     /// ツール開始イベント送出
     /// </summary>
     /// <param name="call">ツール呼び出し</param>
@@ -687,5 +854,36 @@ public sealed class PlcToolset
         {
             _owner._context.Value = null;
         }
+    }
+
+    private IReadOnlyList<ProgramContext> BuildProgramContexts(string query)
+    {
+        var contexts = new List<ProgramContext>();
+        if (string.IsNullOrWhiteSpace(query) || _store.Programs.Count == 0)
+        {
+            return contexts;
+        }
+
+        foreach (var program in _store.Programs)
+        {
+            var name = program.Key;
+            var baseName = Path.GetFileNameWithoutExtension(name) ?? string.Empty;
+            if (ContainsIgnoreCase(query, name) || (!string.IsNullOrWhiteSpace(baseName) && ContainsIgnoreCase(query, baseName)))
+            {
+                contexts.Add(new ProgramContext(name, program.Value));
+            }
+        }
+
+        return contexts;
+    }
+
+    private static bool ContainsIgnoreCase(string source, string value)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return source.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

@@ -885,6 +885,32 @@
     min-height: 80px;
 }
 
+.scrollable-description {
+    min-height: 160px;
+    max-height: 260px;
+    overflow-y: auto;
+    resize: vertical;
+    scrollbar-color: var(--border-color) var(--panel-bg);
+    scrollbar-width: thin;
+}
+
+.scrollable-description::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable-description::-webkit-scrollbar-track {
+    background: var(--panel-bg);
+}
+
+.scrollable-description::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+}
+
+.scrollable-description::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.65);
+}
+
 .field.double {
     display: grid;
     gap: 10px;
@@ -1299,7 +1325,7 @@ input[type="file"].plc-file-input {
     display: inline-flex;
     align-items: center;
     width: 56px;
-    height: 30px;
+    height: 22px
 }
 
 .plc-switch input {
@@ -1311,18 +1337,18 @@ input[type="file"].plc-file-input {
 .plc-switch-track {
     position: absolute;
     inset: 0;
-    background: var(--panel-soft);
+    background: var(--plc-status-off);
     border-radius: 999px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--plc-status-off-border);
     transition: all 0.2s ease;
 }
 
 .plc-switch-thumb {
     position: absolute;
-    height: 22px;
-    width: 22px;
-    left: 5px;
-    bottom: 4px;
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 3px;
     background: var(--bubble-bg);
     border-radius: 50%;
     box-shadow: var(--soft-shadow);
@@ -1330,13 +1356,13 @@ input[type="file"].plc-file-input {
 }
 
 .plc-switch input:checked + .plc-switch-track {
-    background: linear-gradient(135deg, var(--cta-start), var(--cta-end));
-    border-color: var(--cta-border);
-    box-shadow: 0 6px 16px rgba(23, 154, 214, 0.25);
+    background: linear-gradient(135deg, var(--plc-status-on-start), var(--plc-status-on-end));
+    border-color: var(--plc-status-on-border);
+    box-shadow: 0 6px 16px rgba(16, 185, 129, 0.35);
 }
 
 .plc-switch input:checked + .plc-switch-track + .plc-switch-thumb {
-    transform: translateX(22px);
+    transform: translateX(32px);
     background: var(--glass-bg);
 }
 

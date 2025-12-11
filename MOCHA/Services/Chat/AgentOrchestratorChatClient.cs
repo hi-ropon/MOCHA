@@ -1,10 +1,13 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
+using MOCHA.Agents.Infrastructure.Orchestration;
 using MOCHA.Models.Chat;
+using MOCHA.Models.Auth;
 
 using DomainChatTurn = MOCHA.Agents.Domain.ChatTurn;
 using DomainAuthorRole = MOCHA.Agents.Domain.AuthorRole;
@@ -19,14 +22,17 @@ namespace MOCHA.Services.Chat;
 public sealed class AgentOrchestratorChatClient : IAgentChatClient
 {
     private readonly IAgentOrchestrator _orchestrator;
+    private readonly IUserRoleProvider _roleProvider;
 
     /// <summary>
     /// オーケストレーター注入による初期化
     /// </summary>
     /// <param name="orchestrator">エージェントオーケストレーター</param>
-    public AgentOrchestratorChatClient(IAgentOrchestrator orchestrator)
+    /// <param name="roleProvider">ロールプロバイダー</param>
+    public AgentOrchestratorChatClient(IAgentOrchestrator orchestrator, IUserRoleProvider roleProvider)
     {
-        this._orchestrator = orchestrator;
+        _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
+        _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
     }
 
     /// <summary>
@@ -69,12 +75,15 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
             .Select(MapToDomainTurn)
             .ToList();
 
+        var (roleValues, instructionTemplate) = await ResolveRoleContextAsync(turn.UserId, cancellationToken);
         var userTurn = history.LastOrDefault() ?? DomainChatTurn.User(string.Empty);
         var context = new ChatContext(conversationId, history)
         {
             AgentNumber = turn.AgentNumber,
             UserId = turn.UserId,
-            PlcOnline = turn.PlcOnline
+            PlcOnline = turn.PlcOnline,
+            UserRoles = roleValues,
+            InstructionTemplate = instructionTemplate
         };
 
         var events = await _orchestrator.ReplyAsync(userTurn, context, cancellationToken);
@@ -115,6 +124,19 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
                     break;
             }
         }
+    }
+
+    private async Task<(IReadOnlyCollection<string> Roles, string InstructionTemplate)> ResolveRoleContextAsync(
+        string? userId,
+        CancellationToken cancellationToken)
+    {
+        var roles = string.IsNullOrWhiteSpace(userId)
+            ? Array.Empty<UserRoleId>()
+            : await _roleProvider.GetRolesAsync(userId, cancellationToken) ?? Array.Empty<UserRoleId>();
+
+        var normalized = roles.Select(r => r.Value).ToArray();
+        var template = RoleInstructionComposer.Compose(OrganizerInstructions.Base, normalized);
+        return (normalized, template);
     }
 
     private static DomainChatTurn MapToDomainTurn(ChatMessage message)

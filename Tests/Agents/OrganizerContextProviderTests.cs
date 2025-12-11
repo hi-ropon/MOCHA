@@ -53,6 +53,51 @@ public class OrganizerContextProviderTests
     }
 
     /// <summary>
+    /// 接続情報は含めない
+    /// </summary>
+    [TestMethod]
+    public async Task BuildAsync_IPポートは含めない()
+    {
+        var pcRepo = new InMemoryPcSettingRepository();
+        var plcRepo = new InMemoryPlcUnitRepository();
+        var gatewayRepo = new InMemoryGatewaySettingRepository();
+        var unitConfigRepo = new InMemoryUnitConfigurationRepository();
+        var drawingCatalog = new DrawingCatalog(new FakeDrawingRepository(), Options.Create(new DrawingStorageOptions()));
+        var provider = new OrganizerContextProvider(pcRepo, plcRepo, gatewayRepo, unitConfigRepo, drawingCatalog, NullLogger<OrganizerContextProvider>.Instance);
+
+        var gateway = GatewaySetting.Create("user-1", "A-01", new GatewaySettingDraft { Host = "10.0.0.1", Port = 8500 }, DateTimeOffset.UtcNow);
+        await gatewayRepo.UpsertAsync(gateway);
+
+        var unit = PlcUnit.Restore(
+            Guid.NewGuid(),
+            "user-1",
+            "A-01",
+            "Unit-A",
+            "Mitsubishi",
+            "R04",
+            "main",
+            "192.168.0.10",
+            5000,
+            null,
+            null,
+            null,
+            Array.Empty<PlcFileUpload>(),
+            "メインシーケンス",
+            Array.Empty<PlcUnitModule>(),
+            Array.Empty<FunctionBlock>(),
+            DateTimeOffset.UtcNow,
+            DateTimeOffset.UtcNow);
+
+        await plcRepo.AddAsync(unit);
+
+        var context = await provider.BuildAsync("user-1", "A-01", CancellationToken.None);
+
+        Assert.IsFalse(context.Architecture.Contains("ゲートウェイ"));
+        Assert.IsFalse(context.Architecture.Contains("ip=", StringComparison.OrdinalIgnoreCase));
+        Assert.IsFalse(context.Architecture.Contains("port=", StringComparison.OrdinalIgnoreCase));
+    }
+
+    /// <summary>
     /// 装置ユニットがある場合に全件の構成機器を含める
     /// </summary>
     [TestMethod]

@@ -182,6 +182,13 @@
         },
         resize: function (element, maxLines) {
             applyAutoResize(element, maxLines);
+        },
+        scrollToBottom: function (element) {
+            if (!element) {
+                return;
+            }
+
+            element.scrollTop = element.scrollHeight;
         }
     };
 })();

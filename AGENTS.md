@@ -1,43 +1,52 @@
 # Repository Guidelines
 
 ## ルール
-- 日本語でやりとりすること
-- 勝手にgitでコミットしないこと。コミットするときは毎回私の許可を確認すること。コミットメッセージは日本語にすること
-- DDDを採用すること
-- TDDを採用すること
-- XMLコメントは体言止めにして。あと文章終わりの句読点「。」は不要
+- 日本語で会話すること
+- 勝手に `git commit` しないこと。コミットする際は都度許可を取り、コミットメッセージは日本語の現在形で記述する
+- DDD（ドメイン駆動設計）と TDD（テスト駆動開発）を採用する
+- XMLコメントは体言止めとし、文章末の句読点「。」は付けない
 
 ## プロジェクト構成
-- `BlazorApp1/`: Blazor Server (.NET 8) 本体。コンポーネント、サービス、スタイルを格納。
-- `BlazorApp1/Components/`: Razor UI（ページ、レイアウト、ルート）。
-- `BlazorApp1/Services/`: チャットオーケストレーション、Copilot/PLC インターフェース、履歴ステート。
-- `BlazorApp1/Models/`: チャットドメインモデルとストリーミングイベント。
-- `BlazorApp1/wwwroot/`: 静的アセットと CSS (`app.css`, `bg.png`)。
-- `Tests/`: xUnit テストプロジェクト。
-- `docs/`: 仕様と設計メモ（`spec.md`）。
+- `MOCHA/`: Blazor Server (.NET 8) 本体。`Program.cs` で DI を構成し、DDD のドメイン・アプリケーション・インフラを各ディレクトリで分離
+- `MOCHA/Components`・`MOCHA/Pages`: Razor UI コンポーネントとページ
+- `MOCHA/Services`: チャットオーケストレーション、Agent/Copilot/PLC 統合、Drawing/Manual/Feedback などサービス群
+- `MOCHA/Models`: ドメインモデルやストレージオプション
+- `MOCHA/Data`: `ChatDbContext`/マイグレーション・インフラ
+- `MOCHA.Agents/`: Agent Framework のドメイン・インフラ・ツールセット
+- `Tests/`: MSTest のテストプロジェクト（`Tests/MOCHA.Tests.csproj`）。名前空間は本体と一致させている
+- `docs/`: 設計メモ（`spec.md`）、図面エージェント、ロール、DB スキーマなど
+- `sample/`: プロンプト例・ゲートウェイ応答・図面素材のスタブ
+- `wwwroot/`: グローバル CSS/画像
 
-## ビルド・テスト・開発コマンド
-- `dotnet restore`：NuGet パッケージ復元。
-- `dotnet build`：ソリューションをビルド。
-- `dotnet run --project BlazorApp1/BlazorApp1.csproj`：ローカル起動（既定 https://localhost:7240 / http://localhost:5240）。
-- `dotnet test`：`Tests` 配下の xUnit テストを実行。
+## アーキテクチャ
+- `Program.cs` は認証（`DevAuth`/`AzureAd`）、`ChatDbContext`、サービス、`AddMochaAgents` の登録を行い、`IDatabaseInitializer` と `RoleBootstrapper` で起動時の DB 初期化とロール付与を実行
+- チャット一連の処理は `IChatOrchestrator`/`IAgentChatClient` を中心に、`ChatStreamEvent` を用いたストリーミングと `ConversationHistoryState` による履歴管理を継続的に行う
+- Agent は `MOCHA.Agents` の Organizer → Drawing/PLC/Manual ツールセットで委譲され、`AgentDelegationPolicy` で深さ・許可エッジを制御
+- 図面管理は `DrawingRepository`/`DrawingCatalog`/`DrawingContentReader` のトリオで行い、`UserDrawingManualStore` 経由で `ManualToolset`・`ManualAgentTool` に接続
+- 設定は `appsettings*.json` で `ConnectionStrings:ChatDb`、`AzureAd`、`DevAuth`、`DrawingStorage`、`PlcStorage`、`Llm`、`AgentDelegation`、`RoleBootstrap` などを保持
 
-## コーディング規約・命名
-- C#: インデント4スペース。クラス/メソッドは PascalCase、ローカル/フィールドは camelCase、定数は ALL_CAPS。
-- Razor: コンポーネントは薄く保ち、重いロジックはコードビハインド/partial を検討。
-- Services/DI: インターフェースは `I` プレフィックス（例 `IChatOrchestrator`）。テスト用フェイクを用意。
-- CSS: レイアウト単位はコンポーネントスコープ `.razor.css`、共通調整は `wwwroot/app.css`。
+## 開発・実行
+- 依存復元: `dotnet restore`
+- ビルド: `dotnet build`
+- 起動: `dotnet run --project MOCHA/MOCHA.csproj`（`DevAuth.Enabled=true` でローカル Cookie 認証、`AzureAd.Enabled=true` で Entra ID）
+- `dotnet ef database update --project MOCHA --startup-project MOCHA` で手動マイグレーション同期が可能だが、`IDatabaseInitializer` により起動時に自動適用されるので通常不要
+- ブラウザアクセス: `https://localhost:7240` / `http://localhost:5240` で `/signup`/`/login` してサイドバーから装置エージェントを選択しチャットを試す
+- UI で `ManualToolset` による `find_manuals`/`read_manual`、`invoke_drawing_agent` の流れを試験し、Stop/Cancel でキャンセルハンドリングを確認する
 
 ## テスト方針
-- フレームワーク: MSTest。対象コードと同じ名前空間構成で `Tests/` に追加。
-- 命名: `メソッド_状態_期待結果`。テストメソッド名は日本語にすること
-- カバレッジ: ユーザーメッセージフロー、Copilot ツール要求、キャンセル経路などチャットオーケストレーションの分岐を重点。
-- 依存: `IAgentChatClient` はフェイク/モックで決定論的に。PlcAgentTool はエージェント側でフェイク化する。
+- テストプロジェクトは MSTest (`Tests/MOCHA.Tests.csproj`)。テストメソッド名は `メソッド_状態_期待結果` 形式で日本語
+- テーマ: ユーザー発話 → `ChatOrchestrator` → Agent ツール/PLC/図面のフロー、`DeviceAgentState`/`DeviceAgentAccessService`、`RoleBootstrapper`、`UserPreferencesState`
+- `IAgentChatClient`/`IChatRepository` などはフェイク実装を用いて決定論的なストリーム・ツールレスポンスを検証。`PlcAgentTool` はエージェント側のフェイクを活用
+- 図面周りは `DrawingRepository`/`DrawingCatalog`/`DrawingContentReader`/`DrawingRegistrationService` を中心に `Tests/Drawings` で TDD している
 
-## コミット・PR ガイド
-- コミット: 簡潔な現在形（例 `Add sidebar collapse toggle`, `Refine chat composer UI`）。関連変更はまとめる。
-- PR: 目的、主要変更、テスト結果（`dotnet test`、手動UI確認）を明記。課題リンクを付与。UI変更はスクショ/GIF を推奨。
+## ドキュメント
+- `docs/spec.md`：Agent Orchestrator/BFFのシーケンス、UI 方針、認証、テスト戦略
+- `docs/drawing-agent.md`：図面エージェントの設計・検索/抽出フロー・テスト項目
+- `docs/database-schema.md`：現行 `ChatDbContext` のテーブル・制約・インデックス構成
+- `docs/roles.md`：ロールと装置エージェントの割当ポリシー
+- `MOCHA.Agents/Resources`：Agent 指示・ツールプロンプトのテンプレート
 
 ## セキュリティ・設定ヒント
-- 認証: MS アカウント認証前提。秘密情報はソースに置かない。ローカルは `appsettings.Development.json` を使用し、実 secrets はコミットしない。
-- 外部呼び出し: PLC ゲートウェイと Copilot SDK はインターフェース越し。ベース URL やトークンは設定で管理し、コード直書きしない。
+- 認証情報や API キーは `appsettings.Development.json` または環境変数に設定し、実シークレットをソース管理しないこと
+- `Llm` 設定は OpenAI/AzureOpenAI の `Provider`、`ApiKey`、`Endpoint`、`ModelOrDeployment` を指定。未設定時はフェイク Agent が利用できる
+- PLC/Gateway 設定は `GatewaySettingEntity`/`PlcUnitEntity` を通じて DB に保存。`FunctionBlockApiClient`/`FunctionBlockService` を介して外部 Gateway を呼び出し、`PlcStorage:RootPath` にファイルを保持

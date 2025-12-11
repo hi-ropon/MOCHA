@@ -39,7 +39,8 @@ public sealed class PlcUnitsController : ControllerBase
             return BadRequest("エージェント番号を指定してください");
         }
 
-        var list = await _repository.ListAsync(userId, agentNumber.Trim(), cancellationToken);
+        var normalizedAgent = agentNumber.Trim();
+        var list = await _repository.ListAsync(normalizedAgent, cancellationToken);
         var result = list.Select(u => new PlcUnitSummary
         {
             Id = u.Id,

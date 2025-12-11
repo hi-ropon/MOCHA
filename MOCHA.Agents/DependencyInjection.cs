@@ -37,9 +37,12 @@ public static class DependencyInjection
         services.AddScoped<ManualAgentTool>();
         services.AddScoped<PlcAgentTool>();
         services.AddScoped<IPlcDataLoader, NullPlcDataLoader>();
-        services.AddSingleton<IPlcDataStore, PlcDataStore>();
+        services.AddSingleton<ITabularProgramParser, TabularProgramParser>();
+        services.AddSingleton<IPlcDataStore>(sp => new PlcDataStore(sp.GetRequiredService<ITabularProgramParser>()));
         services.AddSingleton<PlcProgramAnalyzer>();
+        services.AddSingleton<PlcCommentSearchService>();
         services.AddSingleton<PlcReasoner>();
+        services.AddSingleton<PlcFaultTracer>();
         services.AddSingleton<PlcManualService>();
         services.AddHttpClient<IPlcGatewayClient, PlcGatewayClient>(client =>
         {
@@ -54,6 +57,7 @@ public static class DependencyInjection
         services.AddScoped<OrganizerToolset>();
         services.AddScoped<OrganizerInstructionBuilder>();
         services.AddScoped<IOrganizerContextProvider, NullOrganizerContextProvider>();
+        services.AddScoped<IPlcAgentContextProvider, NullPlcAgentContextProvider>();
         services.AddScoped<IAgentOrchestrator, AgentFrameworkOrchestrator>();
 
         services.AddSingleton<ITaskAgent, PlcTaskAgent>();

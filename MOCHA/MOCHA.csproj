@@ -12,7 +12,6 @@
     <PackageReference Include="Azure.Identity" Version="1.17.1" />
     <PackageReference Include="HtmlSanitizer" Version="9.0.889" />
     <PackageReference Include="Markdig" Version="0.44.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,6 +20,7 @@
     <PackageReference Include="Microsoft.Identity.Web.MicrosoftGraph" Version="4.1.0" />
     <PackageReference Include="Microsoft.Identity.Web.UI" Version="4.1.0" />
     <PackageReference Include="NLog" Version="6.0.6" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
     <PackageReference Include="PdfPig" Version="0.1.12" />
     <PackageReference Include="SimMetrics.Net" Version="1.0.5" />
   </ItemGroup>

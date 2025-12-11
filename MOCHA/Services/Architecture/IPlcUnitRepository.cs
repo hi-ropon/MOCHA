@@ -12,13 +12,12 @@ namespace MOCHA.Services.Architecture;
 public interface IPlcUnitRepository
 {
     /// <summary>
-    /// ユーザーとエージェントで絞り込んだユニット一覧取得
+    /// エージェント単位で絞り込んだユニット一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>ユニット一覧</returns>
-    Task<IReadOnlyList<PlcUnit>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PlcUnit>> ListAsync(string agentNumber, CancellationToken cancellationToken = default);
     /// <summary>
     /// ユニット取得
     /// </summary>

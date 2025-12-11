@@ -78,6 +78,11 @@ public sealed class ManualAgentTool
             var instructions = normalized.Equals("plcAgent", StringComparison.OrdinalIgnoreCase)
                 ? PlcAgentInstructions.For(normalized)
                 : ManualAgentInstructions.For(normalized);
+            if (normalized.Equals("plcAgent", StringComparison.OrdinalIgnoreCase))
+            {
+                var promptForLog = FormatPlcPrompt(instructions, contextHint);
+                _logger.LogDebug("PLCエージェントへのプロンプト: {Instructions}", promptForLog);
+            }
             var agent = new ChatClientAgent(
                 chatClient,
                 name: normalized,
@@ -141,7 +146,7 @@ public sealed class ManualAgentTool
     {
         if (string.IsNullOrWhiteSpace(agentName))
         {
-            return "iaiAgent";
+            return "plcAgent";
         }
 
         var trimmed = agentName.Trim();
@@ -158,5 +163,16 @@ public sealed class ManualAgentTool
             "plc" => "plcAgent",
             _ => trimmed
         };
+    }
+
+    private static string FormatPlcPrompt(string instructions, string? contextHint)
+    {
+        if (string.IsNullOrWhiteSpace(contextHint))
+        {
+            return instructions;
+        }
+
+        var trimmedContext = contextHint.Trim();
+        return $"{instructions}{Environment.NewLine}{Environment.NewLine}[Context]{Environment.NewLine}{trimmedContext}";
     }
 }

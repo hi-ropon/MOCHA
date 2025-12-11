@@ -1,98 +1,56 @@
 # MOCHA
 
-Blazor Server (.NET 8) で構築した Microsoft Agent Framework 連携チャット UI。装置エージェント経由で PLC 読み取りやマニュアル検索を行い、ローカルではフェイクエージェントで完結し、認証や外部接続を後から有効化できる。
+MOCHAはBlazor Server(.NET 8)上で動作する社内向けチャットBFFで、Microsoft Agent FrameworkとCopilot/PLCツールを仲介しながら会話ストリーム・ツール要求・履歴・認証を一貫管理します。DDDで分離されたドメイン、サービス、インフラが `MOCHA` プロジェクトと `MOCHA.Agents` ライブラリに分担され、TDDで検証しやすい構成を維持しています。
 
-## できること
-- エージェント連携チャット UI（ストリーム表示）。ツール要求を受け取り、装置エージェント経由で PLC 読み取りやマニュアル検索を実行。
-- 装置エージェント管理と紐づく履歴フィルタ。サイドバーからエージェントを登録/選択し、その番号ごとに会話を保存。
-- 会話履歴とメッセージを SQLite（`chat.db`）へ永続化。初回起動時にスキーマ自動生成。
-- ユーザーロール管理（DB 持ち）。`/settings/roles` で Admin が付与/削除、API も提供。
-- テーマ・ユーザー設定をブラウザに保存（ライト/ダーク）。
-- 認証は Entra ID（Azure AD）と開発用クッキー認証を切替可能。
+## 特徴
+- 複数エージェントを連携するオーケストレータ (`IAgentChatClient`/`IChatOrchestrator`) が Organizer → Drawing → PLC と順次ツールを叩き、ツールログやアクション結果を `ChatStreamEvent` と履歴に反映する。
+- 装置エージェント設定（番号・名称・PLC/マニュアル紐づけ）とその権限を `DeviceAgentState`・`DeviceAgentAccessService` で管理し、UI側のサイドバーから選択・履歴フィルタを提供。
+- 図面データは `DrawingRepository` ・`DrawingCatalog`・`DrawingContentReader` が `DrawingStorage:RootPath` にあるファイルを参照して `find_drawings`/`read_drawing` を提供する DrawingAgentToolset に引き渡し、OrganizerAgent から `invoke_drawing_agent` で呼び出す。
+- チャット履歴・メッセージ・アクション・ロール情報を `ChatDbContext`（PostgreSQL/任意の `ConnectionStrings:ChatDb`）で永続化し、`RoleBootstrapper` が初回起動時の管理者ロールを注入。
+- `MOCHA/Components`（ログイン/チャット/ロール画面）と `wwwroot/app.css` のデュオトーンUI＋インタラクティブRPCがストリーミング表示を担い、`UserPreferencesState`/`LocalStorageUserPreferencesStore` がテーマ・表示設定をブラウザに保存。
+- `Controllers` 経由でフィードバック・PLC構成・ロール・ユニット設定の REST API を公開し、`FunctionBlockService` が外部ゲートウェイからデバイス構成を取得。
+- 認証は `DevAuth` クッキー（デフォルト）と `AzureAd` OpenID Connect を切り替え可能で、いずれも `[Authorize]` を要求して会話にユーザーID/表示名を添付。
+
+## アーキテクチャ
+- `MOCHA/Services`: Chat Orchestrator・Agent/Copilot連携・Drawing/Manual/PLCサービス・フィードバック/マークダウンレンダラー・テーマ/ロール管理など、責務ごとにサービスに分離。
+- `MOCHA.Agents`: Agent Frameworkのドメイン・インフラ・Application層（Organizer/Drawing/PLCエージェントとツールセット）を定義し、`builder.Services.AddMochaAgents` で登録。
+- `MOCHA/Data`: `ChatDbContext`/マイグレーションと `IDatabaseInitializer`（Postgres初期化）により、エンティティとインデックスを保持。
+- `MOCHA/Components` + `Pages`: Blazorルート + Razorコンポーネントでログイン、チャット、ロール/設定、テーマ切替を提供。
+- `Tests`: MSTestベースで Fake エージェント・リポジトリ・サービスの振る舞いを `Chat`/`Agents`/`Drawings`/`Auth` 等の名前空間構成で網羅。
 
 ## セットアップ
-1. 前提: .NET 8 SDK。SQLite バイナリは不要（内蔵プロバイダー利用）。
-2. 依存復元: `dotnet restore`
-3. ローカル起動: `dotnet run --project MOCHA/MOCHA.csproj`  
-   - 既定では開発用クッキー認証が有効。`/signup` でメールアドレス+パスワードを登録し、そのままサインイン（既存アカウントは `/login`）。  
-   - 起動時に `chat.db` が同ディレクトリに作成される。
-4. テスト: `dotnet test`（MSTest ベース、フェイククライアントで外部依存なし）
+1. .NET 8 SDK をインストールし、PostgreSQL等の `ConnectionStrings:ChatDb` に接続可能なDBを用意する。
+2. 依存復元: `dotnet restore`（`MOCHA.slnx` がソリューション定義）。
+3. データベース: 初回起動時に `IDatabaseInitializer` と EF マイグレーションが自動適用される。必要なら `dotnet ef database update --project MOCHA --startup-project MOCHA` で手動同期。
 
-## 設定ポイント（`MOCHA/appsettings*.json`）
-- `ConnectionStrings:ChatDb`: SQLite の場所（既定 `Data Source=chat.db`）。削除すれば再生成。
-- `AzureAd`: 本番用 OIDC 認証。`Enabled=true` で有効化し、`TenantId`/`ClientId`/`Domain`/`CallbackPath` をテナント値に置換。
-- `Authentication`: 既定スキームの切替。開発時は `DevLogin`、本番は `OpenIdConnect` を設定。
-- `DevAuth`: ローカル用クッキー認証。`Enabled=true` なら `/login` でユーザーID/表示名を入力してサインイン。
-- `Llm`: Microsoft Agent Framework 用の LLM 設定（OpenAI/Azure OpenAI を切替）。未設定でもフェイクが動作。
-- `RoleBootstrap:AdminUserIds`: 起動時に Admin を付与するユーザーID 配列（付与後は空に戻す運用推奨）。
+## 実行
+1. 開発用クッキー認証（`DevAuth.Enabled=true`）で起動: `dotnet run --project MOCHA/MOCHA.csproj`
+2. `https://localhost:7240`/`http://localhost:5240` にアクセスし、`/signup`/`/login` でユーザーを作成。`/roles` などのUIも同じルートから利用。
+3. `AzureAd.Enabled=true` かつ必要なクライアントID等を設定すると Entra ID 認証と Cookie/令牌制御に移行する。`Authentication:DefaultScheme`/`DefaultChallengeScheme` を上書き可能。
+4. サイドバーで装置エージェントを選択し、会話入力（`Ctrl+Enter` 送信）→ツール要求→ツール結果/ストリーム応答を確認。Stopボタンでキャンセル。
 
-### AzureAd 設定例
-```json
-"AzureAd": {
-  "Enabled": false,
-  "Instance": "https://login.microsoftonline.com/",
-  "Domain": "your-domain.onmicrosoft.com",
-  "TenantId": "00000000-0000-0000-0000-000000000000",
-  "ClientId": "00000000-0000-0000-0000-000000000000",
-  "CallbackPath": "/signin-oidc"
-}
-```
+## 構成設定
+- `ConnectionStrings:ChatDb`: PostgreSQL（または任意の `DbContext` 対応）が対象。`Trust Server Certificate` を簡易化用に含めるが、実運用では TLS 証明書を管理。
+- `AzureAd`: Entra ID 認証を有効化する場合、`TenantId`/`ClientId`/`Domain`/`CallbackPath` をセット。
+- `DevAuth`: ローカル用クッキー認証のパス・Cookie名・有効期限。開発時は `Enabled=true` にする。
+- `DrawingStorage:RootPath`/`PlcStorage:RootPath`: 相対または絶対パスで図面・PLCファイルを保持。`DrawingStoragePathBuilder`/`PlcFileStoragePathBuilder` が解決。
+- `Llm`: Agent Framework で使う LLM 接続情報（OpenAI/AzureOpenAI）。`ApiKey`・`Endpoint`・`ModelOrDeployment` を設定しつつ、未設定でも Fake が稼働。
+- `AgentDelegation`: Organizer→サブエージェントの呼び出し深度（`MaxDepth`）とダイレクトに許可するツールエッジを定義。
+- `RoleBootstrap`: 起動時に管理者を付与するユーザーID配列。設定後はクリアしておくのが推奨。
 
-### エージェント/PLC 設定メモ
-- LLM は `Llm` セクションで `Provider`（OpenAI/AzureOpenAI）と `ApiKey`/`Endpoint`/`ModelOrDeployment` を指定。
-- PLC 接続情報は装置エージェント設定（DB 永続化）で管理し、`appsettings.json` には置かない想定。PlcAgentTool がエージェント側で処理する。
+## 開発とテスト
+- `dotnet test`（`Tests/MOCHA.Tests.csproj`）で MSTest による全ユニットテスト実行。テスト命名規則は `メソッド_状態_期待結果`、Fake実装による Agent Orchestrator・DrawingCatalog・Role Bootstrapperなどの分岐を網羅。
+- `Tests/` 内はDDDに準じて `Chat`/`Agents`/`Drawings`/`Auth`/`Manuals` 等の同名空間に展開されているため、コードと1対1のカバレッジを確保しやすい。
+- UI表現を手動確認する場合はブラウザから `dotnet run` 起動後に対話的にフィードバックを送信し、`FeedbackController` で保存されることを確認。
+- 追加機能は `MOCHA.Agents` のツールセット拡張と `ChatOrchestrator` のイベント記録を先にテストし、その後 UI/Controller 層を調整するワークフローを推奨。
 
-#### Llm 設定例
-OpenAI（ApiKey のみ必須）:
-```json
-"Llm": {
-  "Provider": "OpenAI",
-  "ApiKey": "<your-openai-api-key>",
-  "ModelOrDeployment": "gpt-5.1-mini",
-  "AgentName": "mocha-agent",
-  "AgentDescription": "Local dev agent",
-  "Instructions": "You are a helpful assistant for MOCHA."
-}
-```
+## 参考資料
+- `docs/spec.md`: Agent Orchestrator/BFFのシーケンス・UI方針・認証・テスト戦略。
+- `docs/drawing-agent.md`: DrawingAgentおよびツールセット設計。図面検索/読み取りのフローとテスト項目。
+- `docs/roles.md`: ロール定義と装置エージェント割り当てポリシー。
+- `docs/database-schema.md`: 会話/メッセージ/ロール/装置エージェントのER図とインデックス。
+- `MOCHA.Agents/Resources`：Agent応答/ツールロジックで使われるテンプレートやプロンプト。
 
-Azure OpenAI（ApiKey と Endpoint が必須）:
-```json
-"Llm": {
-  "Provider": "AzureOpenAI",
-  "Endpoint": "https://<your-resource>.openai.azure.com/",
-  "ApiKey": "<your-azure-openai-key>",
-  "ModelOrDeployment": "<your-deployment-name>",
-  "AgentName": "mocha-agent",
-  "AgentDescription": "Local dev agent",
-  "Instructions": "You are a helpful assistant for MOCHA."
-}
-```
-
-## アーキテクチャ概要
-- UI: `MOCHA/Components`（チャット画面、サイドバー、ロール設定ページなど）。
-- ドメインモデル: `MOCHA/Models`（チャット/ロール/装置エージェント/設定）。
-- アプリサービス: `MOCHA/Services`  
-  - `Chat`: `ChatOrchestrator` がエージェントのメッセージ/ツールイベントを仲介し、履歴 (`ConversationHistoryState`) とストレージ (`IChatRepository`) を更新。  
-  - `AgentChat`: エージェントクライアントの実装/フェイクを DI 切替。  
-  - `Agents`: ユーザーごとの装置エージェントを管理し、選択状態を UI に通知。  
-  - `Auth`: ユーザーロール永続化とクッキー認証、Admin ブートストラップ。  
-  - `Settings`: テーマ/ユーザー設定の保存と適用。
-- インフラ: `MOCHA/Data` と `MOCHA/Factories` で SQLite スキーマを初期化し、EF Core の DbContext を提供。
-
-## 画面の使い方（ローカル既定設定）
-- サイドバーの「装置エージェント」を登録し、選択してからチャットを送信（エージェントごとに履歴が分かれる）。
-- メッセージ入力は `Ctrl+Enter` で送信。Stop ボタンでストリームをキャンセル。
-- 履歴はサイドバーに表示され、削除すると会話とメッセージが DB から除去される。
-- 右上メニューからテーマ切替、`/settings/roles` で Admin によるロール管理が可能（開発用クッキー認証時は `/login` で選んだユーザーに Admin を付与する設定が利用可）。
-
-## テストと品質
-- `dotnet test` でユニットテスト実行（外部サービス不要）。  
-  - `FakeChatFlowTests`: フェイクエージェントでツールイベントの流れとオーケストレーションを検証。  
-  - `DeviceAgentStateTests`/`ConversationHistoryStateAgentFilterTests`: エージェントと履歴の状態管理を検証。  
-  - `DbUserRoleProviderTests`/`RoleBootstrapperTests`: ロール付与・ブートストラップの動作確認。  
-  - `UserPreferencesStateTests`: テーマ保存・適用の確認。
-
-## ディレクトリ
-- `MOCHA/`: Blazor Server 本体。`Program.cs` で DI とスキーマ初期化を構成。
-- `Tests/`: MSTest プロジェクト。
-- `docs/`: 設計メモ（`spec.md`、`database-schema.md`）。
+## 補足
+- `wwwroot` には共通スタイルとグローバルリソース。コンポーネント単位の `.razor.css` でスコープ調整を行う。
+- `FunctionBlockApiClient`/`FunctionBlockService` は PLCユニット定義を BFF から取得するための仕組みで、`Controllers/FunctionBlocksController.cs` から状態を渡す。

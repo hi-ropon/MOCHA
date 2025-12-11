@@ -10,6 +10,7 @@ using MOCHA.Agents.Application;
 using MOCHA.Agents.Domain;
 using MOCHA.Agents.Domain.Plc;
 using MOCHA.Agents.Infrastructure.Clients;
+using MOCHA.Agents.Infrastructure.Orchestration;
 using MOCHA.Agents.Infrastructure.Tools;
 using MOCHA.Agents.Infrastructure.Plc;
 
@@ -42,14 +43,16 @@ public class ManualToolsetTests
         var manualTools = new ManualToolset(new DummyManualStore(), NullLogger<ManualToolset>.Instance);
         var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
         var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
-        var plcStore = new PlcDataStore();
+        var plcStore = new PlcDataStore(new TabularProgramParser());
         var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
+        var plcSearch = new PlcCommentSearchService(plcStore);
         var plcReasoner = new PlcReasoner();
+        var plcFaultTracer = new PlcFaultTracer(plcStore);
         var plcManual = new PlcManualService(new DummyManualStore());
-        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcReasoner, plcManual, NullLogger<PlcToolset>.Instance);
+        var plcToolset = new PlcToolset(plcStore, new DummyGateway(), plcAnalyzer, plcSearch, plcReasoner, plcFaultTracer, plcManual, NullLogger<PlcToolset>.Instance);
         var plcLoader = new NullPlcDataLoader();
         var policy = new AgentDelegationPolicy(new AgentDelegationOptions());
-        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, policy, NullLogger<OrganizerToolset>.Instance);
+        var organizerToolset = new OrganizerToolset(manualTools, manualAgentTool, plcTool, plcToolset, plcLoader, new NullPlcAgentContextProvider(), policy, NullLogger<OrganizerToolset>.Instance);
 
         Assert.AreEqual(4, organizerToolset.All.Count);
     }
