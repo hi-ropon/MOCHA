@@ -235,6 +235,7 @@
     private string FeedbackCommentInput = string.Empty;
     private static readonly TimeSpan ActivityPulseWindow = TimeSpan.FromSeconds(1.5);
     private ImageAttachment? LightboxAttachment;
+    private bool _scrollToBottomPending;
 
     private bool SendDisabled => IsSending
         || IsUploadingAttachment
@@ -275,6 +276,12 @@
     {
         await RegisterComposerHandlersAsync();
         await ResizeComposerAsync();
+
+        if (_scrollToBottomPending)
+        {
+            _scrollToBottomPending = false;
+            await ScrollMessagesToBottomAsync();
+        }
     }
 
     private async Task RegisterComposerHandlersAsync()
@@ -544,6 +551,7 @@
 
         var userMessage = new ChatMessage(ChatRole.User, text, attachmentsToSend);
         Messages.Add(userMessage);
+        await ScrollToBottom();
         StartNewTurn(TurnActivities.Count);
         _latestAssistant = null;
         _streamingAssistantIndex = null;
@@ -756,13 +764,31 @@
         }
 
         await LoadFeedbackRatingsAsync();
+        await ScrollToBottom();
         await InvokeAsync(StateHasChanged);
     }
 
-    private async Task ScrollToBottom()
+    private Task ScrollToBottom()
     {
-        // Placeholder for future JS interop to auto-scroll.
-        await Task.CompletedTask;
+        _scrollToBottomPending = true;
+        return Task.CompletedTask;
+    }
+
+    private async Task ScrollMessagesToBottomAsync()
+    {
+        if (JS is null)
+        {
+            return;
+        }
+
+        try
+        {
+            await JS.InvokeVoidAsync("mochaComposer.scrollToBottom", MessageList);
+        }
+        catch (Exception ex)
+        {
+            Logger.LogWarning(ex, "チャット欄の自動スクロールに失敗しました");
+        }
     }
 
     private async Task<UserContext> ResolveUserAsync()
