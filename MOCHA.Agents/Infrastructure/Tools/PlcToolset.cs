@@ -172,15 +172,39 @@ public sealed class PlcToolset
     {
         var sb = new StringBuilder();
         sb.AppendLine("登録済みPLCデータ概要");
-        sb.AppendLine($"- プログラムファイル: {_store.Programs.Count}");
-        sb.AppendLine($"- ファンクションブロック: {_store.FunctionBlocks.Count} ({(enableFunctionBlocks ? "enabled" : "disabled")})");
-        sb.AppendLine($"- 実機接続: {(plcOnline ? "オンライン" : "オフライン（read_plc_values/read_multiple_plc_values は無効）")}");
-
-        if (_store.FunctionBlocks.Count > 0)
+        sb.AppendLine("- プログラムファイル:");
+        var programNames = _store.Programs.Keys
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (programNames.Count > 0)
         {
-            var names = string.Join(", ", _store.FunctionBlocks.Take(5).Select(f => f.Name));
-            sb.AppendLine($"  例: {names}");
+            foreach (var programName in programNames)
+            {
+                sb.AppendLine($"  - {programName}");
+            }
         }
+        else
+        {
+            sb.AppendLine("  - なし");
+        }
+
+        sb.AppendLine($"- ファンクションブロック: {(enableFunctionBlocks ? "enabled" : "disabled")}");
+        var functionBlockNames = _store.FunctionBlocks
+            .Select(block => block.Name)
+            .OrderBy(name => name, StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        if (functionBlockNames.Count > 0)
+        {
+            foreach (var blockName in functionBlockNames)
+            {
+                sb.AppendLine($"  - {blockName}");
+            }
+        }
+        else
+        {
+            sb.AppendLine("  - なし");
+        }
+        sb.AppendLine($"- 実機接続: {(plcOnline ? "オンライン" : "オフライン（read_plc_values/read_multiple_plc_values は無効）")}");
 
         if (!string.IsNullOrWhiteSpace(plcUnitId) || !string.IsNullOrWhiteSpace(plcUnitName))
         {
