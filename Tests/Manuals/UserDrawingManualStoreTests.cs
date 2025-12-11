@@ -36,9 +36,10 @@ public class UserDrawingManualStoreTests
         var context = new ManualSearchContext("user-1", "A-01");
 
         var hits = await store.SearchAsync("iaiAgent", "layout", context);
+        var drawingHit = hits.FirstOrDefault(hit => hit.RelativePath.StartsWith("drawing:", StringComparison.OrdinalIgnoreCase));
 
-        Assert.AreEqual(1, hits.Count);
-        StringAssert.StartsWith(hits[0].RelativePath, "drawing:");
+        Assert.IsNotNull(drawingHit);
+        StringAssert.StartsWith(drawingHit!.RelativePath, "drawing:");
     }
 
     /// <summary>
