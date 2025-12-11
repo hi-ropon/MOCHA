@@ -1,4 +1,3 @@
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 
@@ -41,7 +40,7 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
 
             return list.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgentPermissions", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgentPermissions"))
         {
             await EnsureTableAsync(cancellationToken);
             return await GetAllowedAgentNumbersAsync(userId, cancellationToken);
@@ -97,7 +96,7 @@ internal sealed class DeviceAgentPermissionRepository : IDeviceAgentPermissionRe
 
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (SqliteException ex) when (ex.SqliteErrorCode == 1 && ex.Message.Contains("DeviceAgentPermissions", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "DeviceAgentPermissions"))
         {
             await EnsureTableAsync(cancellationToken);
             await ReplaceAsync(userId, normalized, cancellationToken);

@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Architecture;
@@ -37,7 +36,7 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
 
             return entity is null ? null : ToModel(entity);
         }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "GatewaySettings"))
         {
             await EnsureTableAsync(cancellationToken);
             return null;
@@ -67,12 +66,7 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
         {
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex))
-        {
-            await EnsureTableAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "GatewaySettings"))
         {
             await EnsureTableAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -122,20 +116,4 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
     }
 
-    private static bool IsMissingTable(Exception exception)
-    {
-        if (exception is SqliteException sqliteEx)
-        {
-            return sqliteEx.SqliteErrorCode == 1
-                   && sqliteEx.Message.Contains("GatewaySettings", StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (exception is DbUpdateException updateEx && updateEx.InnerException is SqliteException inner)
-        {
-            return inner.SqliteErrorCode == 1
-                   && inner.Message.Contains("GatewaySettings", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 }

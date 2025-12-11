@@ -84,8 +84,11 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContextFactory<ChatDbContext>((sp, options) =>
 {
-    var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Data Source=chat.db";
-    options.UseSqlite(connectionString);
+    var connectionString = builder.Configuration.GetConnectionString("ChatDb") ?? "Host=localhost;Port=5432;Database=mocha;Username=mocha;Password=mocha;Pooling=true;Ssl Mode=Prefer;Trust Server Certificate=true";
+    options.UseNpgsql(connectionString, npgsql =>
+    {
+        npgsql.EnableRetryOnFailure();
+    });
 });
 builder.Services.AddScoped(sp => sp.GetRequiredService<IDbContextFactory<ChatDbContext>>().CreateDbContext());
 builder.Services.AddScoped<IChatDbContext>(sp => sp.GetRequiredService<ChatDbContext>());
@@ -138,7 +141,7 @@ builder.Services.Configure<DevAuthOptions>(builder.Configuration.GetSection("Dev
 builder.Services.Configure<DrawingStorageOptions>(builder.Configuration.GetSection("DrawingStorage"));
 builder.Services.Configure<PlcStorageOptions>(builder.Configuration.GetSection("PlcStorage"));
 builder.Services.AddScoped<RoleBootstrapper>();
-builder.Services.AddScoped<IDatabaseInitializer, SqliteDatabaseInitializer>();
+builder.Services.AddScoped<IDatabaseInitializer, PostgresDatabaseInitializer>();
 builder.Services.AddMochaAgents(builder.Configuration);
 builder.Services.AddScoped<IOrganizerContextProvider, OrganizerContextProvider>();
 builder.Services.AddScoped<IPlcAgentContextProvider, PlcAgentContextProvider>();

@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Drawings;
@@ -37,13 +36,7 @@ internal sealed class DrawingRepository : IDrawingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "Drawings"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "Drawings"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "Drawings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -67,12 +60,7 @@ internal sealed class DrawingRepository : IDrawingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "Drawings"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            return false;
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "Drawings"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "Drawings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return false;
@@ -88,7 +76,7 @@ internal sealed class DrawingRepository : IDrawingRepository
             var entity = await _dbContext.Drawings.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             return entity is null ? null : ToModel(entity);
         }
-        catch (SqliteException ex) when (IsMissingTable(ex, "Drawings"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "Drawings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return null;
@@ -123,7 +111,7 @@ internal sealed class DrawingRepository : IDrawingRepository
                 .Select(ToModel)
                 .ToList();
         }
-        catch (SqliteException ex) when (IsMissingTable(ex, "Drawings"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "Drawings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return Array.Empty<DrawingDocument>();
@@ -159,13 +147,7 @@ internal sealed class DrawingRepository : IDrawingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex, "Drawings"))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex, "Drawings"))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "Drawings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -235,20 +217,4 @@ internal sealed class DrawingRepository : IDrawingRepository
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
     }
 
-    private static bool IsMissingTable(Exception exception, string tableName)
-    {
-        if (exception is SqliteException sqliteEx)
-        {
-            return sqliteEx.SqliteErrorCode == 1
-                   && sqliteEx.Message.Contains(tableName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (exception is DbUpdateException updateEx && updateEx.InnerException is SqliteException inner)
-        {
-            return inner.SqliteErrorCode == 1
-                   && inner.Message.Contains(tableName, StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 }

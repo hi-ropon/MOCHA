@@ -4,7 +4,6 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using MOCHA.Data;
 using MOCHA.Models.Architecture;
@@ -42,13 +41,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PcSettings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -83,13 +76,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return ToModel(entity);
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            await _dbContext.SaveChangesAsync(cancellationToken);
-            return ToModel(entity!);
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PcSettings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             await _dbContext.SaveChangesAsync(cancellationToken);
@@ -106,7 +93,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
             var entity = await _dbContext.PcSettings.FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
             return entity is null ? null : ToModel(entity);
         }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PcSettings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return null;
@@ -129,12 +116,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
             await _dbContext.SaveChangesAsync(cancellationToken);
             return true;
         }
-        catch (DbUpdateException ex) when (IsMissingTable(ex))
-        {
-            await EnsureTableIfMissingAsync(cancellationToken);
-            return false;
-        }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PcSettings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return false;
@@ -164,7 +146,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
                 .Select(ToModel)
                 .ToList();
         }
-        catch (SqliteException ex) when (IsMissingTable(ex))
+        catch (Exception ex) when (DatabaseErrorDetector.IsMissingTable(ex, "PcSettings"))
         {
             await EnsureTableIfMissingAsync(cancellationToken);
             return Array.Empty<PcSetting>();
@@ -241,20 +223,4 @@ internal sealed class PcSettingRepository : IPcSettingRepository
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
     }
 
-    private static bool IsMissingTable(Exception exception)
-    {
-        if (exception is SqliteException sqliteEx)
-        {
-            return sqliteEx.SqliteErrorCode == 1
-                   && sqliteEx.Message.Contains("PcSettings", StringComparison.OrdinalIgnoreCase);
-        }
-
-        if (exception is DbUpdateException updateEx && updateEx.InnerException is SqliteException inner)
-        {
-            return inner.SqliteErrorCode == 1
-                   && inner.Message.Contains("PcSettings", StringComparison.OrdinalIgnoreCase);
-        }
-
-        return false;
-    }
 }

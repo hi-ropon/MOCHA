@@ -1,5 +1,6 @@
 using System.Linq;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Data;
 using MOCHA.Models.Auth;
@@ -14,14 +15,14 @@ namespace MOCHA.Tests;
 public class DbUserRoleProviderTests
 {
     /// <summary>
-    /// インメモリ DB を使ったコンテキスト生成ヘルパー
+    /// インメモリ DB を使ったコンテキストファクトリ生成ヘルパー
     /// </summary>
-    private static ChatDbContext CreateContext(string dbName)
+    private static IDbContextFactory<ChatDbContext> CreateFactory(string dbName)
     {
         var options = new DbContextOptionsBuilder<ChatDbContext>()
             .UseInMemoryDatabase(dbName)
             .Options;
-        return new ChatDbContext(options);
+        return new PooledDbContextFactory<ChatDbContext>(options);
     }
 
     /// <summary>
@@ -30,8 +31,7 @@ public class DbUserRoleProviderTests
     [TestMethod]
     public async Task 重複せず保存される()
     {
-        await using var db = CreateContext(nameof(重複せず保存される));
-        var provider = new DbUserRoleProvider(db);
+        var provider = new DbUserRoleProvider(CreateFactory(nameof(重複せず保存される)));
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Administrator);
         await provider.AssignAsync("u1", UserRoleId.Predefined.Administrator);
@@ -48,8 +48,7 @@ public class DbUserRoleProviderTests
     [TestMethod]
     public async Task 削除操作でロールが取り除かれる()
     {
-        await using var db = CreateContext(nameof(削除操作でロールが取り除かれる));
-        var provider = new DbUserRoleProvider(db);
+        var provider = new DbUserRoleProvider(CreateFactory(nameof(削除操作でロールが取り除かれる)));
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Operator);
         await provider.RemoveAsync("u1", UserRoleId.Predefined.Operator);
@@ -65,8 +64,7 @@ public class DbUserRoleProviderTests
     [TestMethod]
     public async Task 大小文字を無視する()
     {
-        await using var db = CreateContext(nameof(大小文字を無視する));
-        var provider = new DbUserRoleProvider(db);
+        var provider = new DbUserRoleProvider(CreateFactory(nameof(大小文字を無視する)));
 
         await provider.AssignAsync("u1", UserRoleId.Predefined.Developer);
 
