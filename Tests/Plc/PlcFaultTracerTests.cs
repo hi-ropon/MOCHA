@@ -14,7 +14,7 @@ public class PlcFaultTracerTests
     [TestMethod]
     public void TraceErrorCoils_異常コメント付きLコイルを返す()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["L100"] = "過負荷異常",
@@ -45,7 +45,7 @@ public class PlcFaultTracerTests
     [TestMethod]
     public void TraceErrorCoils_キーワードを含まないコメントは除外する()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["L300"] = "正常完了"

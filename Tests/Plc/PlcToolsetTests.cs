@@ -86,7 +86,7 @@ public class PlcToolsetTests
     [TestMethod]
     public async Task ReadValuesAsync_DMOV使用時_2ワードを指定する()
     {
-        var store = new PlcDataStore();
+        var store = CreateStore();
         store.SetPrograms(new[]
         {
             new ProgramFile("main", new List<string> { "\"0\"\t\"\"\t\"DMOV\"\t\"D500\"" })
@@ -114,7 +114,7 @@ public class PlcToolsetTests
     [TestMethod]
     public async Task ReadMultipleValuesAsync_EMOV使用時_2ワードを指定する()
     {
-        var store = new PlcDataStore();
+        var store = CreateStore();
         store.SetPrograms(new[]
         {
             new ProgramFile("main", new List<string> { "\"0\"\t\"\"\t\"EMOV\"\t\"D600\"" })
@@ -142,7 +142,7 @@ public class PlcToolsetTests
     [TestMethod]
     public async Task InferDevicesAsync_プログラム名指定時はプログラム内容を使う()
     {
-        var store = new PlcDataStore();
+        var store = CreateStore();
         store.SetPrograms(new[]
         {
             new ProgramFile("ProgPou.csv", new List<string> { "\"0\"\t\"\"\t\"LD\"\t\"X30\"" })
@@ -170,7 +170,7 @@ public class PlcToolsetTests
     [TestMethod]
     public async Task SearchCommentsAsync_質問キーワードから候補を返す()
     {
-        var store = new PlcDataStore();
+        var store = CreateStore();
         store.SetComments(new Dictionary<string, string>
         {
             ["M0"] = "ﾘﾐｯﾄｽｲｯﾁ異常",
@@ -196,7 +196,7 @@ public class PlcToolsetTests
 
     private static PlcToolset CreateToolset()
     {
-        var store = new PlcDataStore();
+        var store = CreateStore();
         var gateway = new DummyGateway();
         var analyzer = new PlcProgramAnalyzer(store);
         var search = new PlcCommentSearchService(store);
@@ -205,6 +205,8 @@ public class PlcToolsetTests
         var manuals = new PlcManualService(new DummyManualStore());
         return new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
     }
+
+    private static PlcDataStore CreateStore() => new(new TabularProgramParser());
 
     private sealed class CaptureGateway : IPlcGatewayClient
     {

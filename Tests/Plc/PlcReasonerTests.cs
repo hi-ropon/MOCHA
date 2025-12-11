@@ -1,7 +1,8 @@
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using MOCHA.Agents.Infrastructure.Plc;
 using System.Collections.Generic;
 using System.Text.Json;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MOCHA.Agents.Domain.Plc;
+using MOCHA.Agents.Infrastructure.Plc;
 
 namespace MOCHA.Tests;
 
@@ -44,12 +45,10 @@ public class PlcReasonerTests
     public void 複数推定_プログラム内容からデバイスを抽出する()
     {
         var reasoner = new PlcReasoner();
-        var program = new ProgramContext("ProgPou.csv", new List<string>
-        {
+        var program = new ProgramContext("ProgPou.csv", ParseLines(
             "\"0\"\t\"\"\t\"LD\"\t\"X30\"",
             "\"1\"\t\"\"\t\"AND\"\t\"M180\"",
-            "\"2\"\t\"\"\t\"OUT\"\t\"Y1000\""
-        });
+            "\"2\"\t\"\"\t\"OUT\"\t\"Y1000\""));
 
         var json = reasoner.InferMultiple("ProgPou.csv を確認して", new[] { program });
 
@@ -64,10 +63,7 @@ public class PlcReasonerTests
     public void 複数推定_質問中のデバイスを優先する()
     {
         var reasoner = new PlcReasoner();
-        var program = new ProgramContext("ProgPou.csv", new List<string>
-        {
-            "\"0\"\t\"\"\t\"LD\"\t\"X30\""
-        });
+        var program = new ProgramContext("ProgPou.csv", ParseLines("\"0\"\t\"\"\t\"LD\"\t\"X30\""));
 
         var json = reasoner.InferMultiple("D10 を確認しながら ProgPou.csv も参照", new[] { program });
 
@@ -99,6 +95,18 @@ public class PlcReasonerTests
             {
                 list.Add(device);
             }
+        }
+
+        return list;
+    }
+
+    private static IReadOnlyList<ProgramLine> ParseLines(params string[] lines)
+    {
+        var parser = new TabularProgramParser();
+        var list = new List<ProgramLine>();
+        foreach (var line in lines)
+        {
+            list.Add(parser.Parse(line));
         }
 
         return list;

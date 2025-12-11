@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using MOCHA.Agents.Domain.Plc;
 
 namespace MOCHA.Agents.Infrastructure.Plc;
 
@@ -63,7 +64,7 @@ public sealed class PlcReasoner
 
         foreach (var program in programs ?? Enumerable.Empty<ProgramContext>())
         {
-            var devices = ExtractDevices(program.Lines);
+            var devices = ExtractDevices(program.Lines.Select(line => line.Raw));
             if (devices.Count == 0)
             {
                 continue;
@@ -115,4 +116,4 @@ public sealed class PlcReasoner
     }
 }
 
-public sealed record ProgramContext(string Name, IReadOnlyList<string> Lines);
+public sealed record ProgramContext(string Name, IReadOnlyList<ProgramLine> Lines);

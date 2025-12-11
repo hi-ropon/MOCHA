@@ -45,14 +45,14 @@ public sealed class PlcFaultTracer
             for (var i = 0; i < program.Count; i++)
             {
                 var line = program[i];
-                var columns = Split(line);
+                var columns = line.Columns;
                 var instruction = ExtractInstruction(columns);
                 if (!IsOutInstruction(instruction))
                 {
                     continue;
                 }
 
-                var coils = ExtractCoils(line);
+                var coils = ExtractCoils(line.Raw);
                 foreach (var coil in coils)
                 {
                     if (!HasErrorComment(coil))
@@ -66,7 +66,7 @@ public sealed class PlcFaultTracer
                         device = coil.ToUpperInvariant(),
                         comment = GetComment(coil),
                         instruction = instruction ?? string.Empty,
-                        line = line?.Trim() ?? string.Empty,
+                        line = line.Raw.Trim(),
                         relatedDevices = related
                     });
                 }
@@ -122,14 +122,14 @@ public sealed class PlcFaultTracer
             .ToList();
     }
 
-    private static IReadOnlyCollection<string> CollectRelatedDevices(IReadOnlyList<string> program, int index, string coil)
+    private static IReadOnlyCollection<string> CollectRelatedDevices(IReadOnlyList<ProgramLine> program, int index, string coil)
     {
         var set = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var start = Math.Max(0, index - 2);
         for (var i = start; i <= index; i++)
         {
-            var line = program[i];
-            foreach (Match match in _deviceRegex.Matches(line ?? string.Empty))
+            var rawLine = program[i].Raw;
+            foreach (Match match in _deviceRegex.Matches(rawLine ?? string.Empty))
             {
                 var device = match.Groups[1].Value;
                 if (device.Equals(coil, StringComparison.OrdinalIgnoreCase))
@@ -166,14 +166,4 @@ public sealed class PlcFaultTracer
         return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
     }
 
-    private static IReadOnlyList<string> Split(string? line)
-    {
-        if (string.IsNullOrEmpty(line))
-        {
-            return Array.Empty<string>();
-        }
-
-        var delimiter = line.Contains('\t') ? '\t' : ',';
-        return line.Split(delimiter);
-    }
 }

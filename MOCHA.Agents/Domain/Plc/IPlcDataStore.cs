@@ -40,7 +40,7 @@ public interface IPlcDataStore
     /// <summary>
     /// プログラムコレクション
     /// </summary>
-    IReadOnlyDictionary<string, IReadOnlyList<string>> Programs { get; }
+    IReadOnlyDictionary<string, IReadOnlyList<ProgramLine>> Programs { get; }
 
     /// <summary>
     /// ファンクションブロック一覧

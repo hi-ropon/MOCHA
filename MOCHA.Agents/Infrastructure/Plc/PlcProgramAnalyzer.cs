@@ -30,14 +30,17 @@ public sealed class PlcProgramAnalyzer
         {
             for (var i = 0; i < program.Count; i++)
             {
-                if (!ContainsDevice(program[i], token))
+                if (!ContainsDevice(program[i].Raw, token))
                 {
                     continue;
                 }
 
                 var start = Math.Max(0, i - context);
                 var end = Math.Min(program.Count - 1, i + context);
-                var block = program.Skip(start).Take(end - start + 1);
+                var block = program
+                    .Skip(start)
+                    .Take(end - start + 1)
+                    .Select(line => line.Raw);
                 results.Add(string.Join(Environment.NewLine, block));
             }
         }
@@ -58,7 +61,7 @@ public sealed class PlcProgramAnalyzer
             for (var i = 0; i < program.Count; i++)
             {
                 var line = program[i];
-                if (!ContainsDevice(line, target))
+                if (!ContainsDevice(line.Raw, target))
                 {
                     continue;
                 }
@@ -68,7 +71,7 @@ public sealed class PlcProgramAnalyzer
                 var end = Math.Min(program.Count - 1, i + 1);
                 for (var cursor = start; cursor <= end; cursor++)
                 {
-                    foreach (Match m in _deviceRegex.Matches(program[cursor]))
+                    foreach (Match m in _deviceRegex.Matches(program[cursor].Raw))
                     {
                         var value = m.Groups[1].Value;
                         if (!string.Equals(value, target, StringComparison.OrdinalIgnoreCase))
@@ -123,7 +126,7 @@ public sealed class PlcProgramAnalyzer
             var currentInstruction = string.Empty;
             foreach (var line in program)
             {
-                var columns = SplitCsv(line);
+                var columns = line.Columns;
                 var instruction = ExtractInstruction(columns);
                 if (!string.IsNullOrWhiteSpace(instruction))
                 {
@@ -254,17 +257,6 @@ public sealed class PlcProgramAnalyzer
 
         var trimmed = value.Trim().Trim('"');
         return string.IsNullOrWhiteSpace(trimmed) ? null : trimmed;
-    }
-
-    private static IReadOnlyList<string> SplitCsv(string line)
-    {
-        if (string.IsNullOrEmpty(line))
-        {
-            return Array.Empty<string>();
-        }
-
-        var delimiter = line.Contains('\t') ? '\t' : ',';
-        return line.Split(delimiter);
     }
 
     private static bool ContainsDevice(string line, string token)

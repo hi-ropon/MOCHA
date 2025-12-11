@@ -43,7 +43,7 @@ public class ManualToolsetTests
         var manualTools = new ManualToolset(new DummyManualStore(), NullLogger<ManualToolset>.Instance);
         var manualAgentTool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
         var plcTool = new PlcAgentTool(NullLogger<PlcAgentTool>.Instance);
-        var plcStore = new PlcDataStore();
+        var plcStore = new PlcDataStore(new TabularProgramParser());
         var plcAnalyzer = new PlcProgramAnalyzer(plcStore);
         var plcSearch = new PlcCommentSearchService(plcStore);
         var plcReasoner = new PlcReasoner();

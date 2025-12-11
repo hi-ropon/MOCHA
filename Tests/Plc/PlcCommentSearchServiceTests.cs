@@ -13,7 +13,7 @@ public class PlcCommentSearchServiceTests
     [TestMethod]
     public void Search_全角質問と半角コメントを突き合わせる()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["M10"] = "ﾘﾐｯﾄｽｲｯﾁ異常あり",
@@ -31,7 +31,7 @@ public class PlcCommentSearchServiceTests
     [TestMethod]
     public void Search_デバイス指定を優先する()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["D100"] = "メインモータ回転数",
@@ -49,7 +49,7 @@ public class PlcCommentSearchServiceTests
     [TestMethod]
     public void Search_スコア降順で複数結果を返す()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["X10"] = "原点リミットエラー",
@@ -69,7 +69,7 @@ public class PlcCommentSearchServiceTests
     [TestMethod]
     public void Search_あいまい一致で結果を返す()
     {
-        var store = new PlcDataStore();
+        var store = new PlcDataStore(new TabularProgramParser());
         store.SetComments(new Dictionary<string, string>
         {
             ["D30"] = "PRESSURE SENSOR FEEDBACK"

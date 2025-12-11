@@ -37,7 +37,8 @@ public static class DependencyInjection
         services.AddScoped<ManualAgentTool>();
         services.AddScoped<PlcAgentTool>();
         services.AddScoped<IPlcDataLoader, NullPlcDataLoader>();
-        services.AddSingleton<IPlcDataStore, PlcDataStore>();
+        services.AddSingleton<ITabularProgramParser, TabularProgramParser>();
+        services.AddSingleton<IPlcDataStore>(sp => new PlcDataStore(sp.GetRequiredService<ITabularProgramParser>()));
         services.AddSingleton<PlcProgramAnalyzer>();
         services.AddSingleton<PlcCommentSearchService>();
         services.AddSingleton<PlcReasoner>();
