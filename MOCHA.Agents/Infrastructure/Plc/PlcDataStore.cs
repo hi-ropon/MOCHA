@@ -23,6 +23,8 @@ public sealed class PlcDataStore : IPlcDataStore
     /// <inheritdoc />
     public IReadOnlyDictionary<string, IReadOnlyList<string>> Programs => _programs;
     /// <inheritdoc />
+    public IReadOnlyDictionary<string, string> Comments => _comments;
+    /// <inheritdoc />
     public IReadOnlyCollection<FunctionBlockData> FunctionBlocks => _functionBlocks.Values.ToList();
 
     /// <inheritdoc />

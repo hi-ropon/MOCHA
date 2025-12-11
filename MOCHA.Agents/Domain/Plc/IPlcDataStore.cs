@@ -33,6 +33,11 @@ public interface IPlcDataStore
     bool TryGetComment(string device, out string? comment);
 
     /// <summary>
+    /// コメントコレクション
+    /// </summary>
+    IReadOnlyDictionary<string, string> Comments { get; }
+
+    /// <summary>
     /// プログラムコレクション
     /// </summary>
     IReadOnlyDictionary<string, IReadOnlyList<string>> Programs { get; }

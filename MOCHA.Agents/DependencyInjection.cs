@@ -39,6 +39,7 @@ public static class DependencyInjection
         services.AddScoped<IPlcDataLoader, NullPlcDataLoader>();
         services.AddSingleton<IPlcDataStore, PlcDataStore>();
         services.AddSingleton<PlcProgramAnalyzer>();
+        services.AddSingleton<PlcCommentSearchService>();
         services.AddSingleton<PlcReasoner>();
         services.AddSingleton<PlcFaultTracer>();
         services.AddSingleton<PlcManualService>();

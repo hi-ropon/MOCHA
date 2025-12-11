@@ -94,10 +94,11 @@ public class PlcToolsetTests
 
         var gateway = new CaptureGateway();
         var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
         var reasoner = new PlcReasoner();
         var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        var toolset = new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
         var method = typeof(PlcToolset).GetMethod("ReadValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(method);
 
@@ -121,10 +122,11 @@ public class PlcToolsetTests
 
         var gateway = new CaptureGateway();
         var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
         var reasoner = new PlcReasoner();
         var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        var toolset = new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
         var method = typeof(PlcToolset).GetMethod("ReadMultipleValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(method);
 
@@ -148,10 +150,11 @@ public class PlcToolsetTests
 
         var gateway = new DummyGateway();
         var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
         var reasoner = new PlcReasoner();
         var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        var toolset = new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
         var method = typeof(PlcToolset).GetMethod("InferDevicesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.IsNotNull(method);
 
@@ -161,15 +164,46 @@ public class PlcToolsetTests
         StringAssert.Contains(json, "X30");
     }
 
+    /// <summary>
+    /// コメント検索ツールで質問文のキーワードから候補を返す
+    /// </summary>
+    [TestMethod]
+    public async Task SearchCommentsAsync_質問キーワードから候補を返す()
+    {
+        var store = new PlcDataStore();
+        store.SetComments(new Dictionary<string, string>
+        {
+            ["M0"] = "ﾘﾐｯﾄｽｲｯﾁ異常",
+            ["D10"] = "圧力計"
+        });
+
+        var gateway = new DummyGateway();
+        var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
+        var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
+        var manuals = new PlcManualService(new DummyManualStore());
+        var toolset = new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        var method = typeof(PlcToolset).GetMethod("SearchCommentsAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+
+        var task = (Task<string>)method!.Invoke(toolset, new object?[] { "リミットスイッチが効かない", CancellationToken.None })!;
+        var json = await task;
+
+        StringAssert.Contains(json, "\"matchCount\":1");
+        StringAssert.Contains(json, "M0");
+    }
+
     private static PlcToolset CreateToolset()
     {
         var store = new PlcDataStore();
         var gateway = new DummyGateway();
         var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
         var reasoner = new PlcReasoner();
         var faultTracer = new PlcFaultTracer(store);
         var manuals = new PlcManualService(new DummyManualStore());
-        return new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        return new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
     }
 
     private sealed class CaptureGateway : IPlcGatewayClient

@@ -27,6 +27,7 @@ public sealed class PlcToolset
     private readonly IPlcDataStore _store;
     private readonly IPlcGatewayClient _gateway;
     private readonly PlcProgramAnalyzer _programAnalyzer;
+    private readonly PlcCommentSearchService _commentSearch;
     private readonly PlcReasoner _reasoner;
     private readonly PlcFaultTracer _faultTracer;
     private readonly PlcManualService _manuals;
@@ -78,6 +79,7 @@ public sealed class PlcToolset
         IPlcDataStore store,
         IPlcGatewayClient gateway,
         PlcProgramAnalyzer programAnalyzer,
+        PlcCommentSearchService commentSearch,
         PlcReasoner reasoner,
         PlcFaultTracer faultTracer,
         PlcManualService manuals,
@@ -86,6 +88,7 @@ public sealed class PlcToolset
         _store = store;
         _gateway = gateway;
         _programAnalyzer = programAnalyzer;
+        _commentSearch = commentSearch;
         _reasoner = reasoner;
         _faultTracer = faultTracer;
         _manuals = manuals;
@@ -104,6 +107,10 @@ public sealed class PlcToolset
             AIFunctionFactory.Create(new Func<string, int, CancellationToken, Task<string>>(GetCommentAsync),
                 name: "get_comment",
                 description: "デバイスコメントを取得します。"),
+
+            AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(SearchCommentsAsync),
+                name: "search_comment_devices",
+                description: "質問文をコメントに対して全文検索し関連デバイス候補を返します。"),
 
             AIFunctionFactory.Create(new Func<string, CancellationToken, Task<string>>(InferDeviceAsync),
                 name: "reasoning_device",
@@ -310,6 +317,42 @@ public sealed class PlcToolset
         catch (Exception ex)
         {
             _logger.LogError(ex, "get_comment 実行に失敗しました。");
+            EmitCompleted(call, ex.Message, false, ex.Message);
+            return Task.FromResult(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// コメント横断検索
+    /// </summary>
+    private Task<string> SearchCommentsAsync(string question, CancellationToken cancellationToken)
+    {
+        var call = new ToolCall("search_comment_devices", JsonSerializer.Serialize(new { question }, _serializerOptions));
+        EmitRequested(call);
+
+        try
+        {
+            var results = _commentSearch.Search(question, 10);
+            var payload = JsonSerializer.Serialize(new
+            {
+                status = "success",
+                question,
+                matchCount = results.Count,
+                results = results.Select(r => new
+                {
+                    device = r.Device,
+                    comment = r.Comment,
+                    score = Math.Round(r.Score, 2, MidpointRounding.AwayFromZero),
+                    matchedTerms = r.MatchedTerms
+                })
+            }, _serializerOptions);
+
+            EmitCompleted(call, payload, true);
+            return Task.FromResult(payload);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "search_comment_devices 実行に失敗しました。");
             EmitCompleted(call, ex.Message, false, ex.Message);
             return Task.FromResult(ex.Message);
         }
