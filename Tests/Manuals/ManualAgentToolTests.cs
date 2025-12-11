@@ -36,19 +36,19 @@ public class ManualAgentToolTests
     }
 
     /// <summary>
-    /// エージェント名省略時に IAI エージェントとして応答する
+    /// エージェント名省略時に PLC エージェントとして応答する
     /// </summary>
     [TestMethod]
-    public async Task エージェント名省略_IAIで応答する()
+    public async Task エージェント名省略_PLCで応答する()
     {
-        var factory = new FakeFactory(new FakeChatClient(new[] { "IAI-response" }));
+        var factory = new FakeFactory(new FakeChatClient(new[] { "PLC-response" }));
         var manualTools = new ManualToolset(new FakeManualStore(), NullLogger<ManualToolset>.Instance);
         var tool = new ManualAgentTool(factory, manualTools, NullLogger<ManualAgentTool>.Instance);
 
         using var _ = manualTools.UseContext(new ChatContext("conv-iai", Array.Empty<ChatTurn>()), _ => { });
         var result = await tool.RunAsync(string.Empty, "RCON 設定");
 
-        StringAssert.Contains(result, "IAI-response");
+        StringAssert.Contains(result, "PLC-response");
     }
 
     /// <summary>
