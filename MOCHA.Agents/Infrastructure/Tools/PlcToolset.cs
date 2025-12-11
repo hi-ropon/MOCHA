@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Text.Json;
@@ -562,7 +563,8 @@ public sealed class PlcToolset
     {
         var call = new ToolCall("reasoning_multiple_devices", JsonSerializer.Serialize(new { query }, _serializerOptions));
         EmitRequested(call);
-        var result = _reasoner.InferMultiple(query);
+        var programContexts = BuildProgramContexts(query);
+        var result = _reasoner.InferMultiple(query, programContexts);
         EmitCompleted(call, result, true);
         return Task.FromResult(result);
     }
@@ -785,5 +787,36 @@ public sealed class PlcToolset
         {
             _owner._context.Value = null;
         }
+    }
+
+    private IReadOnlyList<ProgramContext> BuildProgramContexts(string query)
+    {
+        var contexts = new List<ProgramContext>();
+        if (string.IsNullOrWhiteSpace(query) || _store.Programs.Count == 0)
+        {
+            return contexts;
+        }
+
+        foreach (var program in _store.Programs)
+        {
+            var name = program.Key;
+            var baseName = Path.GetFileNameWithoutExtension(name) ?? string.Empty;
+            if (ContainsIgnoreCase(query, name) || (!string.IsNullOrWhiteSpace(baseName) && ContainsIgnoreCase(query, baseName)))
+            {
+                contexts.Add(new ProgramContext(name, program.Value));
+            }
+        }
+
+        return contexts;
+    }
+
+    private static bool ContainsIgnoreCase(string source, string value)
+    {
+        if (string.IsNullOrWhiteSpace(source) || string.IsNullOrWhiteSpace(value))
+        {
+            return false;
+        }
+
+        return source.IndexOf(value, StringComparison.OrdinalIgnoreCase) >= 0;
     }
 }

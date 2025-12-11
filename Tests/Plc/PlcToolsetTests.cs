@@ -134,6 +134,33 @@ public class PlcToolsetTests
         CollectionAssert.Contains((System.Collections.ICollection)gateway.LastBatchSpecs!, "D600:2");
     }
 
+    /// <summary>
+    /// プログラム名を含む質問ではプログラム内容からデバイスを抽出する
+    /// </summary>
+    [TestMethod]
+    public async Task InferDevicesAsync_プログラム名指定時はプログラム内容を使う()
+    {
+        var store = new PlcDataStore();
+        store.SetPrograms(new[]
+        {
+            new ProgramFile("ProgPou.csv", new List<string> { "\"0\"\t\"\"\t\"LD\"\t\"X30\"" })
+        });
+
+        var gateway = new DummyGateway();
+        var analyzer = new PlcProgramAnalyzer(store);
+        var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
+        var manuals = new PlcManualService(new DummyManualStore());
+        var toolset = new PlcToolset(store, gateway, analyzer, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        var method = typeof(PlcToolset).GetMethod("InferDevicesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+
+        var task = (Task<string>)method!.Invoke(toolset, new object?[] { "ProgPou.csv を確認したい", CancellationToken.None })!;
+        var json = await task;
+
+        StringAssert.Contains(json, "X30");
+    }
+
     private static PlcToolset CreateToolset()
     {
         var store = new PlcDataStore();
