@@ -33,6 +33,7 @@ public sealed class OrganizerInstructionBuilder
         string template,
         string? userId,
         string? agentNumber,
+        bool plcOnline,
         CancellationToken cancellationToken = default)
     {
         var baseTemplate = string.IsNullOrWhiteSpace(template)
@@ -46,9 +47,13 @@ public sealed class OrganizerInstructionBuilder
         var drawings = string.IsNullOrWhiteSpace(context.Drawings)
             ? "図面情報: 情報なし"
             : context.Drawings.Trim();
+        var plcStatus = plcOnline
+            ? "実機読み取りが許可されているため read_plc_values/read_multiple_plc_values/read_plc_gateway を即時実行してよい。ユーザーへの追加確認は不要。"
+            : "実機読み取りはユーザー設定で無効。read_plc_values/read_multiple_plc_values/read_plc_gateway は呼び出さず、プログラム解析やマニュアルで回答する。";
 
         return baseTemplate
             .Replace("{{architecture_context}}", architecture, StringComparison.Ordinal)
-            .Replace("{{drawing_context}}", drawings, StringComparison.Ordinal);
+            .Replace("{{drawing_context}}", drawings, StringComparison.Ordinal)
+            .Replace("{{plc_reading_status}}", plcStatus, StringComparison.Ordinal);
     }
 }

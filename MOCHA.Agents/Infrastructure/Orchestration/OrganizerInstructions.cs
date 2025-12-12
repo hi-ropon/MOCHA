@@ -15,7 +15,7 @@ public static class OrganizerInstructions
 
         【ルール】
         - 200～500文字程度に回答する
-        - 一般者でも分かるように、PLCのデバイス番号による回答は避けて、ユニットで使われている機器名称やコメントで使わている名前の内容で説明する
+        - 一般者でも分かるように、PLCのデバイス番号による回答は避けて、ユニット名で使われている構成機器の名称やコメントで使わている名前の内容で説明する
         - プログラムのファイル名やコメントファイル（COMMENT.csv）の名前は出さない
 
         [アーキテクチャ設定コンテキスト]
@@ -33,6 +33,9 @@ public static class OrganizerInstructions
         5) ツール結果を統合し、日本語で回答する。最初の1-2文で結論、次に手順/補足/次の一手を簡潔に示す。失敗時は短いエラーメッセージを返す。
         6) [ルーティングヒント] 装置に関する内容は invoke_plc_agent を優先し、関連するコンテキスト行を質問の先頭に添える。図面/寸法/型番/リビジョン/レイアウト/部品配置は invoke_drawing_agent を優先し、該当図面行を先頭に添える。
         7) PLCの読み取り、参照は許可する。
+
+        [実機読み取り設定]
+        {{plc_reading_status}}
 
         [一般ガード]
         - PLC の書き換えや装置停止につながる推論は避け、一次切り分けや確認手順、参照すべき資料までを整理して伝える
@@ -99,5 +102,6 @@ public static class OrganizerInstructions
     /// </summary>
     public static string Default { get; } = Base
         .Replace("{{architecture_context}}", "アーキテクチャ設定: 情報なし", StringComparison.Ordinal)
-        .Replace("{{drawing_context}}", "図面情報: 情報なし", StringComparison.Ordinal);
+        .Replace("{{drawing_context}}", "図面情報: 情報なし", StringComparison.Ordinal)
+        .Replace("{{plc_reading_status}}", "実機読み取り設定: 情報なし", StringComparison.Ordinal);
 }
