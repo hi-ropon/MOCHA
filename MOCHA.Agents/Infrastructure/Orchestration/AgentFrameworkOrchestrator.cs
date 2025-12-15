@@ -236,7 +236,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         var baseTemplate = !string.IsNullOrWhiteSpace(context.InstructionTemplate)
             ? context.InstructionTemplate!
             : _options.Instructions ?? OrganizerInstructions.Template;
-        var instructions = await _instructionBuilder.BuildAsync(baseTemplate, context.UserId, context.AgentNumber, cancellationToken);
+        var instructions = await _instructionBuilder.BuildAsync(baseTemplate, context.UserId, context.AgentNumber, context.PlcOnline, cancellationToken);
         _logger.LogInformation("Using agent instructions: {Instructions}", instructions);
 
         if (_threads.TryGetValue(context.ConversationId, out var existing))

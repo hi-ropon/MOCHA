@@ -1,7 +1,9 @@
+using System;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Web;
@@ -24,6 +26,22 @@ using MOCHA.Agents.Application;
 using MOCHA.Models.Architecture;
 
 var builder = WebApplication.CreateBuilder(args);
+
+var configuredServerUrls = builder.Configuration["Server:Urls"];
+if (!string.IsNullOrWhiteSpace(configuredServerUrls))
+{
+    var urls = configuredServerUrls
+        .Split(';', StringSplitOptions.RemoveEmptyEntries);
+    for (var i = 0; i < urls.Length; i++)
+    {
+        urls[i] = urls[i].Trim();
+    }
+
+    if (urls.Length > 0)
+    {
+        builder.WebHost.UseUrls(urls);
+    }
+}
 
 var azureAdEnabled = builder.Configuration.GetValue<bool>("AzureAd:Enabled");
 var devAuthOptions = builder.Configuration.GetSection("DevAuth").Get<DevAuthOptions>() ?? new DevAuthOptions();

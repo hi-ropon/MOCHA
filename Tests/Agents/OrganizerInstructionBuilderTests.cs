@@ -19,12 +19,14 @@ public class OrganizerInstructionBuilderTests
     {
         var builder = new OrganizerInstructionBuilder(new FakeContextProvider());
 
-        var result = await builder.BuildAsync(OrganizerInstructions.Template, null, null);
+        var result = await builder.BuildAsync(OrganizerInstructions.Template, null, null, plcOnline: true);
 
         StringAssert.Contains(result, "アーキテクチャ設定: 情報なし");
         StringAssert.Contains(result, "図面情報: 情報なし");
+        StringAssert.Contains(result, "実機読み取りが許可されている");
         Assert.IsFalse(result.Contains("{{architecture_context}}", StringComparison.Ordinal));
         Assert.IsFalse(result.Contains("{{drawing_context}}", StringComparison.Ordinal));
+        Assert.IsFalse(result.Contains("{{plc_reading_status}}", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -36,10 +38,24 @@ public class OrganizerInstructionBuilderTests
         var provider = new FakeContextProvider(new OrganizerContext("ユニット: A-01", "drawing:1 テスト図面"));
         var builder = new OrganizerInstructionBuilder(provider);
 
-        var result = await builder.BuildAsync(OrganizerInstructions.Template, "user-1", "A-01");
+        var result = await builder.BuildAsync(OrganizerInstructions.Template, "user-1", "A-01", plcOnline: true);
 
         StringAssert.Contains(result, "ユニット: A-01");
         StringAssert.Contains(result, "drawing:1 テスト図面");
+    }
+
+    /// <summary>
+    /// PLC読み取り設定が反映される
+    /// </summary>
+    [TestMethod]
+    public async Task BuildAsync_PlcOffline_説明が切り替わる()
+    {
+        var builder = new OrganizerInstructionBuilder(new FakeContextProvider());
+
+        var result = await builder.BuildAsync(OrganizerInstructions.Template, null, null, plcOnline: false);
+
+        StringAssert.Contains(result, "実機読み取りはユーザー設定で無効");
+        StringAssert.DoesNotMatch(result, new System.Text.RegularExpressions.Regex("\\{\\{plc_reading_status\\}\\}"));
     }
 
     private sealed class FakeContextProvider : IOrganizerContextProvider

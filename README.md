@@ -28,6 +28,7 @@ MOCHAはBlazor Server(.NET 8)上で動作する社内向けチャットBFFで、
 2. `https://localhost:7240`/`http://localhost:5240` にアクセスし、`/signup`/`/login` でユーザーを作成。`/roles` などのUIも同じルートから利用。
 3. `AzureAd.Enabled=true` かつ必要なクライアントID等を設定すると Entra ID 認証と Cookie/令牌制御に移行する。`Authentication:DefaultScheme`/`DefaultChallengeScheme` を上書き可能。
 4. サイドバーで装置エージェントを選択し、会話入力（`Ctrl+Enter` 送信）→ツール要求→ツール結果/ストリーム応答を確認。Stopボタンでキャンセル。
+5. ソリューション全体を指定フォルダへ出力（リリース/発行）する場合は `dotnet publish MOCHA.slnx -c Release -o /path/to/output` を使用。
 
 ## 構成設定
 - `ConnectionStrings:ChatDb`: PostgreSQL（または任意の `DbContext` 対応）が対象。`Trust Server Certificate` を簡易化用に含めるが、実運用では TLS 証明書を管理。
