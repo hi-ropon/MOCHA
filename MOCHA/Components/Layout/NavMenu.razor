@@ -21,6 +21,7 @@
 @inject MOCHA.Services.Agents.PlcConnectionState PlcConnectionState
 @inject IUserRoleProvider RoleProvider
 @inject MOCHA.Services.Drawings.DrawingRegistrationService DrawingService
+@inject AgentDelegationSettingService AgentDelegationSettingService
 @inject MOCHA.Services.Architecture.PlcConfigurationService PlcService
 @inject MOCHA.Services.Architecture.GatewayConfigurationService GatewayService
 @inject PcConfigurationService PcConfigurationService
@@ -217,6 +218,50 @@
                                 </div>
                             </div>
                         }
+
+                        <div class="agent-settings-section">
+                            <div class="drawing-header">
+                                <div>
+                                    <div class="agent-settings-section-title">サブエージェント</div>
+                                    <div class="agent-settings-subtitle">この装置エージェントで許可するサブエージェントを選択します</div>
+                                </div>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="SaveDelegationSettingsAsync"
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber) || _delegationSaving)">
+                                    保存
+                                </button>
+                            </div>
+
+                            @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+                            {
+                                <div class="drawing-empty">装置エージェントを選択してください</div>
+                            }
+                            else
+                            {
+                                <div class="agent-list">
+                                    @foreach (var option in _subAgentOptions)
+                                    {
+                                        var checkedValue = _selectedSubAgents.Contains(option.Id);
+                                        <label class="agent-row">
+                                            <input type="checkbox"
+                                                   class="agent-checkbox"
+                                                   checked="@checkedValue"
+                                                   @onchange="args => ToggleSubAgent(option.Id, args.Value)" />
+                                            <div class="agent-row-info">
+                                                <div class="agent-row-name">@option.Name</div>
+                                                <div class="agent-row-number">@option.Description</div>
+                                            </div>
+                                        </label>
+                                    }
+                                </div>
+                            }
+
+                            @if (!string.IsNullOrWhiteSpace(_delegationError))
+                            {
+                                <div class="drawing-error" style="margin-top: 8px;">@_delegationError</div>
+                            }
+                        </div>
 
                         <div class="agent-settings-section architecture-manager">
                             <div class="drawing-header">
@@ -1287,6 +1332,10 @@
     private string agentNameInput = string.Empty;
     private bool _isRegistering;
     private AgentSettingsTab _agentSettingsTab = AgentSettingsTab.Register;
+    private IReadOnlyList<SubAgentOption> _subAgentOptions = SubAgentOptions.All;
+    private HashSet<string> _selectedSubAgents = new(StringComparer.OrdinalIgnoreCase);
+    private string? _delegationError;
+    private bool _delegationSaving;
     private string SettingsSelectedAgentNumber => _agentSettingsSelection.SelectedAgentNumber ?? string.Empty;
     private Theme _selectedTheme = Theme.Light;
     private bool _plcOnlineSetting = true;
@@ -1475,6 +1524,7 @@
 
     private async Task LoadSettingsDataAsync()
     {
+        await LoadDelegationSettingsAsync();
         await LoadDrawingsAsync();
         await LoadPcSettingsAsync();
         await LoadUnitConfigurationsAsync();
@@ -1655,6 +1705,19 @@
         _drawings = await DrawingService.ListAsync(_userId, SettingsSelectedAgentNumber);
     }
 
+    private async Task LoadDelegationSettingsAsync()
+    {
+        if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _selectedSubAgents.Clear();
+            return;
+        }
+
+        var setting = await AgentDelegationSettingService.GetAsync(_userId, SettingsSelectedAgentNumber);
+        _selectedSubAgents = new HashSet<string>(setting.AllowedSubAgents, StringComparer.OrdinalIgnoreCase);
+        _delegationError = null;
+    }
+
     private async Task LoadPcSettingsAsync()
     {
         if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
@@ -1730,6 +1793,58 @@
         finally
         {
             _gatewaySaving = false;
+        }
+    }
+
+    private void ToggleSubAgent(string id, object? value)
+    {
+        var enabled = value is bool b
+            ? b
+            : bool.TryParse(value?.ToString(), out var parsed) && parsed;
+
+        if (enabled)
+        {
+            _selectedSubAgents.Add(id);
+        }
+        else
+        {
+            _selectedSubAgents.Remove(id);
+        }
+    }
+
+    private async Task SaveDelegationSettingsAsync()
+    {
+        if (_userId is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            _delegationError = "装置エージェントを選択してください";
+            return;
+        }
+
+        _delegationSaving = true;
+        try
+        {
+            var draft = new AgentDelegationSettingDraft
+            {
+                AllowedSubAgents = _selectedSubAgents.ToList()
+            };
+
+            var result = await AgentDelegationSettingService.SaveAsync(_userId, SettingsSelectedAgentNumber, draft);
+            if (!result.Succeeded)
+            {
+                _delegationError = result.Error;
+                return;
+            }
+
+            _delegationError = null;
+        }
+        finally
+        {
+            _delegationSaving = false;
         }
     }
 

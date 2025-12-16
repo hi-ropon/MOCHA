@@ -39,6 +39,8 @@ internal interface IChatDbContext
     DbSet<GatewaySettingEntity> GatewaySettings { get; }
     /// <summary>装置ユニット構成エンティティのセット</summary>
     DbSet<UnitConfigurationEntity> UnitConfigurations { get; }
+    /// <summary>サブエージェント設定エンティティのセット</summary>
+    DbSet<AgentDelegationSettingEntity> AgentDelegationSettings { get; }
     /// <summary>トラッキング操作へのアクセス</summary>
     ChangeTracker ChangeTracker { get; }
     /// <summary>データベース操作用ファサード</summary>

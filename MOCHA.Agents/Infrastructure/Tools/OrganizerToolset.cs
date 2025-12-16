@@ -38,9 +38,11 @@ public sealed class OrganizerToolset
     private readonly AITool _invokePlcTool;
     private readonly AITool _invokeDrawingTool;
     private readonly AITool _plcGatewayTool;
+    private readonly Dictionary<string, AITool> _toolMap;
+    private readonly IReadOnlyList<AITool> _allTools;
 
     /// <summary>提供するツール一覧</summary>
-    public IReadOnlyList<AITool> All { get; }
+    public IReadOnlyList<AITool> All => _allTools;
 
     /// <summary>
     /// ツールセットの依存関係注入による初期化
@@ -95,35 +97,101 @@ public sealed class OrganizerToolset
             name: "read_plc_gateway",
             description: "PLC Gateway からデバイスを読み取ります。optionsJson に devices/IP/port を含めます。");
 
-        All = BuildDelegationTools("organizer");
+        _allTools = new List<AITool>
+        {
+            _invokeIaiTool,
+            _invokeOrientalTool,
+            _invokePlcTool,
+            _invokeDrawingTool
+        };
+        _toolMap = _allTools.ToDictionary(t => t.Name, t => t, StringComparer.OrdinalIgnoreCase);
     }
 
-    private IReadOnlyList<AITool> BuildDelegationTools(string caller)
+    /// <summary>コンテキストに応じたツール一覧を返す</summary>
+    public IReadOnlyList<AITool> GetTools(ChatContext context)
     {
+        var allowedByPolicy = _delegationPolicy.GetAllowedCallees("organizer");
+        var allowedBySetting = NormalizeAllowed(context?.AllowedSubAgents);
+        var effective = allowedBySetting.Count == 0
+            ? allowedByPolicy
+            : allowedByPolicy.Where(c => allowedBySetting.Contains(c, StringComparer.OrdinalIgnoreCase)).ToList();
+
         var tools = new List<AITool>();
-        foreach (var callee in _delegationPolicy.GetAllowedCallees(caller))
+        foreach (var callee in effective)
         {
-            if (string.Equals(callee, "iaiAgent", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(callee, "iaiAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_iai_agent", out var iai))
             {
-                tools.Add(_invokeIaiTool);
+                tools.Add(iai);
                 continue;
             }
 
-            if (string.Equals(callee, "orientalAgent", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(callee, "orientalAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_oriental_agent", out var oriental))
             {
-                tools.Add(_invokeOrientalTool);
+                tools.Add(oriental);
                 continue;
             }
 
-            if (string.Equals(callee, "plcAgent", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(callee, "plcAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_plc_agent", out var plc))
             {
-                tools.Add(_invokePlcTool);
+                tools.Add(plc);
                 continue;
             }
 
-            if (string.Equals(callee, "drawingAgent", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(callee, "drawingAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_drawing_agent", out var drawing))
             {
-                tools.Add(_invokeDrawingTool);
+                tools.Add(drawing);
+            }
+        }
+
+        return tools;
+    }
+
+    private static IReadOnlyCollection<string> NormalizeAllowed(IReadOnlyCollection<string>? allowed)
+    {
+        if (allowed is null || allowed.Count == 0)
+        {
+            return Array.Empty<string>();
+        }
+
+        return allowed
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Select(x => x.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private IReadOnlyList<AITool> BuildDelegationTools(string caller, IReadOnlyCollection<string>? allowedFromSetting)
+    {
+        var allowedByPolicy = _delegationPolicy.GetAllowedCallees(caller);
+        var allowedBySetting = NormalizeAllowed(allowedFromSetting);
+        var effective = allowedBySetting.Count == 0
+            ? allowedByPolicy
+            : allowedByPolicy.Where(a => allowedBySetting.Contains(a, StringComparer.OrdinalIgnoreCase)).ToList();
+
+        var tools = new List<AITool>();
+        foreach (var callee in effective)
+        {
+            if (string.Equals(callee, "iaiAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_iai_agent", out var iai))
+            {
+                tools.Add(iai);
+                continue;
+            }
+
+            if (string.Equals(callee, "orientalAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_oriental_agent", out var oriental))
+            {
+                tools.Add(oriental);
+                continue;
+            }
+
+            if (string.Equals(callee, "plcAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_plc_agent", out var plc))
+            {
+                tools.Add(plc);
+                continue;
+            }
+
+            if (string.Equals(callee, "drawingAgent", StringComparison.OrdinalIgnoreCase) && _toolMap.TryGetValue("invoke_drawing_agent", out var drawing))
+            {
+                tools.Add(drawing);
             }
         }
 
@@ -137,6 +205,18 @@ public sealed class OrganizerToolset
         var ctx = _context.Value;
         var caller = ctx?.CallStack.Current ?? "organizer";
         var depth = ctx?.CallStack.Depth ?? 0;
+        var allowedSubAgents = ctx?.AllowedSubAgents;
+
+        if (allowedSubAgents is not null && allowedSubAgents.Count > 0 && !allowedSubAgents.Contains(callee, StringComparer.OrdinalIgnoreCase))
+        {
+            rejection = "サブエージェントが無効です";
+            if (ctx is not null)
+            {
+                ctx.Emit(AgentEventFactory.ToolCompleted(ctx.ChatContext.ConversationId, new ToolResult(call.Name, rejection, false, rejection)));
+            }
+
+            return false;
+        }
 
         if (!_delegationPolicy.CanInvoke(caller, callee, depth, out var reason))
         {
@@ -187,7 +267,8 @@ public sealed class OrganizerToolset
     {
         var callStack = new AgentCallStack();
         var rootFrame = callStack.Push("organizer");
-        _context.Value = new ScopeContext(chatContext, sink, callStack);
+        var allowed = NormalizeAllowed(chatContext.AllowedSubAgents);
+        _context.Value = new ScopeContext(chatContext, sink, callStack, allowed);
         var manualScope = _manualTools.UseContext(chatContext, sink);
         var agentScope = _manualAgentTool.UseContext(chatContext.ConversationId, sink);
         var plcScope = _plcToolset.UseContext(chatContext.ConversationId, sink);
@@ -301,7 +382,7 @@ public sealed class OrganizerToolset
             var connectionContext = await _plcAgentContextProvider.BuildAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, cancellationToken);
             var plcOnline = ctx?.ChatContext.PlcOnline ?? true;
             _plcToolset.SetConnectionContext(connectionContext);
-            var delegationTools = BuildDelegationTools("plcAgent");
+            var delegationTools = BuildDelegationTools("plcAgent", ctx?.AllowedSubAgents);
             var plcTools = _plcToolset.GetTools(plcOnline);
             var gatewayTools = plcOnline ? new[] { _plcGatewayTool } : Array.Empty<AITool>();
             var extraTools = plcTools.Concat(gatewayTools).Concat(delegationTools);
@@ -417,7 +498,7 @@ public sealed class OrganizerToolset
         }
     }
 
-    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink, AgentCallStack CallStack)
+    private sealed record ScopeContext(ChatContext ChatContext, Action<AgentEvent> Sink, AgentCallStack CallStack, IReadOnlyCollection<string> AllowedSubAgents)
     {
         public void Emit(AgentEvent ev) => Sink(ev);
     }

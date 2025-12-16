@@ -18,6 +18,9 @@ public static class OrganizerInstructions
         - 一般者でも分かるように、PLCのデバイス番号による回答は避けて、ユニット名で使われている構成機器の名称やコメントで使わている名前の内容で説明する
         - プログラムのファイル名やコメントファイル（COMMENT.csv）の名前は出さない
 
+        [サブエージェント利用ポリシー]
+        {{subagent_policy}}
+
         [アーキテクチャ設定コンテキスト]
         {{architecture_context}}
         [図面コンテキスト]
@@ -101,7 +104,72 @@ public static class OrganizerInstructions
     /// コンテキストなしの既定プロンプト
     /// </summary>
     public static string Default { get; } = Base
+        .Replace("{{subagent_policy}}", BuildSubAgentPolicy(new[] { "plcAgent", "iaiAgent", "orientalAgent", "drawingAgent" }), StringComparison.Ordinal)
         .Replace("{{architecture_context}}", "アーキテクチャ設定: 情報なし", StringComparison.Ordinal)
         .Replace("{{drawing_context}}", "図面情報: 情報なし", StringComparison.Ordinal)
         .Replace("{{plc_reading_status}}", "実機読み取り設定: 情報なし", StringComparison.Ordinal);
+
+    internal static string BuildSubAgentPolicy(IReadOnlyCollection<string>? allowedSubAgents)
+    {
+        var known = new[]
+        {
+            ("plcAgent", "PLCエージェント"),
+            ("iaiAgent", "IAIエージェント"),
+            ("orientalAgent", "Orientalエージェント"),
+            ("drawingAgent", "図面エージェント")
+        };
+
+        var normalized = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (allowedSubAgents is null)
+        {
+            foreach (var (id, _) in known)
+            {
+                normalized.Add(id);
+            }
+        }
+        else if (allowedSubAgents.Count > 0)
+        {
+            foreach (var value in allowedSubAgents)
+            {
+                if (string.IsNullOrWhiteSpace(value))
+                {
+                    continue;
+                }
+
+                normalized.Add(value.Trim());
+            }
+        }
+
+        if (normalized.Count == 0)
+        {
+            return "サブエージェント呼び出しは禁止。invoke_plc_agent / invoke_iai_agent / invoke_oriental_agent / invoke_drawing_agent は使わず、ツール不要な範囲のみ短く回答する。";
+        }
+
+        var allowedLabels = new List<string>();
+        foreach (var agent in known)
+        {
+            if (normalized.Contains(agent.Item1))
+            {
+                allowedLabels.Add(agent.Item2);
+            }
+        }
+
+        var unknown = normalized.Where(x => known.All(k => !k.Item1.Equals(x, StringComparison.OrdinalIgnoreCase))).ToArray();
+        if (unknown.Length > 0)
+        {
+            allowedLabels.AddRange(unknown);
+        }
+
+        var deniedLabels = known
+            .Where(k => !normalized.Contains(k.Item1))
+            .Select(k => k.Item2)
+            .ToArray();
+
+        if (deniedLabels.Length == 0)
+        {
+            return $"サブエージェント呼び出しは全て許可。優先的に委譲する: {string.Join(", ", allowedLabels)}";
+        }
+
+        return $"許可: {string.Join(", ", allowedLabels)} / 禁止: {string.Join(", ", deniedLabels)}。禁止サブエージェントのツール呼び出しは行わず、Organizer が直接簡潔に回答する。";
+    }
 }

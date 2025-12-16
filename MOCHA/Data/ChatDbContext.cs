@@ -34,6 +34,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
     public DbSet<PlcUnitEntity> PlcUnits => Set<PlcUnitEntity>();
     public DbSet<GatewaySettingEntity> GatewaySettings => Set<GatewaySettingEntity>();
     public DbSet<UnitConfigurationEntity> UnitConfigurations => Set<UnitConfigurationEntity>();
+    public DbSet<AgentDelegationSettingEntity> AgentDelegationSettings => Set<AgentDelegationSettingEntity>();
 
     /// <summary>
     /// エンティティの制約やインデックス構成
@@ -186,6 +187,15 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Description).HasMaxLength(500);
             builder.Property(x => x.DevicesJson).HasColumnType("TEXT");
             builder.HasIndex(x => new { x.UserId, x.AgentNumber, x.CreatedAt });
+        });
+
+        modelBuilder.Entity<AgentDelegationSettingEntity>(builder =>
+        {
+            builder.HasKey(x => x.Id);
+            builder.Property(x => x.UserObjectId).HasMaxLength(200);
+            builder.Property(x => x.AgentNumber).HasMaxLength(100);
+            builder.Property(x => x.AllowedSubAgentsJson).HasColumnType("TEXT");
+            builder.HasIndex(x => new { x.UserObjectId, x.AgentNumber }).IsUnique();
         });
     }
 }

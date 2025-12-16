@@ -23,6 +23,9 @@ public sealed record ChatContext(string ConversationId, IReadOnlyList<ChatTurn> 
     /// <summary>優先的に使うテンプレート文字列</summary>
     public string? InstructionTemplate { get; init; }
 
+    /// <summary>許可されたサブエージェント</summary>
+    public IReadOnlyCollection<string> AllowedSubAgents { get; init; } = Array.Empty<string>();
+
     /// <summary>
     /// 履歴なしのチャットコンテキスト生成
     /// </summary>
