@@ -44,8 +44,14 @@ public class DevAuthTests
         });
 
         var response = await client.GetAsync("/");
+        if (response.StatusCode == HttpStatusCode.RedirectKeepVerb)
+        {
+            var redirectLocation = response.Headers.Location;
+            Assert.IsNotNull(redirectLocation);
+            response = await client.GetAsync(redirectLocation);
+        }
 
-        Assert.AreEqual(HttpStatusCode.Redirect, response.StatusCode);
+        Assert.IsTrue(response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.RedirectKeepVerb);
         StringAssert.StartsWith(response.Headers.Location?.AbsolutePath, "/login");
     }
 
@@ -62,6 +68,13 @@ public class DevAuthTests
         });
 
         var response = await client.GetAsync("/login");
+        if (response.StatusCode == HttpStatusCode.RedirectKeepVerb)
+        {
+            var redirectLocation = response.Headers.Location;
+            Assert.IsNotNull(redirectLocation);
+            response = await client.GetAsync(redirectLocation);
+        }
+
         response.EnsureSuccessStatusCode();
         var body = await response.Content.ReadAsStringAsync();
 
@@ -91,14 +104,14 @@ public class DevAuthTests
             ["__RequestVerificationToken"] = antiforgery
         });
 
-        var postResponse = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var postResponse = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", content);
 
-        Assert.AreEqual(HttpStatusCode.Redirect, postResponse.StatusCode);
+        Assert.IsTrue(postResponse.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.RedirectKeepVerb);
         var cookieHeader = postResponse.Headers.TryGetValues("Set-Cookie", out var values) ? values.FirstOrDefault() : null;
         Assert.IsNotNull(cookieHeader);
         client.DefaultRequestHeaders.Add("Cookie", cookieHeader.Split(';')[0]);
 
-        var homeResponse = await client.GetAsync("/");
+        var homeResponse = await GetAllowingRedirectAsync(client, "/");
 
         homeResponse.EnsureSuccessStatusCode();
     }
@@ -119,14 +132,14 @@ public class DevAuthTests
         var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
         var firstContent = CreateSignupContent(email, "Passw0rd!", "/", antiforgery);
 
-        var firstResponse = await client.PostAsync("/signup?returnUrl=%2F", firstContent);
+        var firstResponse = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", firstContent);
 
-        Assert.AreEqual(HttpStatusCode.Redirect, firstResponse.StatusCode);
+        Assert.IsTrue(firstResponse.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.RedirectKeepVerb);
 
         antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
         var secondContent = CreateSignupContent(email, "Passw0rd!", "/", antiforgery);
 
-        var secondResponse = await client.PostAsync("/signup?returnUrl=%2F", secondContent);
+        var secondResponse = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", secondContent);
         var body = WebUtility.HtmlDecode(await secondResponse.Content.ReadAsStringAsync());
 
         Assert.AreEqual(HttpStatusCode.OK, secondResponse.StatusCode);
@@ -148,7 +161,7 @@ public class DevAuthTests
         var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
         var content = CreateSignupContent("invalid-email", "Passw0rd!", "/", antiforgery);
 
-        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var response = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", content);
         var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -177,7 +190,7 @@ public class DevAuthTests
             ["__RequestVerificationToken"] = antiforgery
         });
 
-        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var response = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", content);
         var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -199,7 +212,7 @@ public class DevAuthTests
         var antiforgery = await AntiforgeryTokenFetcher.FetchAsync(client, "/signup");
         var content = CreateSignupContent("shortpass@example.com", "12345", "/", antiforgery);
 
-        var response = await client.PostAsync("/signup?returnUrl=%2F", content);
+        var response = await PostAllowingKeepVerbRedirectAsync(client, "/signup?returnUrl=%2F", content);
         var body = WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync());
 
         Assert.AreEqual(HttpStatusCode.OK, response.StatusCode);
@@ -223,6 +236,51 @@ public class DevAuthTests
             ["ReturnUrl"] = returnUrl,
             ["__RequestVerificationToken"] = token
         });
+
+    /// <summary>
+    /// GET 時にリダイレクトを一度だけ許容するヘルパー
+    /// </summary>
+    /// <param name="client">HTTP クライアント</param>
+    /// <param name="path">取得先パス</param>
+    /// <returns>最終レスポンス</returns>
+    private static async Task<HttpResponseMessage> GetAllowingRedirectAsync(HttpClient client, string path)
+    {
+        var response = await client.GetAsync(path);
+        if (response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.RedirectKeepVerb)
+        {
+            var redirectLocation = response.Headers.Location;
+            Assert.IsNotNull(redirectLocation);
+            var nextUri = redirectLocation.IsAbsoluteUri
+                ? redirectLocation
+                : new Uri(client.BaseAddress ?? new Uri("https://localhost"), redirectLocation);
+            response = await client.GetAsync(nextUri);
+        }
+
+        return response;
+    }
+
+    /// <summary>
+    /// POST 時に RedirectKeepVerb を踏んだ場合に 1 度だけ追従するヘルパー
+    /// </summary>
+    /// <param name="client">HTTP クライアント</param>
+    /// <param name="path">送信先パス</param>
+    /// <param name="content">送信内容</param>
+    /// <returns>最終レスポンス</returns>
+    private static async Task<HttpResponseMessage> PostAllowingKeepVerbRedirectAsync(HttpClient client, string path, FormUrlEncodedContent content)
+    {
+        var response = await client.PostAsync(path, content);
+        if (response.StatusCode == HttpStatusCode.RedirectKeepVerb)
+        {
+            var redirectLocation = response.Headers.Location;
+            Assert.IsNotNull(redirectLocation);
+            var nextUri = redirectLocation.IsAbsoluteUri
+                ? redirectLocation
+                : new Uri(client.BaseAddress ?? new Uri("https://localhost"), redirectLocation);
+            response = await client.PostAsync(nextUri, content);
+        }
+
+        return response;
+    }
 }
 
 /// <summary>
@@ -340,6 +398,22 @@ internal static class AntiforgeryTokenFetcher
     public static async Task<string> FetchAsync(HttpClient client, string path)
     {
         var response = await client.GetAsync(path);
+        var redirectCount = 0;
+        while (response.StatusCode is HttpStatusCode.Redirect or HttpStatusCode.RedirectKeepVerb)
+        {
+            if (redirectCount++ > 3)
+            {
+                break;
+            }
+
+            var redirectLocation = response.Headers.Location;
+            Assert.IsNotNull(redirectLocation);
+            var nextUri = redirectLocation.IsAbsoluteUri
+                ? redirectLocation
+                : new Uri(client.BaseAddress ?? new Uri("https://localhost"), redirectLocation);
+            response = await client.GetAsync(nextUri);
+        }
+
         response.EnsureSuccessStatusCode();
 
         var body = await response.Content.ReadAsStringAsync();

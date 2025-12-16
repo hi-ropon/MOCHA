@@ -24,9 +24,11 @@ public class OrganizerInstructionBuilderTests
         StringAssert.Contains(result, "アーキテクチャ設定: 情報なし");
         StringAssert.Contains(result, "図面情報: 情報なし");
         StringAssert.Contains(result, "実機読み取りが許可されている");
+        StringAssert.Contains(result, "サブエージェント呼び出しは全て許可");
         Assert.IsFalse(result.Contains("{{architecture_context}}", StringComparison.Ordinal));
         Assert.IsFalse(result.Contains("{{drawing_context}}", StringComparison.Ordinal));
         Assert.IsFalse(result.Contains("{{plc_reading_status}}", StringComparison.Ordinal));
+        Assert.IsFalse(result.Contains("{{subagent_policy}}", StringComparison.Ordinal));
     }
 
     /// <summary>
@@ -56,6 +58,25 @@ public class OrganizerInstructionBuilderTests
 
         StringAssert.Contains(result, "実機読み取りはユーザー設定で無効");
         StringAssert.DoesNotMatch(result, new System.Text.RegularExpressions.Regex("\\{\\{plc_reading_status\\}\\}"));
+    }
+
+    /// <summary>
+    /// サブエージェント制限がプロンプトに反映される
+    /// </summary>
+    [TestMethod]
+    public async Task BuildAsync_サブエージェント制限あり_ポリシーを埋め込む()
+    {
+        var builder = new OrganizerInstructionBuilder(new FakeContextProvider());
+
+        var result = await builder.BuildAsync(
+            OrganizerInstructions.Template,
+            null,
+            null,
+            plcOnline: true,
+            allowedSubAgents: new[] { "plcAgent", "drawingAgent" });
+
+        StringAssert.Contains(result, "許可: PLCエージェント, 図面エージェント");
+        StringAssert.Contains(result, "禁止: IAIエージェント, Orientalエージェント");
     }
 
     private sealed class FakeContextProvider : IOrganizerContextProvider

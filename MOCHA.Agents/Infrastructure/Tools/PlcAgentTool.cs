@@ -129,6 +129,7 @@ public sealed class PlcAgentTool
                     devices = specs,
                     ip = options.Ip,
                     port = options.Port,
+                    transport = options.Transport,
                     plc_host = options.PlcHost
                 };
 
@@ -156,6 +157,11 @@ public sealed class PlcAgentTool
             if (!string.IsNullOrWhiteSpace(options.PlcHost))
             {
                 query.Add($"plc_host={Uri.EscapeDataString(options.PlcHost)}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(options.Transport))
+            {
+                query.Add($"transport={Uri.EscapeDataString(options.Transport)}");
             }
 
             if (!string.IsNullOrWhiteSpace(options.Ip))
@@ -203,6 +209,8 @@ public sealed class PlcAgentTool
         public int? Port { get; init; }
         [JsonPropertyName("plc_host")]
         public string? PlcHost { get; init; }
+        [JsonPropertyName("transport")]
+        public string? Transport { get; init; }
         [JsonPropertyName("timeout")]
         public double? TimeoutSeconds { get; init; }
         public IReadOnlyList<string> Devices { get; init; } = Array.Empty<string>();

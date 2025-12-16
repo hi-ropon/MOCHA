@@ -9,6 +9,7 @@ public sealed record DeviceReadRequest(
     string Spec,
     string? Ip = null,
     int? Port = null,
+    string? Transport = null,
     string? PlcHost = null,
     TimeSpan? Timeout = null,
     string? BaseUrl = null);

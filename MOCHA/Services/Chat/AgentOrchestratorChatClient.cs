@@ -8,6 +8,7 @@ using MOCHA.Agents.Domain;
 using MOCHA.Agents.Infrastructure.Orchestration;
 using MOCHA.Models.Chat;
 using MOCHA.Models.Auth;
+using MOCHA.Services.Agents;
 
 using DomainChatTurn = MOCHA.Agents.Domain.ChatTurn;
 using DomainAuthorRole = MOCHA.Agents.Domain.AuthorRole;
@@ -23,16 +24,22 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
 {
     private readonly IAgentOrchestrator _orchestrator;
     private readonly IUserRoleProvider _roleProvider;
+    private readonly AgentDelegationSettingService _delegationSettingService;
 
     /// <summary>
     /// オーケストレーター注入による初期化
     /// </summary>
     /// <param name="orchestrator">エージェントオーケストレーター</param>
     /// <param name="roleProvider">ロールプロバイダー</param>
-    public AgentOrchestratorChatClient(IAgentOrchestrator orchestrator, IUserRoleProvider roleProvider)
+    /// <param name="delegationSettingService">サブエージェント設定サービス</param>
+    public AgentOrchestratorChatClient(
+        IAgentOrchestrator orchestrator,
+        IUserRoleProvider roleProvider,
+        AgentDelegationSettingService delegationSettingService)
     {
         _orchestrator = orchestrator ?? throw new ArgumentNullException(nameof(orchestrator));
         _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
+        _delegationSettingService = delegationSettingService ?? throw new ArgumentNullException(nameof(delegationSettingService));
     }
 
     /// <summary>
@@ -76,6 +83,7 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
             .ToList();
 
         var (roleValues, instructionTemplate) = await ResolveRoleContextAsync(turn.UserId, cancellationToken);
+        var allowedSubAgents = await ResolveAllowedSubAgentsAsync(turn.UserId, turn.AgentNumber, cancellationToken);
         var userTurn = history.LastOrDefault() ?? DomainChatTurn.User(string.Empty);
         var context = new ChatContext(conversationId, history)
         {
@@ -83,7 +91,8 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
             UserId = turn.UserId,
             PlcOnline = turn.PlcOnline,
             UserRoles = roleValues,
-            InstructionTemplate = instructionTemplate
+            InstructionTemplate = instructionTemplate,
+            AllowedSubAgents = allowedSubAgents
         };
 
         var events = await _orchestrator.ReplyAsync(userTurn, context, cancellationToken);
@@ -137,6 +146,17 @@ public sealed class AgentOrchestratorChatClient : IAgentChatClient
         var normalized = roles.Select(r => r.Value).ToArray();
         var template = RoleInstructionComposer.Compose(OrganizerInstructions.Base, normalized);
         return (normalized, template);
+    }
+
+    private async Task<IReadOnlyCollection<string>> ResolveAllowedSubAgentsAsync(string? userId, string? agentNumber, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        {
+            return Array.Empty<string>();
+        }
+
+        var setting = await _delegationSettingService.GetAsync(userId, agentNumber, cancellationToken);
+        return setting.AllowedSubAgents;
     }
 
     private static DomainChatTurn MapToDomainTurn(ChatMessage message)

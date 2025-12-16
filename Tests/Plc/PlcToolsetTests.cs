@@ -60,8 +60,8 @@ public class PlcToolsetTests
             8500,
             new[]
             {
-                new PlcAgentUnit(Guid.NewGuid(), "Unit-A", "192.168.0.10", 5000, "10.0.0.1", 8500),
-                new PlcAgentUnit(Guid.NewGuid(), "Unit-B", "192.168.0.11", 5001, "10.0.0.2", 8600)
+                new PlcAgentUnit(Guid.NewGuid(), "Unit-A", "192.168.0.10", 5000, "tcp", "10.0.0.1", 8500),
+                new PlcAgentUnit(Guid.NewGuid(), "Unit-B", "192.168.0.11", 5001, "udp", "10.0.0.2", 8600)
             });
 
         var hint = toolset.BuildContextHint(
@@ -74,10 +74,42 @@ public class PlcToolsetTests
             connectionContext: connection);
 
         StringAssert.Contains(hint, "デフォルトゲートウェイ: 10.0.0.1:8500");
-        StringAssert.Contains(hint, "ユニット: Unit-A ip=192.168.0.10 port=5000 gw=10.0.0.1:8500");
-        StringAssert.Contains(hint, "ユニット: Unit-B ip=192.168.0.11 port=5001 gw=10.0.0.2:8600");
+        StringAssert.Contains(hint, "ユニット: Unit-A ip=192.168.0.10 port=5000 transport=TCP gw=10.0.0.1:8500");
+        StringAssert.Contains(hint, "ユニット: Unit-B ip=192.168.0.11 port=5001 transport=UDP gw=10.0.0.2:8600");
         StringAssert.Contains(hint, "ゲートウェイオプション");
         StringAssert.Contains(hint, "補足: note");
+    }
+
+    /// <summary>
+    /// ユニットの通信方式をゲートウェイリクエストへ反映する
+    /// </summary>
+    [TestMethod]
+    public async Task ReadValuesAsync_ユニットTransportを反映する()
+    {
+        var store = CreateStore();
+        var gateway = new CaptureGateway();
+        var analyzer = new PlcProgramAnalyzer(store);
+        var search = new PlcCommentSearchService(store);
+        var reasoner = new PlcReasoner();
+        var faultTracer = new PlcFaultTracer(store);
+        var manuals = new PlcManualService(new DummyManualStore());
+        var toolset = new PlcToolset(store, gateway, analyzer, search, reasoner, faultTracer, manuals, NullLogger<PlcToolset>.Instance);
+        toolset.SetConnectionContext(new PlcAgentContext(
+            gatewayHost: null,
+            gatewayPort: null,
+            units: new[]
+            {
+                new PlcAgentUnit(Guid.NewGuid(), "Unit-A", "192.168.0.10", 5511, "udp", null, null)
+            }));
+        var method = typeof(PlcToolset).GetMethod("ReadValuesAsync", BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method);
+
+        var task = (Task<string>)method!.Invoke(toolset, new object?[] { "D0", string.Empty, 0, 3, null, CancellationToken.None })!;
+        await task;
+
+        Assert.AreEqual("udp", gateway.LastRequest?.Transport);
+        Assert.AreEqual("192.168.0.10", gateway.LastRequest?.Ip);
+        Assert.AreEqual(5511, gateway.LastRequest?.Port);
     }
 
     /// <summary>

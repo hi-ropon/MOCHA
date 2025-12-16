@@ -291,12 +291,14 @@ h1:focus {
 .agent-row {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
+    gap: 0.6rem;
     padding: 0.55rem 0.7rem;
     border-radius: 10px;
     border: 1px solid var(--border-color);
     background: var(--panel-bg);
     transition: border-color 0.15s ease, background-color 0.15s ease;
+    text-align: left;
 }
 
 .agent-row:hover {

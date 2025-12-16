@@ -12,6 +12,8 @@ public sealed class PlcUnitDraft
 {
     /// <summary>サポートするメーカー一覧</summary>
     public static readonly IReadOnlyList<string> SupportedManufacturers = new[] { "三菱電機", "KEYENCE" };
+    /// <summary>サポートする通信方式</summary>
+    public static readonly IReadOnlyList<string> SupportedTransports = new[] { "tcp", "udp" };
     /// <summary>ユニット名</summary>
     public string Name { get; init; } = string.Empty;
     /// <summary>メーカー</summary>
@@ -24,6 +26,8 @@ public sealed class PlcUnitDraft
     public string? IpAddress { get; init; }
     /// <summary>ポート番号</summary>
     public int? Port { get; init; }
+    /// <summary>通信方式</summary>
+    public string Transport { get; init; } = "tcp";
     /// <summary>ゲートウェイIPアドレス</summary>
     public string? GatewayHost { get; init; }
     /// <summary>ゲートウェイポート番号</summary>
@@ -64,6 +68,11 @@ public sealed class PlcUnitDraft
         if (Port is not null && (Port <= 0 || Port > 65535))
         {
             return (false, "ポート番号は1-65535で入力してください");
+        }
+
+        if (!SupportedTransports.Contains(NormalizeTransport(Transport), StringComparer.OrdinalIgnoreCase))
+        {
+            return (false, "通信方式は tcp または udp を選択してください");
         }
 
         if (Modules.Any(m => string.IsNullOrWhiteSpace(m.Name)))
@@ -128,6 +137,11 @@ public sealed class PlcUnitDraft
         }
 
         return (true, null);
+    }
+
+    private static string NormalizeTransport(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "tcp" : value.Trim().ToLowerInvariant();
     }
 
     private static bool IsCsvFile(string fileName)

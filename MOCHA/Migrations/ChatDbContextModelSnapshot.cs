@@ -191,6 +191,10 @@ namespace MOCHA.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Transport")
+                        .HasMaxLength(10)
+                        .HasColumnType("character varying(10)");
+
                     b.Property<string>("Manufacturer")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");

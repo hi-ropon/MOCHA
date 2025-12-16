@@ -21,6 +21,7 @@ public sealed class PlcUnit
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
     /// <param name="port">ポート番号</param>
+    /// <param name="transport">通信方式</param>
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
     /// <param name="programDescription">プログラム構成説明</param>
@@ -38,6 +39,7 @@ public sealed class PlcUnit
         string? role,
         string? ipAddress,
         int? port,
+        string? transport,
         string? gatewayHost,
         int? gatewayPort,
         PlcFileUpload? commentFile,
@@ -57,6 +59,7 @@ public sealed class PlcUnit
         Role = role;
         IpAddress = ipAddress;
         Port = port;
+        Transport = NormalizeTransport(transport);
         GatewayHost = gatewayHost;
         GatewayPort = gatewayPort;
         CommentFile = commentFile;
@@ -86,6 +89,8 @@ public sealed class PlcUnit
     public string? IpAddress { get; }
     /// <summary>ポート番号</summary>
     public int? Port { get; }
+    /// <summary>通信方式</summary>
+    public string Transport { get; }
     /// <summary>ゲートウェイIP</summary>
     public string? GatewayHost { get; }
     /// <summary>ゲートウェイポート</summary>
@@ -126,6 +131,7 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
+            NormalizeTransport(draft.Transport),
             NormalizeNullable(draft.GatewayHost),
             draft.GatewayPort,
             NormalizeFile(draft.CommentFile),
@@ -149,6 +155,7 @@ public sealed class PlcUnit
     /// <param name="role">役割</param>
     /// <param name="ipAddress">IPアドレス</param>
     /// <param name="port">ポート番号</param>
+    /// <param name="transport">通信方式</param>
     /// <param name="commentFile">コメントファイル</param>
     /// <param name="programFiles">プログラムファイル</param>
     /// <param name="programDescription">プログラム構成説明</param>
@@ -166,6 +173,7 @@ public sealed class PlcUnit
         string? role,
         string? ipAddress,
         int? port,
+        string? transport,
         string? gatewayHost,
         int? gatewayPort,
         PlcFileUpload? commentFile,
@@ -186,6 +194,7 @@ public sealed class PlcUnit
             role,
             ipAddress,
             port,
+            transport,
             gatewayHost,
             gatewayPort,
             commentFile,
@@ -214,6 +223,7 @@ public sealed class PlcUnit
             NormalizeNullable(draft.Role),
             NormalizeNullable(draft.IpAddress),
             draft.Port,
+            NormalizeTransport(draft.Transport),
             NormalizeNullable(draft.GatewayHost),
             draft.GatewayPort,
             NormalizeFile(draft.CommentFile) ?? CommentFile,
@@ -242,6 +252,7 @@ public sealed class PlcUnit
             Role,
             IpAddress,
             Port,
+            Transport,
             GatewayHost,
             GatewayPort,
             CommentFile,
@@ -266,6 +277,13 @@ public sealed class PlcUnit
     private static string NormalizeRequired(string value)
     {
         return string.IsNullOrWhiteSpace(value) ? string.Empty : value.Trim();
+    }
+
+    private static string NormalizeTransport(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value)
+            ? "tcp"
+            : value.Trim().ToLowerInvariant();
     }
 
     private static PlcFileUpload? NormalizeFile(PlcFileUpload? file)

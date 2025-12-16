@@ -60,6 +60,9 @@ public sealed class PlcAgentUnit
     /// <summary>ユニットポート</summary>
     public int? Port { get; }
 
+    /// <summary>通信方式</summary>
+    public string? Transport { get; }
+
     /// <summary>ユニットに紐づくゲートウェイホスト</summary>
     public string? GatewayHost { get; }
 
@@ -73,14 +76,16 @@ public sealed class PlcAgentUnit
     /// <param name="name">ユニット名</param>
     /// <param name="ipAddress">IPアドレス</param>
     /// <param name="port">ポート</param>
+    /// <param name="transport">通信方式</param>
     /// <param name="gatewayHost">ゲートウェイホスト</param>
     /// <param name="gatewayPort">ゲートウェイポート</param>
-    public PlcAgentUnit(Guid id, string name, string? ipAddress, int? port, string? gatewayHost, int? gatewayPort)
+    public PlcAgentUnit(Guid id, string name, string? ipAddress, int? port, string? transport, string? gatewayHost, int? gatewayPort)
     {
         Id = id;
         Name = string.IsNullOrWhiteSpace(name) ? string.Empty : name.Trim();
         IpAddress = string.IsNullOrWhiteSpace(ipAddress) ? null : ipAddress.Trim();
         Port = port;
+        Transport = string.IsNullOrWhiteSpace(transport) ? null : transport.Trim().ToLowerInvariant();
         GatewayHost = string.IsNullOrWhiteSpace(gatewayHost) ? null : gatewayHost.Trim();
         GatewayPort = gatewayPort;
     }

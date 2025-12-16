@@ -134,17 +134,18 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             {
                 entity.UserId = unit.UserId;
                 entity.AgentNumber = unit.AgentNumber;
-                entity.Name = unit.Name;
-                entity.Manufacturer = unit.Manufacturer;
-                entity.Model = unit.Model;
-                entity.Role = unit.Role;
-                entity.IpAddress = unit.IpAddress;
-                entity.Port = unit.Port;
-                entity.GatewayHost = unit.GatewayHost;
-                entity.GatewayPort = unit.GatewayPort;
-                entity.ProgramDescription = unit.ProgramDescription;
-                entity.CommentFileJson = SerializeFile(unit.CommentFile);
-                entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
+            entity.Name = unit.Name;
+            entity.Manufacturer = unit.Manufacturer;
+            entity.Model = unit.Model;
+            entity.Role = unit.Role;
+            entity.IpAddress = unit.IpAddress;
+            entity.Port = unit.Port;
+            entity.Transport = unit.Transport;
+            entity.GatewayHost = unit.GatewayHost;
+            entity.GatewayPort = unit.GatewayPort;
+            entity.ProgramDescription = unit.ProgramDescription;
+            entity.CommentFileJson = SerializeFile(unit.CommentFile);
+            entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
                 entity.ModulesJson = SerializeModules(unit.Modules);
                 entity.FunctionBlocksJson = SerializeFunctionBlocks(unit.FunctionBlocks);
                 entity.CreatedAt = unit.CreatedAt;
@@ -175,6 +176,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             Role = unit.Role,
             IpAddress = unit.IpAddress,
             Port = unit.Port,
+            Transport = unit.Transport,
             GatewayHost = unit.GatewayHost,
             GatewayPort = unit.GatewayPort,
             ProgramDescription = unit.ProgramDescription,
@@ -204,6 +206,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             entity.Role,
             entity.IpAddress,
             entity.Port,
+            entity.Transport,
             entity.GatewayHost,
             entity.GatewayPort,
             commentFile,
@@ -275,10 +278,45 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
 
     private async Task EnsureTableIfMissingAsync(CancellationToken cancellationToken)
     {
+        var provider = _dbContext.Database.ProviderName ?? string.Empty;
         var connection = _dbContext.Database.GetDbConnection();
         if (connection.State != System.Data.ConnectionState.Open)
         {
             await connection.OpenAsync(cancellationToken);
+        }
+
+        if (provider.Contains("Npgsql", StringComparison.OrdinalIgnoreCase))
+        {
+            const string createSqlNpgsql = """
+                CREATE TABLE IF NOT EXISTS "PlcUnits"(
+                    "Id" uuid NOT NULL CONSTRAINT "PK_PlcUnits" PRIMARY KEY,
+                    "UserId" TEXT NOT NULL,
+                    "AgentNumber" TEXT NOT NULL,
+                    "Name" TEXT NOT NULL,
+                    "Manufacturer" TEXT NULL,
+                    "Model" TEXT NULL,
+                    "Role" TEXT NULL,
+                    "IpAddress" TEXT NULL,
+                    "Transport" TEXT NULL,
+                    "Port" INTEGER NULL,
+                    "GatewayHost" TEXT NULL,
+                    "GatewayPort" INTEGER NULL,
+                    "ProgramDescription" TEXT NULL,
+                    "CommentFileJson" TEXT NULL,
+                    "ProgramFilesJson" TEXT NULL,
+                    "ModulesJson" TEXT NULL,
+                    "FunctionBlocksJson" TEXT NULL,
+                    "CreatedAt" TEXT NOT NULL,
+                    "UpdatedAt" TEXT NOT NULL
+                );
+                CREATE INDEX IF NOT EXISTS "IX_PlcUnits_UserId_AgentNumber_CreatedAt" ON "PlcUnits"("UserId", "AgentNumber", "CreatedAt");
+            """;
+            await _dbContext.Database.ExecuteSqlRawAsync(createSqlNpgsql, cancellationToken);
+            const string addTransportSqlNpgsql = """
+                ALTER TABLE "PlcUnits" ADD COLUMN IF NOT EXISTS "Transport" TEXT NULL;
+            """;
+            await _dbContext.Database.ExecuteSqlRawAsync(addTransportSqlNpgsql, cancellationToken);
+            return;
         }
 
         const string createSql = """
@@ -291,6 +329,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
                 Model TEXT NULL,
                 Role TEXT NULL,
                 IpAddress TEXT NULL,
+                Transport TEXT NULL,
                 Port INTEGER NULL,
                 GatewayHost TEXT NULL,
                 GatewayPort INTEGER NULL,
@@ -306,6 +345,18 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
         """;
 
         await _dbContext.Database.ExecuteSqlRawAsync(createSql, cancellationToken);
+        const string addTransportSql = """
+            ALTER TABLE PlcUnits ADD COLUMN Transport TEXT NULL;
+        """;
+
+        try
+        {
+            await _dbContext.Database.ExecuteSqlRawAsync(addTransportSql, cancellationToken);
+        }
+        catch
+        {
+            // 既に列が存在する場合は無視する
+        }
     }
 
 }

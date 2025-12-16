@@ -236,7 +236,13 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
         var baseTemplate = !string.IsNullOrWhiteSpace(context.InstructionTemplate)
             ? context.InstructionTemplate!
             : _options.Instructions ?? OrganizerInstructions.Template;
-        var instructions = await _instructionBuilder.BuildAsync(baseTemplate, context.UserId, context.AgentNumber, context.PlcOnline, cancellationToken);
+        var instructions = await _instructionBuilder.BuildAsync(
+            baseTemplate,
+            context.UserId,
+            context.AgentNumber,
+            context.PlcOnline,
+            context.AllowedSubAgents,
+            cancellationToken);
         _logger.LogInformation("Using agent instructions: {Instructions}", instructions);
 
         if (_threads.TryGetValue(context.ConversationId, out var existing))
@@ -246,7 +252,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
                 name: _options.AgentName ?? "mocha-agent",
                 description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
                 instructions: instructions,
-                tools: _tools.All.ToList());
+                tools: _tools.GetTools(context).ToList());
 
             return new AgentHandle(existing.Client, agentWithContext);
         }
@@ -257,7 +263,7 @@ public sealed class AgentFrameworkOrchestrator : IAgentOrchestrator
             name: _options.AgentName ?? "mocha-agent",
             description: _options.AgentDescription ?? "MOCHA agent powered by Microsoft Agent Framework",
             instructions: instructions,
-            tools: _tools.All.ToList());
+            tools: _tools.GetTools(context).ToList());
 
         return new AgentHandle(chatClient, agent);
     }
