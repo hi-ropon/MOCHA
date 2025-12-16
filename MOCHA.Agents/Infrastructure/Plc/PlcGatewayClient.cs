@@ -38,7 +38,7 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         try
         {
             var uri = BuildUri(request.BaseUrl, $"api/read/{address.Device}/{Uri.EscapeDataString(address.Address)}/{address.Length}");
-            if (!string.IsNullOrWhiteSpace(request.Ip) || request.Port is not null || !string.IsNullOrWhiteSpace(request.PlcHost))
+            if (!string.IsNullOrWhiteSpace(request.Ip) || request.Port is not null || !string.IsNullOrWhiteSpace(request.PlcHost) || !string.IsNullOrWhiteSpace(request.Transport))
             {
                 var query = new List<string>();
                 if (!string.IsNullOrWhiteSpace(request.PlcHost))
@@ -54,6 +54,11 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
                 if (request.Port is not null)
                 {
                     query.Add($"port={request.Port.Value}");
+                }
+
+                if (!string.IsNullOrWhiteSpace(request.Transport))
+                {
+                    query.Add($"transport={Uri.EscapeDataString(request.Transport)}");
                 }
 
                 var builder = new UriBuilder(uri) { Query = string.Join("&", query) };
@@ -92,7 +97,7 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         {
             var uri = BuildUri(request.BaseUrl, "api/batch_read");
             var specs = request.Specs.Select(s => DeviceAddress.Parse(s).ToSpec()).ToList();
-            var payload = new GatewayBatchRequest(specs, request.Ip, request.Port, request.PlcHost);
+            var payload = new GatewayBatchRequest(specs, request.Ip, request.Port, request.Transport, request.PlcHost);
 
             _logger.LogInformation("PLC Gateway バッチ読み取りリクエスト: POST {Uri} payload={Payload}", uri, JsonSerializer.Serialize(payload, _serializerOptions));
 
@@ -159,5 +164,6 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         [property: JsonPropertyName("devices")] IReadOnlyList<string> Devices,
         [property: JsonPropertyName("ip")] string? Ip,
         [property: JsonPropertyName("port")] int? Port,
+        [property: JsonPropertyName("transport")] string? Transport,
         [property: JsonPropertyName("plc_host")] string? PlcHost);
 }

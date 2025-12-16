@@ -134,17 +134,18 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             {
                 entity.UserId = unit.UserId;
                 entity.AgentNumber = unit.AgentNumber;
-                entity.Name = unit.Name;
-                entity.Manufacturer = unit.Manufacturer;
-                entity.Model = unit.Model;
-                entity.Role = unit.Role;
-                entity.IpAddress = unit.IpAddress;
-                entity.Port = unit.Port;
-                entity.GatewayHost = unit.GatewayHost;
-                entity.GatewayPort = unit.GatewayPort;
-                entity.ProgramDescription = unit.ProgramDescription;
-                entity.CommentFileJson = SerializeFile(unit.CommentFile);
-                entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
+            entity.Name = unit.Name;
+            entity.Manufacturer = unit.Manufacturer;
+            entity.Model = unit.Model;
+            entity.Role = unit.Role;
+            entity.IpAddress = unit.IpAddress;
+            entity.Port = unit.Port;
+            entity.Transport = unit.Transport;
+            entity.GatewayHost = unit.GatewayHost;
+            entity.GatewayPort = unit.GatewayPort;
+            entity.ProgramDescription = unit.ProgramDescription;
+            entity.CommentFileJson = SerializeFile(unit.CommentFile);
+            entity.ProgramFilesJson = SerializeFiles(unit.ProgramFiles);
                 entity.ModulesJson = SerializeModules(unit.Modules);
                 entity.FunctionBlocksJson = SerializeFunctionBlocks(unit.FunctionBlocks);
                 entity.CreatedAt = unit.CreatedAt;
@@ -175,6 +176,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             Role = unit.Role,
             IpAddress = unit.IpAddress,
             Port = unit.Port,
+            Transport = unit.Transport,
             GatewayHost = unit.GatewayHost,
             GatewayPort = unit.GatewayPort,
             ProgramDescription = unit.ProgramDescription,
@@ -204,6 +206,7 @@ internal sealed class PlcUnitRepository : IPlcUnitRepository
             entity.Role,
             entity.IpAddress,
             entity.Port,
+            entity.Transport,
             entity.GatewayHost,
             entity.GatewayPort,
             commentFile,

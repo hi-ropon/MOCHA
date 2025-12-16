@@ -160,6 +160,7 @@ internal sealed class ChatDbContext : DbContext, IChatDbContext
             builder.Property(x => x.Model).HasMaxLength(200);
             builder.Property(x => x.Role).HasMaxLength(200);
             builder.Property(x => x.IpAddress).HasMaxLength(100);
+            builder.Property(x => x.Transport).HasMaxLength(10);
             builder.Property(x => x.GatewayHost).HasMaxLength(100);
             builder.Property(x => x.CommentFileJson).HasColumnType("TEXT");
             builder.Property(x => x.ProgramFilesJson).HasColumnType("TEXT");

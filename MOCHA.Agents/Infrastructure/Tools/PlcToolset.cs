@@ -33,6 +33,7 @@ public sealed class PlcToolset
     private readonly PlcManualService _manuals;
     private readonly ILogger<PlcToolset> _logger;
     private IReadOnlyList<AITool>? _toolsWithoutGatewayReads;
+    private PlcAgentContext? _connectionContext;
     private readonly AsyncLocal<ScopeContext?> _context = new();
     private readonly JsonSerializerOptions _serializerOptions = new(JsonSerializerDefaults.Web)
     {
@@ -230,7 +231,8 @@ public sealed class PlcToolset
                 var ip = string.IsNullOrWhiteSpace(unit.IpAddress) ? "-" : unit.IpAddress;
                 var port = unit.Port?.ToString(CultureInfo.InvariantCulture) ?? "-";
                 var gw = FormatGateway(unit.GatewayHost, unit.GatewayPort);
-                sb.AppendLine($"- ユニット: {unit.Name} ip={ip} port={port}{gw}");
+                var transport = FormatTransport(unit.Transport).ToUpperInvariant();
+                sb.AppendLine($"- ユニット: {unit.Name} ip={ip} port={port} transport={transport}{gw}");
             }
         }
 
@@ -253,6 +255,28 @@ public sealed class PlcToolset
         return $" gw={text}";
     }
 
+    private static string FormatTransport(string? transport)
+    {
+        if (string.IsNullOrWhiteSpace(transport))
+        {
+            return "tcp";
+        }
+
+        return transport.Trim().ToLowerInvariant();
+    }
+
+    private (string? Ip, int? Port, string? Transport, string? PlcHost) ResolveConnection(string? ip, int? port)
+    {
+        var ctx = _context.Value;
+        var connection = ctx?.ConnectionContext ?? _connectionContext;
+        var unit = connection?.Units.FirstOrDefault();
+        var resolvedIp = string.IsNullOrWhiteSpace(ip) ? unit?.IpAddress : ip;
+        var resolvedPort = port is null || port.Value <= 0 ? unit?.Port : port;
+        var resolvedTransport = unit is null ? null : FormatTransport(unit.Transport);
+        var resolvedHost = string.IsNullOrWhiteSpace(unit?.GatewayHost) ? connection?.GatewayHost : unit?.GatewayHost;
+        return (resolvedIp, resolvedPort, resolvedTransport, resolvedHost);
+    }
+
     /// <summary>
     /// ストリーミングコンテキストのスコープ設定
     /// </summary>
@@ -263,6 +287,22 @@ public sealed class PlcToolset
     {
         _context.Value = new ScopeContext(conversationId, sink);
         return new Scope(this);
+    }
+
+    /// <summary>
+    /// 接続コンテキストを設定
+    /// </summary>
+    /// <param name="connectionContext">接続情報</param>
+    public void SetConnectionContext(PlcAgentContext? connectionContext)
+    {
+        _connectionContext = connectionContext;
+        var ctx = _context.Value;
+        if (ctx is null)
+        {
+            return;
+        }
+
+        ctx.ConnectionContext = connectionContext;
     }
 
     /// <summary>
@@ -652,15 +692,21 @@ public sealed class PlcToolset
         var normalizedSpec = address.ToSpec();
         var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec = normalizedSpec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
         EmitRequested(call);
+        var connection = ResolveConnection(ip, port);
+        var resolvedIp = string.IsNullOrWhiteSpace(ip) ? connection.Ip : ip;
+        var resolvedPort = port <= 0 ? connection.Port : port;
+        var resolvedTransport = string.IsNullOrWhiteSpace(connection.Transport) ? null : connection.Transport;
+        var resolvedPlcHost = connection.PlcHost;
 
         try
         {
             var result = await _gateway.ReadAsync(
                 new DeviceReadRequest(
                     normalizedSpec,
-                    string.IsNullOrWhiteSpace(ip) ? null : ip,
-                    port <= 0 ? null : port,
-                    PlcHost: null,
+                    string.IsNullOrWhiteSpace(resolvedIp) ? null : resolvedIp,
+                    resolvedPort,
+                    resolvedTransport,
+                    resolvedPlcHost,
                     Timeout: TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10),
                     BaseUrl: baseUrl),
                 cancellationToken);
@@ -689,11 +735,12 @@ public sealed class PlcToolset
         var normalizedSpecs = specs.Select(s => NormalizeAddress(DeviceAddress.Parse(s)).ToSpec()).ToList();
         var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs = normalizedSpecs, baseUrl }, _serializerOptions));
         EmitRequested(call);
+        var connection = ResolveConnection(null, null);
 
         try
         {
             var result = await _gateway.ReadBatchAsync(
-                new BatchReadRequest(normalizedSpecs, BaseUrl: baseUrl),
+                new BatchReadRequest(normalizedSpecs, connection.Ip, connection.Port, connection.Transport, connection.PlcHost, BaseUrl: baseUrl),
                 cancellationToken);
             var payload = JsonSerializer.Serialize(result, _serializerOptions);
             EmitCompleted(call, payload, string.IsNullOrEmpty(result.Error));
@@ -836,8 +883,20 @@ public sealed class PlcToolset
         ctx?.Emit(AgentEventFactory.ToolCompleted(ctx.ConversationId, new ToolResult(call.Name, result, success, error)));
     }
 
-    private sealed record ScopeContext(string ConversationId, Action<AgentEvent> Sink)
+    private sealed class ScopeContext
     {
+        public ScopeContext(string conversationId, Action<AgentEvent> sink)
+        {
+            ConversationId = conversationId;
+            Sink = sink;
+        }
+
+        public string ConversationId { get; }
+
+        public Action<AgentEvent> Sink { get; }
+
+        public PlcAgentContext? ConnectionContext { get; set; }
+
         public void Emit(AgentEvent ev) => Sink(ev);
     }
 

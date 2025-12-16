@@ -157,6 +157,7 @@ internal sealed class SqliteDatabaseInitializer : IDatabaseInitializer
                 Model TEXT NULL,
                 Role TEXT NULL,
                 IpAddress TEXT NULL,
+                Transport TEXT NULL,
                 Port INTEGER NULL,
                 GatewayHost TEXT NULL,
                 GatewayPort INTEGER NULL,

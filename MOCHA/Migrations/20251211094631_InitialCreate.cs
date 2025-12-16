@@ -159,6 +159,7 @@ namespace MOCHA.Migrations
                     Model = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     Role = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
                     IpAddress = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
+                    Transport = table.Column<string>(type: "character varying(10)", maxLength: 10, nullable: true),
                     Port = table.Column<int>(type: "integer", nullable: true),
                     GatewayHost = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: true),
                     GatewayPort = table.Column<int>(type: "integer", nullable: true),

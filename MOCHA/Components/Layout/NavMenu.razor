@@ -385,6 +385,10 @@
                                                         <div class="plc-label">ポート</div>
                                                         <div class="plc-value">@FormatPort(plc.Port)</div>
                                                     </div>
+                                                    <div class="endpoint-cell">
+                                                        <div class="plc-label">通信方式</div>
+                                                        <div class="plc-value">@FormatTransport(plc.Transport)</div>
+                                                    </div>
                                                 </div>
                                                 <div class="plc-row files-row">
                                                     <div>
@@ -875,6 +879,13 @@
                                placeholder="例: 5000" />
                     </div>
                 </div>
+                <div class="field">
+                    <label>通信方式</label>
+                    <select class="agent-input" @bind="_plcTransport">
+                        <option value="tcp">TCP/IP</option>
+                        <option value="udp">UDP</option>
+                    </select>
+                </div>
 
                 <div class="field">
                     <label>プログラム構成説明</label>
@@ -1317,6 +1328,7 @@
     private string _plcProgramDescription = string.Empty;
     private string _plcIp = string.Empty;
     private int? _plcPort;
+    private string _plcTransport = "tcp";
     private string _gatewayHost = string.Empty;
     private int? _gatewayPort;
     private bool _gatewaySaving;
@@ -2241,6 +2253,7 @@
         _plcProgramDescription = string.Empty;
         _plcIp = string.Empty;
         _plcPort = null;
+        _plcTransport = "tcp";
         _commentFile = null;
         _commentFileName = null;
         _commentFileSize = 0;
@@ -2274,6 +2287,7 @@
         _plcProgramDescription = unit.ProgramDescription ?? string.Empty;
         _plcIp = unit.IpAddress ?? string.Empty;
         _plcPort = unit.Port;
+        _plcTransport = string.IsNullOrWhiteSpace(unit.Transport) ? "tcp" : unit.Transport;
         _commentFile = null;
         _commentFileName = unit.CommentFile?.FileName;
         _commentFileSize = unit.CommentFile?.FileSize ?? 0;
@@ -2317,6 +2331,7 @@
         _commentFileContent = null;
         _plcManufacturer = string.Empty;
         _plcProgramDescription = string.Empty;
+        _plcTransport = "tcp";
         ResetUnitInput();
         _functionBlocks.Clear();
         _fbName = string.Empty;
@@ -2708,6 +2723,7 @@
                 ProgramDescription = _plcProgramDescription,
                 IpAddress = _plcIp,
                 Port = _plcPort,
+                Transport = _plcTransport,
                 Modules = _unitInputs.ToList(),
                 CommentFile = _commentFile is not null
                     ? new PlcFileUpload
@@ -2802,6 +2818,16 @@
     private static string FormatPort(int? port)
     {
         return port.HasValue && port.Value > 0 ? port.Value.ToString() : "未設定";
+    }
+
+    private static string FormatTransport(string? transport)
+    {
+        if (string.IsNullOrWhiteSpace(transport))
+        {
+            return "TCP/IP";
+        }
+
+        return string.Equals(transport, "udp", StringComparison.OrdinalIgnoreCase) ? "UDP" : "TCP/IP";
     }
 
     private static bool IsCsvFile(string fileName)

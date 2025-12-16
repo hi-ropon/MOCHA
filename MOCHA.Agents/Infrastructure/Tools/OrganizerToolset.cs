@@ -300,6 +300,7 @@ public sealed class OrganizerToolset
             await _plcDataLoader.LoadAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, parsedOptions.EnableFunctionBlocks, cancellationToken);
             var connectionContext = await _plcAgentContextProvider.BuildAsync(ctx?.ChatContext.UserId, ctx?.ChatContext.AgentNumber, unitId, cancellationToken);
             var plcOnline = ctx?.ChatContext.PlcOnline ?? true;
+            _plcToolset.SetConnectionContext(connectionContext);
             var delegationTools = BuildDelegationTools("plcAgent");
             var plcTools = _plcToolset.GetTools(plcOnline);
             var gatewayTools = plcOnline ? new[] { _plcGatewayTool } : Array.Empty<AITool>();

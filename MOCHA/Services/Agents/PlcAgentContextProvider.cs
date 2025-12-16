@@ -71,6 +71,6 @@ public sealed class PlcAgentContextProvider : IPlcAgentContextProvider
     {
         var host = string.IsNullOrWhiteSpace(unit.GatewayHost) ? gateway?.Host : unit.GatewayHost;
         var port = unit.GatewayPort ?? gateway?.Port;
-        return new PlcAgentUnit(unit.Id, unit.Name, unit.IpAddress, unit.Port, host, port);
+        return new PlcAgentUnit(unit.Id, unit.Name, unit.IpAddress, unit.Port, unit.Transport, host, port);
     }
 }
