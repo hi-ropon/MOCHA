@@ -219,77 +219,42 @@
                             </div>
                         }
 
-                        <div class="agent-settings-section">
-                            <div class="drawing-header">
-                                <div>
-                                    <div class="agent-settings-section-title">サブエージェント</div>
-                                    <div class="agent-settings-subtitle">この装置エージェントで許可するサブエージェントを選択します</div>
-                                </div>
+                        <div class="agent-settings-section architecture-manager">
+                        <div class="drawing-header architecture-header">
+                            <div class="architecture-header-title">
+                                <div class="agent-settings-section-title">アーキテクチャ設定</div>
+                            </div>
+                            <div class="architecture-actions">
                                 <button type="button"
                                         class="new-chat-btn save-agent-btn drawing-open-btn"
-                                        @onclick="SaveDelegationSettingsAsync"
-                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber) || _delegationSaving)">
-                                    保存
+                                        @onclick="OpenUnitModalForCreate"
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                    装置ユニットを追加
+                                </button>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="OpenPlcModalForCreate"
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                    PLCユニットを追加
+                                </button>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="OpenPcModalForCreate"
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                    PCを追加
+                                </button>
+                                <button type="button"
+                                        class="new-chat-btn save-agent-btn drawing-open-btn"
+                                        @onclick="OpenDelegationModalAsync"
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
+                                    サブエージェント設定
                                 </button>
                             </div>
-
-                            @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
-                            {
-                                <div class="drawing-empty">装置エージェントを選択してください</div>
-                            }
-                            else
-                            {
-                                <div class="agent-list">
-                                    @foreach (var option in _subAgentOptions)
-                                    {
-                                        var checkedValue = _selectedSubAgents.Contains(option.Id);
-                                        <label class="agent-row">
-                                            <input type="checkbox"
-                                                   class="agent-checkbox"
-                                                   checked="@checkedValue"
-                                                   @onchange="args => ToggleSubAgent(option.Id, args.Value)" />
-                                            <div class="agent-row-info">
-                                                <div class="agent-row-name">@option.Name</div>
-                                                <div class="agent-row-number">@option.Description</div>
-                                            </div>
-                                        </label>
-                                    }
-                                </div>
-                            }
-
-                            @if (!string.IsNullOrWhiteSpace(_delegationError))
-                            {
-                                <div class="drawing-error" style="margin-top: 8px;">@_delegationError</div>
-                            }
                         </div>
 
-                        <div class="agent-settings-section architecture-manager">
-                            <div class="drawing-header">
-                                <div>
-                                    <div class="agent-settings-section-title">アーキテクチャ設定</div>
-                                    <div class="agent-settings-subtitle">PCとPLCの構成をまとめて管理</div>
-                                </div>
-                                <div class="architecture-actions">
-                                    <button type="button"
-                                            class="new-chat-btn save-agent-btn drawing-open-btn"
-                                            @onclick="OpenUnitModalForCreate"
-                                            disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
-                                        装置ユニットを追加
-                                    </button>
-                                    <button type="button"
-                                            class="new-chat-btn save-agent-btn drawing-open-btn"
-                                            @onclick="OpenPlcModalForCreate"
-                                            disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
-                                        PLCユニットを追加
-                                    </button>
-                                    <button type="button"
-                                            class="new-chat-btn save-agent-btn drawing-open-btn"
-                                            @onclick="OpenPcModalForCreate"
-                                            disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))">
-                                        PCを追加
-                                    </button>
-                                </div>
-                            </div>
+                        <div class="agent-settings-subtitle" style="margin-bottom: 16px;">
+                            @GetDelegationSummaryTemporarily()
+                        </div>
 
                             @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
                             {
@@ -1310,6 +1275,62 @@
     </div>
 }
 
+@if (_delegationModalOpen)
+{
+    <div class="drawing-modal-overlay" @onclick="CloseDelegationModal">
+        <div class="drawing-modal-shell" @onclick:stopPropagation="true">
+            <div class="drawing-modal-header">
+                <div>
+                    <div class="drawing-modal-title">サブエージェント設定</div>
+                    <div class="drawing-modal-subtitle">装置エージェント @SettingsSelectedAgentNumber</div>
+                </div>
+                <button type="button" class="drawing-close" @onclick="CloseDelegationModal" aria-label="閉じる">×</button>
+            </div>
+
+            <div class="drawing-modal-body">
+                @if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+                {
+                    <div class="drawing-empty">装置エージェントを選択してください</div>
+                }
+                else
+                {
+                    <div class="agent-list">
+                        @foreach (var option in _subAgentOptions)
+                        {
+                            var checkedValue = _selectedSubAgents.Contains(option.Id);
+                            <label class="agent-row">
+                                <input type="checkbox"
+                                       class="agent-checkbox"
+                                       checked="@checkedValue"
+                                       @onchange="args => ToggleSubAgent(option.Id, args.Value)" />
+                                <div class="agent-row-info">
+                                    <div class="agent-row-name">@option.Name</div>
+                                    <div class="agent-row-number">@option.Description</div>
+                                </div>
+                            </label>
+                        }
+                    </div>
+                }
+
+                @if (!string.IsNullOrWhiteSpace(_delegationError))
+                {
+                    <div class="drawing-error" style="margin-top: 8px;">@_delegationError</div>
+                }
+            </div>
+
+            <div class="drawing-modal-actions">
+                <button type="button" class="agent-delete-btn cancel-btn" @onclick="CloseDelegationModal">キャンセル</button>
+                <button type="button"
+                        class="new-chat-btn save-agent-btn drawing-save-btn"
+                        disabled="@(_delegationSaving || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))"
+                        @onclick="SaveDelegationSettingsAsync">
+                    保存
+                </button>
+            </div>
+        </div>
+    </div>
+}
+
 @code {
     [Parameter] public bool IsCollapsed { get; set; }
     [Parameter] public EventCallback OnToggle { get; set; }
@@ -1336,6 +1357,7 @@
     private HashSet<string> _selectedSubAgents = new(StringComparer.OrdinalIgnoreCase);
     private string? _delegationError;
     private bool _delegationSaving;
+    private bool _delegationModalOpen;
     private string SettingsSelectedAgentNumber => _agentSettingsSelection.SelectedAgentNumber ?? string.Empty;
     private Theme _selectedTheme = Theme.Light;
     private bool _plcOnlineSetting = true;
@@ -1419,8 +1441,8 @@
         if (firstRender)
         {
             await EnsurePreferencesAsync();
-        }
     }
+}
 
     private Task ToggleAsync() => OnToggle.InvokeAsync();
 
@@ -1610,6 +1632,25 @@
         _plcOnlineSetting = enabled;
     }
 
+    private string GetDelegationSummaryTemporarily()
+    {
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            return "装置エージェントを選択するとサブエージェントを設定できます";
+        }
+
+        if (_selectedSubAgents.Count == 0)
+        {
+            return "許可されたサブエージェントはありません";
+        }
+
+        var names = _subAgentOptions
+            .Where(option => _selectedSubAgents.Contains(option.Id))
+            .Select(option => option.Name);
+
+        return $"許可済み: {string.Join(" / ", names)}";
+    }
+
     private void SelectAction(UserAction action)
     {
         _selectedAction = action;
@@ -1707,6 +1748,7 @@
 
     private async Task LoadDelegationSettingsAsync()
     {
+        _delegationError = null;
         if (_userId is null || string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
         {
             _selectedSubAgents.Clear();
@@ -1715,6 +1757,24 @@
 
         var setting = await AgentDelegationSettingService.GetAsync(_userId, SettingsSelectedAgentNumber);
         _selectedSubAgents = new HashSet<string>(setting.AllowedSubAgents, StringComparer.OrdinalIgnoreCase);
+        _delegationError = null;
+    }
+
+    private async Task OpenDelegationModalAsync()
+    {
+        if (string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber))
+        {
+            return;
+        }
+
+        await LoadDelegationSettingsAsync();
+        _delegationModalOpen = true;
+        StateHasChanged();
+    }
+
+    private void CloseDelegationModal()
+    {
+        _delegationModalOpen = false;
         _delegationError = null;
     }
 
@@ -1840,7 +1900,7 @@
                 return;
             }
 
-            _delegationError = null;
+            CloseDelegationModal();
         }
         finally
         {
