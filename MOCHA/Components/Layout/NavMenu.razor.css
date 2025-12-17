@@ -184,6 +184,25 @@
     align-items: center;
 }
 
+.architecture-actions .drawing-open-btn {
+    font-size: 12px;
+    padding: 8px 12px;
+}
+
+.architecture-actions .new-chat-btn::before {
+    content: none;
+}
+
+.drawing-header.architecture-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.drawing-header.architecture-header .architecture-actions {
+    justify-content: flex-start;
+}
+
 .drawing-subtitle {
     color: var(--text-muted);
     font-size: 12px;
@@ -191,7 +210,7 @@
 }
 
 .drawing-open-btn {
-    width: 180px !important;
+    width: 160px !important;
     max-width: 100%;
     min-width: 0;
     padding: 10px 14px;
