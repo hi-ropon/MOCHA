@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 
 namespace MOCHA.Services.Architecture;
@@ -18,6 +19,7 @@ public sealed class FunctionBlockService
     private const long _maxFileSizeBytes = 10 * 1024 * 1024;
     private readonly IPlcUnitRepository _repository;
     private readonly IPlcFileStoragePathBuilder _pathBuilder;
+    private readonly IUserRoleProvider _roleProvider;
     private readonly ILogger<FunctionBlockService> _logger;
 
     /// <summary>
@@ -26,10 +28,12 @@ public sealed class FunctionBlockService
     public FunctionBlockService(
         IPlcUnitRepository repository,
         IPlcFileStoragePathBuilder pathBuilder,
+        IUserRoleProvider roleProvider,
         ILogger<FunctionBlockService> logger)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _pathBuilder = pathBuilder ?? throw new ArgumentNullException(nameof(pathBuilder));
+        _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
         _logger = logger;
     }
 
@@ -61,10 +65,15 @@ public sealed class FunctionBlockService
             return FunctionBlockResult.Fail("PLCユニットが見つかりません");
         }
 
-        if (!string.Equals(unit.UserId, userId, StringComparison.Ordinal) ||
-            !string.Equals(unit.AgentNumber, agentNumber, StringComparison.Ordinal))
+        if (!string.Equals(unit.AgentNumber, agentNumber, StringComparison.Ordinal))
         {
             return FunctionBlockResult.Fail("別のユーザーまたはエージェントに紐づいています");
+        }
+
+        var isOwner = string.Equals(unit.UserId, userId, StringComparison.Ordinal);
+        if (!isOwner && !await HasAdminOrDeveloperRoleAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            return FunctionBlockResult.Fail("管理者または開発者のみ編集できます");
         }
 
         if (unit.FunctionBlocks.Any(f => string.Equals(f.Name, draft.Name, StringComparison.OrdinalIgnoreCase)))
@@ -104,8 +113,13 @@ public sealed class FunctionBlockService
             return Array.Empty<FunctionBlock>();
         }
 
-        if (!string.Equals(unit.UserId, userId, StringComparison.Ordinal) ||
-            !string.Equals(unit.AgentNumber, agentNumber, StringComparison.Ordinal))
+        if (!string.Equals(unit.AgentNumber, agentNumber, StringComparison.Ordinal))
+        {
+            return Array.Empty<FunctionBlock>();
+        }
+
+        if (!string.Equals(unit.UserId, userId, StringComparison.Ordinal) &&
+            !await HasAdminOrDeveloperRoleAsync(userId, cancellationToken).ConfigureAwait(false))
         {
             return Array.Empty<FunctionBlock>();
         }
@@ -139,8 +153,13 @@ public sealed class FunctionBlockService
     {
         var unit = await _repository.GetAsync(plcUnitId, cancellationToken);
         if (unit is null ||
-            !string.Equals(unit.UserId, userId, StringComparison.Ordinal) ||
             !string.Equals(unit.AgentNumber, agentNumber, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(unit.UserId, userId, StringComparison.Ordinal) &&
+            !await HasAdminOrDeveloperRoleAsync(userId, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
@@ -159,6 +178,30 @@ public sealed class FunctionBlockService
         await _repository.UpdateAsync(updated, cancellationToken);
         _logger.LogInformation("ファンクションブロックを削除しました: {Name}", target.Name);
         return true;
+    }
+
+    private async Task<bool> HasAdminOrDeveloperRoleAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return false;
+        }
+
+        var roles = new[]
+        {
+            UserRoleId.Predefined.Administrator.Value,
+            UserRoleId.Predefined.Developer.Value
+        };
+
+        foreach (var role in roles)
+        {
+            if (await _roleProvider.IsInRoleAsync(userId, role, cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private (bool IsValid, string? Error) Validate(string userId, string agentNumber, FunctionBlockDraft draft)

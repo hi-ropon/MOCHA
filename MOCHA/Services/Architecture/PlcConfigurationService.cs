@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 
 namespace MOCHA.Services.Architecture;
@@ -17,6 +18,7 @@ internal sealed class PlcConfigurationService
     private const long _maxFileSizeBytesm = 10 * 1024 * 1024;
     private readonly IPlcUnitRepository _repository;
     private readonly IPlcFileStoragePathBuilder _pathBuilder;
+    private readonly IUserRoleProvider _roleProvider;
     private readonly ILogger<PlcConfigurationService> _logger;
 
     /// <summary>
@@ -25,13 +27,16 @@ internal sealed class PlcConfigurationService
     /// <param name="repository">PLCユニットリポジトリ</param>
     /// <param name="logger">ロガー</param>
     /// <param name="pathBuilder">ファイル保存パスビルダー</param>
+    /// <param name="roleProvider">ロール判定</param>
     public PlcConfigurationService(
         IPlcUnitRepository repository,
         IPlcFileStoragePathBuilder pathBuilder,
+        IUserRoleProvider roleProvider,
         ILogger<PlcConfigurationService> logger)
     {
         _repository = repository;
         _pathBuilder = pathBuilder;
+        _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
         _logger = logger;
     }
 
@@ -99,7 +104,7 @@ internal sealed class PlcConfigurationService
         }
 
         var existing = await _repository.GetAsync(unitId, cancellationToken);
-        if (existing is null || !string.Equals(existing.UserId, userId, StringComparison.Ordinal))
+        if (existing is null)
         {
             return PlcUnitResult.Fail("PLCユニットが見つかりません");
         }
@@ -107,6 +112,12 @@ internal sealed class PlcConfigurationService
         if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
         {
             return PlcUnitResult.Fail("別の装置エージェントに紐づくため更新できません");
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasAdminOrDeveloperRoleAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            return PlcUnitResult.Fail("管理者または開発者のみ編集できます");
         }
 
         var processed = await SaveFilesAsync(agentNumber.Trim(), draft, existing, cancellationToken);
@@ -143,8 +154,13 @@ internal sealed class PlcConfigurationService
             return false;
         }
 
-        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) ||
-            !string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasAdminOrDeveloperRoleAsync(userId, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }
@@ -189,6 +205,30 @@ internal sealed class PlcConfigurationService
         }
 
         return (true, null);
+    }
+
+    private async Task<bool> HasAdminOrDeveloperRoleAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return false;
+        }
+
+        var roles = new[]
+        {
+            UserRoleId.Predefined.Administrator.Value,
+            UserRoleId.Predefined.Developer.Value
+        };
+
+        foreach (var role in roles)
+        {
+            if (await _roleProvider.IsInRoleAsync(userId, role, cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private async Task<(bool Succeeded, string? Error, PlcUnitDraft Draft, List<string> PathsToDelete)> SaveFilesAsync(

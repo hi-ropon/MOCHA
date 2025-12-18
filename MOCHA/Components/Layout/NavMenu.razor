@@ -516,7 +516,7 @@
                                 <button type="button"
                                         class="new-chat-btn save-agent-btn drawing-open-btn"
                                         @onclick="OpenDrawingModalForCreate"
-                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber) || !isAdmin)">
+                                        disabled="@(string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber) || !(isAdmin || isDeveloper))">
                                     図面を登録
                                 </button>
                             </div>
@@ -548,7 +548,7 @@
                                                 <div class="drawing-action-buttons">
                                                     <button type="button"
                                                             class="agent-delete-btn drawing-edit-btn"
-                                                            disabled="@( !isAdmin)"
+                                                            disabled="@( !(isAdmin || isDeveloper))"
                                                             @onclick="() => OpenDrawingModalForEdit(drawing)">
                                                         編集
                                                     </button>
@@ -1910,9 +1910,9 @@
 
     private async Task OpenDrawingModalForCreate()
     {
-        if (!isAdmin)
+        if (!(isAdmin || isDeveloper))
         {
-            await JsRuntime.InvokeVoidAsync("alert", "管理者のみ図面を登録できます");
+            await JsRuntime.InvokeVoidAsync("alert", "管理者または開発者のみ図面を登録できます");
             return;
         }
 
@@ -1933,9 +1933,9 @@
 
     private async Task OpenDrawingModalForEdit(DrawingDocument drawing)
     {
-        if (!isAdmin)
+        if (!(isAdmin || isDeveloper))
         {
-            await JsRuntime.InvokeVoidAsync("alert", "管理者のみ図面を編集できます");
+            await JsRuntime.InvokeVoidAsync("alert", "管理者または開発者のみ図面を編集できます");
             return;
         }
 
@@ -2004,9 +2004,9 @@
 
         _drawingError = null;
 
-        if (!isAdmin)
+        if (!(isAdmin || isDeveloper))
         {
-            _drawingError = "管理者のみ図面を登録できます";
+            _drawingError = "管理者または開発者のみ図面を登録できます";
             return;
         }
 
@@ -2064,7 +2064,7 @@
     }
 
     private bool CanSaveDrawing => !_drawingSaving
-                                   && isAdmin
+                                   && (isAdmin || isDeveloper)
                                    && !string.IsNullOrWhiteSpace(SettingsSelectedAgentNumber)
                                    && (_editingDrawingId.HasValue || _drawingFiles.Count > 0);
 

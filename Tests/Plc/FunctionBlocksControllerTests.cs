@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Security.Claims;
 using System.Text;
+using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Controllers;
 using MOCHA.Models.Architecture;
+using MOCHA.Models.Auth;
 using MOCHA.Services.Architecture;
 
 namespace Tests.Plc;
@@ -25,7 +28,7 @@ public class FunctionBlocksControllerTests
         {
             var pathBuilder = new PlcFileStoragePathBuilder(Options.Create(new PlcStorageOptions { RootPath = root }));
             var repo = new InMemoryPlcUnitRepository();
-            var service = new FunctionBlockService(repo, pathBuilder, NullLogger<FunctionBlockService>.Instance);
+            var service = new FunctionBlockService(repo, pathBuilder, new AlwaysAllowRoleProvider(), NullLogger<FunctionBlockService>.Instance);
             var controller = new FunctionBlocksController(service);
             var userId = "user-api";
             var agentNumber = "001";
@@ -71,5 +74,13 @@ public class FunctionBlocksControllerTests
                 Directory.Delete(root, true);
             }
         }
+    }
+
+    private sealed class AlwaysAllowRoleProvider : IUserRoleProvider
+    {
+        public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
+        public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
