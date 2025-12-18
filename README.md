@@ -28,10 +28,10 @@ MOCHAはBlazor Server(.NET 8)上で動作する社内向けチャットBFFで、
 2. `https://localhost:7240`/`http://localhost:5240` にアクセスし、`/signup`/`/login` でユーザーを作成。`/roles` などのUIも同じルートから利用。
 3. `AzureAd.Enabled=true` かつ必要なクライアントID等を設定すると Entra ID 認証と Cookie/令牌制御に移行する。`Authentication:DefaultScheme`/`DefaultChallengeScheme` を上書き可能。
 4. サイドバーで装置エージェントを選択し、会話入力（`Ctrl+Enter` 送信）→ツール要求→ツール結果/ストリーム応答を確認。Stopボタンでキャンセル。
-5. ソリューション全体を指定フォルダへ出力（リリース/発行）する場合は `dotnet publish MOCHA.slnx -c Release -o /path/to/output` を使用。
+5. ソリューション全体を指定フォルダへ出力（リリース/発行）する場合は `dotnet publish MOCHA.slnx -c Release -o /path/to/output` を使用。単一ファイル化したい場合は `-r <RID> --self-contained true -p:PublishSingleFile=true` を追加して runtime を指定する。
    - ランタイム込み（self-contained）で公開するには RID（例: `win-x64`/`linux-x64`）と `--self-contained true` を指定し、必要なら出力先も固定する:
      ```
-     dotnet publish MOCHA/MOCHA.csproj -c Release -r win-x64 --self-contained true -o publish/win-x64
+     dotnet publish MOCHA/MOCHA.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -o publish
      ```
      `-r` を適切な RID に変更し、`-o` を整理用のフォルダに変更すれば、その実行環境に合わせた実行ファイル一式が得られる。
 
