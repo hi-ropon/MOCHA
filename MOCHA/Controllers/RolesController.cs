@@ -12,14 +12,17 @@ namespace MOCHA.Controllers;
 public sealed class RolesController : ControllerBase
 {
     private readonly IUserRoleProvider _roleProvider;
+    private readonly IUserLookupService _userLookup;
 
     /// <summary>
     /// ロールプロバイダー注入によるコントローラー初期化
     /// </summary>
     /// <param name="roleProvider">ロールプロバイダー</param>
-    public RolesController(IUserRoleProvider roleProvider)
+    /// <param name="userLookup">ユーザー検索サービス</param>
+    public RolesController(IUserRoleProvider roleProvider, IUserLookupService userLookup)
     {
         _roleProvider = roleProvider;
+        _userLookup = userLookup;
     }
 
     /// <summary>
@@ -36,7 +39,13 @@ public sealed class RolesController : ControllerBase
             return Forbid();
         }
 
-        var roles = await _roleProvider.GetRolesAsync(userId, cancellationToken);
+        var targetUser = await ResolveTargetUserAsync(userId, cancellationToken);
+        if (targetUser is null)
+        {
+            return NotFound("ユーザーが見つかりません");
+        }
+
+        var roles = await _roleProvider.GetRolesAsync(targetUser.UserId, cancellationToken);
         return Ok(roles.Select(r => r.Value));
     }
 
@@ -58,8 +67,13 @@ public sealed class RolesController : ControllerBase
         {
             return BadRequest("UserId と Role は必須です。");
         }
+        var targetUser = await ResolveTargetUserAsync(request.UserId, cancellationToken);
+        if (targetUser is null)
+        {
+            return NotFound("ユーザーが見つかりません");
+        }
 
-        await _roleProvider.AssignAsync(request.UserId, UserRoleId.From(request.Role), cancellationToken);
+        await _roleProvider.AssignAsync(targetUser.UserId, UserRoleId.From(request.Role), cancellationToken);
         return Ok();
     }
 
@@ -78,7 +92,13 @@ public sealed class RolesController : ControllerBase
             return Forbid();
         }
 
-        await _roleProvider.RemoveAsync(userId, UserRoleId.From(role), cancellationToken);
+        var targetUser = await ResolveTargetUserAsync(userId, cancellationToken);
+        if (targetUser is null)
+        {
+            return NotFound("ユーザーが見つかりません");
+        }
+
+        await _roleProvider.RemoveAsync(targetUser.UserId, UserRoleId.From(role), cancellationToken);
         return Ok();
     }
 
@@ -96,6 +116,16 @@ public sealed class RolesController : ControllerBase
         }
 
         return await _roleProvider.IsInRoleAsync(userId, UserRoleId.Predefined.Administrator.Value, cancellationToken);
+    }
+
+    private async Task<UserLookupResult?> ResolveTargetUserAsync(string userId, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(userId))
+        {
+            return null;
+        }
+
+        return await _userLookup.FindByIdentifierAsync(userId, cancellationToken);
     }
 }
 

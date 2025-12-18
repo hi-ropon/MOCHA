@@ -125,10 +125,10 @@ public class UserDrawingManualStoreTests
             return Task.FromResult(doc);
         }
 
-        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
         {
             IReadOnlyList<DrawingDocument> list = new List<DrawingDocument>(_store.Values
-                .Where(d => d.UserId == userId && (agentNumber is null || d.AgentNumber == agentNumber)));
+                .Where(d => agentNumber is null || d.AgentNumber == agentNumber));
             return Task.FromResult(list);
         }
 

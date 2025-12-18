@@ -39,7 +39,7 @@ public class DrawingRegistrationServiceTests
             });
 
         Assert.IsFalse(result.Succeeded);
-        Assert.AreEqual("管理者のみ図面を登録できます", result.Error);
+        Assert.AreEqual("管理者または開発者のみ図面を登録できます", result.Error);
     }
 
     /// <summary>
@@ -67,7 +67,7 @@ public class DrawingRegistrationServiceTests
         Assert.IsNotNull(result.Document);
         Assert.AreEqual("A-02", result.Document!.AgentNumber);
 
-        var stored = await repository.ListAsync("admin", "A-02");
+        var stored = await repository.ListAsync("A-02");
         Assert.AreEqual(1, stored.Count);
         Assert.AreEqual("panel.dwg", stored[0].FileName);
     }
@@ -107,7 +107,7 @@ public class DrawingRegistrationServiceTests
         Assert.IsNotNull(result.Documents);
         Assert.AreEqual(2, result.Documents!.Count);
 
-        var stored = await repository.ListAsync("admin-batch", "D-10");
+        var stored = await repository.ListAsync("D-10");
         var fileNames = stored.Select(x => x.FileName).OrderBy(x => x).ToList();
         CollectionAssert.AreEqual(new List<string> { "layout.pdf", "mechanical.dwg" }, fileNames);
     }
@@ -183,7 +183,7 @@ public class DrawingRegistrationServiceTests
         Assert.IsFalse(result.Succeeded);
         Assert.AreEqual("ファイルサイズが 0 バイトです", result.Error);
 
-        var stored = await repository.ListAsync("admin-batch2", "D-11");
+        var stored = await repository.ListAsync("D-11");
         Assert.AreEqual(0, stored.Count);
     }
 
@@ -207,7 +207,7 @@ public class DrawingRegistrationServiceTests
         var result = await service.UpdateDescriptionAsync("user-2", existing.Id, "修正案");
 
         Assert.IsFalse(result.Succeeded);
-        Assert.AreEqual("管理者のみ図面を編集できます", result.Error);
+        Assert.AreEqual("管理者または開発者のみ図面を編集できます", result.Error);
     }
 
     /// <summary>
@@ -265,7 +265,7 @@ public class DrawingRegistrationServiceTests
         var result = await service.DeleteAsync("admin-del", target.Id);
 
         Assert.IsTrue(result.Succeeded);
-        var remaining = await repository.ListAsync("admin-del", "D-01");
+        var remaining = await repository.ListAsync("D-01");
         Assert.AreEqual(0, remaining.Count);
     }
 
@@ -294,7 +294,7 @@ public class DrawingRegistrationServiceTests
         var result = await service.DeleteAsync(ownerId, registered.Document!.Id);
 
         Assert.IsFalse(result.Succeeded);
-        Assert.AreEqual("管理者のみ図面を削除できます", result.Error);
+        Assert.AreEqual("管理者または開発者のみ図面を削除できます", result.Error);
     }
 
     /// <summary>
@@ -327,7 +327,7 @@ public class DrawingRegistrationServiceTests
     /// </summary>
     private sealed class FakeRoleProvider : IUserRoleProvider
     {
-        private readonly bool _isAdmin;
+        private readonly bool _isPrivileged;
 
         /// <summary>
         /// 管理者フラグ指定の初期化
@@ -335,7 +335,7 @@ public class DrawingRegistrationServiceTests
         /// <param name="isAdmin">管理者フラグ</param>
         public FakeRoleProvider(bool isAdmin)
         {
-            _isAdmin = isAdmin;
+            _isPrivileged = isAdmin;
         }
 
         public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default)
@@ -356,9 +356,10 @@ public class DrawingRegistrationServiceTests
         /// </summary>
         public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default)
         {
-            if (string.Equals(role, UserRoleId.Predefined.Administrator.Value, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(role, UserRoleId.Predefined.Administrator.Value, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(role, UserRoleId.Predefined.Developer.Value, StringComparison.OrdinalIgnoreCase))
             {
-                return Task.FromResult(_isAdmin);
+                return Task.FromResult(_isPrivileged);
             }
 
             return Task.FromResult(false);

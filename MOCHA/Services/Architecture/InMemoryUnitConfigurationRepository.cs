@@ -43,10 +43,10 @@ internal sealed class InMemoryUnitConfigurationRepository : IUnitConfigurationRe
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<UnitConfiguration>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<UnitConfiguration>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         var list = _store.Values
-            .Where(x => x.UserId == userId && x.AgentNumber == agentNumber)
+            .Where(x => x.AgentNumber == agentNumber)
             .OrderBy(x => x.CreatedAt)
             .ToList();
 

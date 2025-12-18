@@ -45,7 +45,7 @@ public class DrawingCatalogTests
 
             var catalog = CreateCatalog(tempRoot, new[] { document });
 
-            var result = await catalog.FindAsync("user-1", "A-01", document.Id, CancellationToken.None);
+            var result = await catalog.FindAsync("A-01", document.Id, CancellationToken.None);
 
             Assert.IsNotNull(result);
             Assert.IsTrue(result.Exists);
@@ -84,7 +84,7 @@ public class DrawingCatalogTests
 
         var catalog = CreateCatalog(Path.Combine(Path.GetTempPath(), "dummy"), new[] { document });
 
-        var result = await catalog.FindAsync("user-1", "B-99", document.Id, CancellationToken.None);
+        var result = await catalog.FindAsync("B-99", document.Id, CancellationToken.None);
 
         Assert.IsNull(result);
     }
@@ -108,7 +108,7 @@ public class DrawingCatalogTests
 
         var catalog = CreateCatalog(Path.Combine(Path.GetTempPath(), "dummy"), new[] { document });
 
-        var result = await catalog.FindAsync("user-1", "A-01", document.Id, CancellationToken.None);
+        var result = await catalog.FindAsync("A-01", document.Id, CancellationToken.None);
 
         Assert.IsNotNull(result);
         Assert.IsFalse(result.Exists);
@@ -155,7 +155,7 @@ public class DrawingCatalogTests
             return Task.FromResult(document);
         }
 
-        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
         {
             var list = new List<DrawingDocument>();
             foreach (var document in _documents.Values)

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 
 namespace MOCHA.Services.Architecture;
@@ -13,16 +14,19 @@ namespace MOCHA.Services.Architecture;
 internal sealed class PcConfigurationService
 {
     private readonly IPcSettingRepository _repository;
+    private readonly IUserRoleProvider _roleProvider;
     private readonly ILogger<PcConfigurationService> _logger;
 
     /// <summary>
     /// 依存関係を受け取って初期化
     /// </summary>
     /// <param name="repository">設定リポジトリ</param>
+    /// <param name="roleProvider">ロールプロバイダー</param>
     /// <param name="logger">ロガー</param>
-    public PcConfigurationService(IPcSettingRepository repository, ILogger<PcConfigurationService> logger)
+    public PcConfigurationService(IPcSettingRepository repository, IUserRoleProvider roleProvider, ILogger<PcConfigurationService> logger)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -35,12 +39,13 @@ internal sealed class PcConfigurationService
     /// <returns>設定一覧</returns>
     public Task<IReadOnlyList<PcSetting>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        _ = userId;
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Task.FromResult<IReadOnlyList<PcSetting>>(Array.Empty<PcSetting>());
         }
 
-        return _repository.ListAsync(userId, agentNumber, cancellationToken);
+        return _repository.ListAsync(agentNumber, cancellationToken);
     }
 
     /// <summary>
@@ -53,6 +58,11 @@ internal sealed class PcConfigurationService
     /// <returns>結果</returns>
     public async Task<PcSettingResult> AddAsync(string userId, string agentNumber, PcSettingDraft draft, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return PcSettingResult.Fail("管理者または開発者のみ編集できます");
+        }
+
         var validation = Validate(userId, agentNumber, draft);
         if (!validation.IsValid)
         {
@@ -76,6 +86,11 @@ internal sealed class PcConfigurationService
     /// <returns>結果</returns>
     public async Task<PcSettingResult> UpdateAsync(string userId, string agentNumber, Guid settingId, PcSettingDraft draft, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return PcSettingResult.Fail("管理者または開発者のみ編集できます");
+        }
+
         var validation = Validate(userId, agentNumber, draft);
         if (!validation.IsValid)
         {
@@ -109,6 +124,11 @@ internal sealed class PcConfigurationService
     /// <returns>削除成功なら true</returns>
     public async Task<bool> DeleteAsync(string userId, string agentNumber, Guid settingId, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return false;
+        }
+
         var existing = await _repository.GetAsync(settingId, cancellationToken);
         if (existing is null)
         {
@@ -128,6 +148,25 @@ internal sealed class PcConfigurationService
         }
 
         return deleted;
+    }
+
+    private async Task<bool> HasEditPermissionAsync(string userId, CancellationToken cancellationToken)
+    {
+        var roles = new[]
+        {
+            UserRoleId.Predefined.Administrator.Value,
+            UserRoleId.Predefined.Developer.Value
+        };
+
+        foreach (var role in roles)
+        {
+            if (await _roleProvider.IsInRoleAsync(userId, role, cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static (bool IsValid, string? Error) Validate(string userId, string agentNumber, PcSettingDraft draft)

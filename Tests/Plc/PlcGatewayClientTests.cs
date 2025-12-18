@@ -123,18 +123,21 @@ public class PlcGatewayClientTests
     }
 
     /// <summary>
-    /// plc_host をクエリに含めて送信することを確認
+    /// 単体読み取り時に BaseUrl とクエリを組み立てることを確認
     /// </summary>
     [TestMethod]
-    public async Task 単体読み取り_plc_hostクエリを送信する()
+    public async Task 単体読み取り_BaseUrlとクエリを送信する()
     {
         var handler = new StubHandler(async req =>
         {
             Assert.AreEqual(HttpMethod.Get, req.Method);
-            StringAssert.Contains(req.RequestUri!.AbsolutePath, "/api/read/D/200/1");
-            StringAssert.Contains(req.RequestUri!.Query, "plc_host=plc.edge");
-            StringAssert.Contains(req.RequestUri!.Query, "ip=127.0.0.1");
-            StringAssert.Contains(req.RequestUri!.Query, "port=5511");
+            Assert.AreEqual("http", req.RequestUri!.Scheme);
+            Assert.AreEqual("plc.edge", req.RequestUri.Host);
+            Assert.AreEqual(9000, req.RequestUri.Port);
+            StringAssert.Contains(req.RequestUri.AbsolutePath, "/api/read/D/200/1");
+            StringAssert.Contains(req.RequestUri.Query, "ip=127.0.0.1");
+            StringAssert.Contains(req.RequestUri.Query, "port=5511");
+            StringAssert.Contains(req.RequestUri.Query, "transport=udp");
 
             var payload = JsonSerializer.Serialize(new { values = new[] { 1234 }, success = true });
             return new HttpResponseMessage(HttpStatusCode.OK)
@@ -143,8 +146,10 @@ public class PlcGatewayClientTests
             };
         });
 
-        var client = new PlcGatewayClient(new HttpClient(handler) { BaseAddress = new Uri("http://localhost:8000") }, new DummyLogger());
-        var result = await client.ReadAsync(new DeviceReadRequest("D200", Ip: "127.0.0.1", Port: 5511, PlcHost: "plc.edge", BaseUrl: null), CancellationToken.None);
+        var client = new PlcGatewayClient(new HttpClient(handler), new DummyLogger());
+        var result = await client.ReadAsync(
+            new DeviceReadRequest("D200", Ip: "127.0.0.1", Port: 5511, Transport: "udp", BaseUrl: "plc.edge:9000"),
+            CancellationToken.None);
 
         Assert.IsTrue(result.Success);
         CollectionAssert.AreEqual(new List<int> { 1234 }, (System.Collections.ICollection)result.Values!);
@@ -163,7 +168,7 @@ public class PlcGatewayClientTests
             var json = await req.Content!.ReadAsStringAsync();
             StringAssert.Contains(json, "\"devices\"");
             StringAssert.Contains(json, "\"D100\"");
-            Assert.IsFalse(json.Contains("\"plc_host\":null"));
+            Assert.IsFalse(json.Contains("plc_host", StringComparison.OrdinalIgnoreCase));
             var payload = JsonSerializer.Serialize(new
             {
                 results = new[]

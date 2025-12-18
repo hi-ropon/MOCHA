@@ -38,14 +38,9 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         try
         {
             var uri = BuildUri(request.BaseUrl, $"api/read/{address.Device}/{Uri.EscapeDataString(address.Address)}/{address.Length}");
-            if (!string.IsNullOrWhiteSpace(request.Ip) || request.Port is not null || !string.IsNullOrWhiteSpace(request.PlcHost) || !string.IsNullOrWhiteSpace(request.Transport))
+            if (!string.IsNullOrWhiteSpace(request.Ip) || request.Port is not null || !string.IsNullOrWhiteSpace(request.Transport))
             {
                 var query = new List<string>();
-                if (!string.IsNullOrWhiteSpace(request.PlcHost))
-                {
-                    query.Add($"plc_host={Uri.EscapeDataString(request.PlcHost)}");
-                }
-
                 if (!string.IsNullOrWhiteSpace(request.Ip))
                 {
                     query.Add($"ip={Uri.EscapeDataString(request.Ip)}");
@@ -97,7 +92,7 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         {
             var uri = BuildUri(request.BaseUrl, "api/batch_read");
             var specs = request.Specs.Select(s => DeviceAddress.Parse(s).ToSpec()).ToList();
-            var payload = new GatewayBatchRequest(specs, request.Ip, request.Port, request.Transport, request.PlcHost);
+            var payload = new GatewayBatchRequest(specs, request.Ip, request.Port, request.Transport);
 
             _logger.LogInformation("PLC Gateway バッチ読み取りリクエスト: POST {Uri} payload={Payload}", uri, JsonSerializer.Serialize(payload, _serializerOptions));
 
@@ -134,7 +129,8 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
     {
         if (!string.IsNullOrWhiteSpace(baseUrl))
         {
-            return new Uri(new Uri(baseUrl, UriKind.Absolute), path);
+            var normalized = NormalizeBaseUrl(baseUrl);
+            return new Uri(new Uri(normalized, UriKind.Absolute), path);
         }
 
         if (_http.BaseAddress is not null)
@@ -164,6 +160,16 @@ public sealed class PlcGatewayClient : IPlcGatewayClient
         [property: JsonPropertyName("devices")] IReadOnlyList<string> Devices,
         [property: JsonPropertyName("ip")] string? Ip,
         [property: JsonPropertyName("port")] int? Port,
-        [property: JsonPropertyName("transport")] string? Transport,
-        [property: JsonPropertyName("plc_host")] string? PlcHost);
+        [property: JsonPropertyName("transport")] string? Transport);
+
+    private static string NormalizeBaseUrl(string baseUrl)
+    {
+        var trimmed = baseUrl.Trim();
+        if (!trimmed.Contains("://", StringComparison.Ordinal))
+        {
+            return $"http://{trimmed}";
+        }
+
+        return trimmed;
+    }
 }

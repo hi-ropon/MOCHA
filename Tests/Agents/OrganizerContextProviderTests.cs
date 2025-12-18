@@ -249,7 +249,7 @@ public class OrganizerContextProviderTests
             return Task.FromResult<DrawingDocument?>(null);
         }
 
-        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+        public Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
         {
             return Task.FromResult<IReadOnlyList<DrawingDocument>>(new List<DrawingDocument>());
         }

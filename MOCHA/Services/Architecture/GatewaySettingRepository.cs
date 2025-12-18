@@ -20,16 +20,15 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
         _dbContext = dbContext;
     }
 
-    public async Task<GatewaySetting?> GetAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public async Task<GatewaySetting?> GetAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableAsync(cancellationToken);
-        var normalizedUser = userId.Trim();
         var normalizedAgent = agentNumber.Trim();
 
         try
         {
             var entity = _dbContext.GatewaySettings
-                .Where(x => x.UserId == normalizedUser && x.AgentNumber == normalizedAgent)
+                .Where(x => x.AgentNumber == normalizedAgent)
                 .AsEnumerable()
                 .OrderByDescending(x => x.UpdatedAt)
                 .FirstOrDefault();
@@ -48,7 +47,8 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
         await EnsureTableAsync(cancellationToken);
 
         var entity = await _dbContext.GatewaySettings
-            .FirstOrDefaultAsync(x => x.UserId == setting.UserId && x.AgentNumber == setting.AgentNumber, cancellationToken);
+            .OrderByDescending(x => x.UpdatedAt)
+            .FirstOrDefaultAsync(x => x.AgentNumber == setting.AgentNumber, cancellationToken);
 
         if (entity is null)
         {
@@ -110,6 +110,7 @@ internal sealed class GatewaySettingRepository : IGatewaySettingRepository
                 Port INTEGER NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS IX_GatewaySettings_AgentNumber ON GatewaySettings(AgentNumber);
             CREATE INDEX IF NOT EXISTS IX_GatewaySettings_UserId_AgentNumber ON GatewaySettings(UserId, AgentNumber);
         """;
 

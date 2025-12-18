@@ -156,6 +156,8 @@ builder.Services.AddScoped<IColorSchemeProvider, BrowserColorSchemeProvider>();
 builder.Services.AddScoped<IThemeApplicator, DomThemeApplicator>();
 builder.Services.AddScoped<UserPreferencesState>();
 builder.Services.AddScoped<IUserRoleProvider, DbUserRoleProvider>();
+builder.Services.AddScoped<IUserLookupService, UserLookupService>();
+builder.Services.AddScoped<IUserLookupStrategy, DevUserLookupStrategy>();
 builder.Services.Configure<RoleBootstrapOptions>(builder.Configuration.GetSection("RoleBootstrap"));
 builder.Services.Configure<DevAuthOptions>(builder.Configuration.GetSection("DevAuth"));
 builder.Services.Configure<DrawingStorageOptions>(builder.Configuration.GetSection("DrawingStorage"));

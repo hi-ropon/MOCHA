@@ -1,11 +1,13 @@
 using System.Collections.Generic;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Controllers;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 using MOCHA.Services.Architecture;
 
@@ -140,7 +142,7 @@ public class UnitConfigurationsControllerTests
     private static UnitConfigurationsController CreateController(out UnitConfigurationService service)
     {
         var repository = new InMemoryUnitConfigurationRepository();
-        service = new UnitConfigurationService(repository, NullLogger<UnitConfigurationService>.Instance);
+        service = new UnitConfigurationService(repository, new AlwaysAllowRoleProvider(), NullLogger<UnitConfigurationService>.Instance);
         var controller = new UnitConfigurationsController(service)
         {
             ControllerContext = new ControllerContext
@@ -155,5 +157,13 @@ public class UnitConfigurationsControllerTests
             }
         };
         return controller;
+    }
+
+    private sealed class AlwaysAllowRoleProvider : IUserRoleProvider
+    {
+        public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
+        public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

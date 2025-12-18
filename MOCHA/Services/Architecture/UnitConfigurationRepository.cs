@@ -125,21 +125,20 @@ internal sealed class UnitConfigurationRepository : IUnitConfigurationRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<UnitConfiguration>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<UnitConfiguration>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableIfMissingAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Array.Empty<UnitConfiguration>();
         }
 
-        var normalizedUserId = userId.Trim();
         var normalizedAgent = agentNumber.Trim();
 
         try
         {
             var list = await _dbContext.UnitConfigurations
-                .Where(x => x.UserId == normalizedUserId && x.AgentNumber == normalizedAgent)
+                .Where(x => x.AgentNumber == normalizedAgent)
                 .ToListAsync(cancellationToken);
 
             return list
@@ -239,6 +238,7 @@ internal sealed class UnitConfigurationRepository : IUnitConfigurationRepository
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS IX_UnitConfigurations_AgentNumber_CreatedAt ON UnitConfigurations(AgentNumber, CreatedAt);
             CREATE INDEX IF NOT EXISTS IX_UnitConfigurations_UserId_AgentNumber_CreatedAt ON UnitConfigurations(UserId, AgentNumber, CreatedAt);
         """;
 

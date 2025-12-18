@@ -84,21 +84,14 @@ internal sealed class DrawingRepository : IDrawingRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableIfMissingAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return Array.Empty<DrawingDocument>();
-        }
-
-        var trimmedUserId = userId.Trim();
         var trimmedAgent = string.IsNullOrWhiteSpace(agentNumber) ? null : agentNumber.Trim();
 
         try
         {
-            var query = _dbContext.Drawings
-                .Where(x => x.UserId == trimmedUserId);
+            var query = _dbContext.Drawings.AsQueryable();
 
             if (!string.IsNullOrWhiteSpace(trimmedAgent))
             {
@@ -211,6 +204,7 @@ internal sealed class DrawingRepository : IDrawingRepository
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS IX_Drawings_AgentNumber_CreatedAt ON Drawings(AgentNumber, CreatedAt);
             CREATE INDEX IF NOT EXISTS IX_Drawings_UserId_AgentNumber_CreatedAt ON Drawings(UserId, AgentNumber, CreatedAt);
         """;
 

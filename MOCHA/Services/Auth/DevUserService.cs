@@ -12,16 +12,19 @@ internal sealed class DevUserService : IDevUserService
 {
     private readonly ChatDbContext _db;
     private readonly IPasswordHasher<DevUserEntity> _passwordHasher;
+    private readonly IUserRoleProvider _roleProvider;
 
     /// <summary>
     /// 依存を受け取って初期化する
     /// </summary>
     /// <param name="db">DbContext</param>
     /// <param name="passwordHasher">パスワードハッシュ生成器</param>
-    public DevUserService(ChatDbContext db, IPasswordHasher<DevUserEntity> passwordHasher)
+    /// <param name="roleProvider">ロール割り当てプロバイダー</param>
+    public DevUserService(ChatDbContext db, IPasswordHasher<DevUserEntity> passwordHasher, IUserRoleProvider roleProvider)
     {
         _db = db;
         _passwordHasher = passwordHasher;
+        _roleProvider = roleProvider;
     }
 
     /// <inheritdoc />
@@ -49,6 +52,7 @@ internal sealed class DevUserService : IDevUserService
 
         _db.Set<DevUserEntity>().Add(entity);
         await _db.SaveChangesAsync(cancellationToken);
+        await _roleProvider.AssignAsync(entity.Email, UserRoleId.Predefined.Operator, cancellationToken);
         return entity;
     }
 

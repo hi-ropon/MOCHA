@@ -1743,7 +1743,7 @@
             return;
         }
 
-        _drawings = await DrawingService.ListAsync(_userId, SettingsSelectedAgentNumber);
+        _drawings = await DrawingService.ListAsync(SettingsSelectedAgentNumber);
     }
 
     private async Task LoadDelegationSettingsAsync()
@@ -1820,7 +1820,7 @@
             return;
         }
 
-        var setting = await GatewayService.GetAsync(_userId, SettingsSelectedAgentNumber);
+        var setting = await GatewayService.GetAsync(SettingsSelectedAgentNumber);
         _gatewayHost = setting?.Host ?? string.Empty;
         _gatewayPort = setting?.Port;
     }

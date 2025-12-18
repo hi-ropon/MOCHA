@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 using MOCHA.Services.Architecture;
 
@@ -159,6 +161,15 @@ public class PcConfigurationServiceTests
     {
         return new PcConfigurationService(
             new InMemoryPcSettingRepository(),
+            new AlwaysAllowRoleProvider(),
             NullLogger<PcConfigurationService>.Instance);
+    }
+
+    private sealed class AlwaysAllowRoleProvider : IUserRoleProvider
+    {
+        public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
+        public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }
