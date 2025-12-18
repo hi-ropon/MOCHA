@@ -108,7 +108,7 @@ public sealed class UnitConfigurationService
         }
 
         var existing = await _repository.GetAsync(unitId, cancellationToken);
-        if (existing is null || !string.Equals(existing.UserId, userId, StringComparison.Ordinal))
+        if (existing is null)
         {
             return UnitConfigurationResult.Fail("ユニット構成が見つかりません");
         }
@@ -116,6 +116,12 @@ public sealed class UnitConfigurationService
         if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
         {
             return UnitConfigurationResult.Fail("別の装置エージェントに紐づくため更新できません");
+        }
+
+        var isOwner = string.Equals(existing.UserId, userId, StringComparison.Ordinal);
+        if (!isOwner && !await HasEditPermissionAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            return UnitConfigurationResult.Fail("管理者または開発者のみ編集できます");
         }
 
         var updated = existing.Update(draft);
@@ -151,8 +157,13 @@ public sealed class UnitConfigurationService
             return false;
         }
 
-        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) ||
-            !string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasEditPermissionAsync(userId, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }

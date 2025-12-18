@@ -98,7 +98,7 @@ internal sealed class PcConfigurationService
         }
 
         var existing = await _repository.GetAsync(settingId, cancellationToken);
-        if (existing is null || !string.Equals(existing.UserId, userId, StringComparison.Ordinal))
+        if (existing is null)
         {
             return PcSettingResult.Fail("PC設定が見つかりません");
         }
@@ -106,6 +106,12 @@ internal sealed class PcConfigurationService
         if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
         {
             return PcSettingResult.Fail("別の装置エージェントに紐づくため更新できません");
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasEditPermissionAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            return PcSettingResult.Fail("管理者または開発者のみ編集できます");
         }
 
         var updated = existing.Update(draft);
@@ -135,8 +141,13 @@ internal sealed class PcConfigurationService
             return false;
         }
 
-        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) ||
-            !string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        if (!string.Equals(existing.AgentNumber, agentNumber, StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasEditPermissionAsync(userId, cancellationToken).ConfigureAwait(false))
         {
             return false;
         }

@@ -2,11 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using MOCHA.Models.Architecture;
+using MOCHA.Models.Auth;
 using MOCHA.Services.Architecture;
 
 namespace MOCHA.Tests;
@@ -198,6 +200,7 @@ public class PlcConfigurationServiceTests
         var service = new PlcConfigurationService(
             new InMemoryPlcUnitRepository(),
             new PlcFileStoragePathBuilder(options),
+            new AlwaysAllowRoleProvider(),
             NullLogger<PlcConfigurationService>.Instance);
 
         try
@@ -358,6 +361,15 @@ public class PlcConfigurationServiceTests
         return new PlcConfigurationService(
             new InMemoryPlcUnitRepository(),
             new PlcFileStoragePathBuilder(options),
+            new AlwaysAllowRoleProvider(),
             NullLogger<PlcConfigurationService>.Instance);
+    }
+
+    private sealed class AlwaysAllowRoleProvider : IUserRoleProvider
+    {
+        public Task AssignAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
+        public Task<IReadOnlyCollection<UserRoleId>> GetRolesAsync(string userId, CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyCollection<UserRoleId>>(Array.Empty<UserRoleId>());
+        public Task<bool> IsInRoleAsync(string userId, string role, CancellationToken cancellationToken = default) => Task.FromResult(true);
+        public Task RemoveAsync(string userId, UserRoleId role, CancellationToken cancellationToken = default) => Task.CompletedTask;
     }
 }

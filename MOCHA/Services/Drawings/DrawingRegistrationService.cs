@@ -181,9 +181,15 @@ internal sealed class DrawingRegistrationService
         }
 
         var existing = await _repository.GetAsync(drawingId, cancellationToken);
-        if (existing is null || !string.Equals(existing.UserId, userId, StringComparison.Ordinal))
+        if (existing is null)
         {
             return DrawingRegistrationResult.Fail("図面が見つかりません");
+        }
+
+        if (!string.Equals(existing.UserId, userId, StringComparison.Ordinal) &&
+            !await HasEditPermissionAsync(userId, cancellationToken).ConfigureAwait(false))
+        {
+            return DrawingRegistrationResult.Fail("管理者または開発者のみ編集できます");
         }
 
         var updated = existing.WithDescription(description);
