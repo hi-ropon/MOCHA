@@ -73,9 +73,9 @@ public class PlcToolsetTests
             plcOnline: true,
             connectionContext: connection);
 
-        StringAssert.Contains(hint, "デフォルトゲートウェイ: 10.0.0.1:8500");
-        StringAssert.Contains(hint, "ユニット: Unit-A ip=192.168.0.10 port=5000 transport=TCP gw=10.0.0.1:8500");
-        StringAssert.Contains(hint, "ユニット: Unit-B ip=192.168.0.11 port=5001 transport=UDP gw=10.0.0.2:8600");
+        StringAssert.Contains(hint, "デフォルトゲートウェイ: http://10.0.0.1:8500");
+        StringAssert.Contains(hint, "ユニット: Unit-A ip=192.168.0.10 port=5000 transport=TCP gw=http://10.0.0.1:8500");
+        StringAssert.Contains(hint, "ユニット: Unit-B ip=192.168.0.11 port=5001 transport=UDP gw=http://10.0.0.2:8600");
         StringAssert.Contains(hint, "ゲートウェイオプション");
         StringAssert.Contains(hint, "補足: note");
     }

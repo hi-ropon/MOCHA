@@ -220,10 +220,10 @@ public sealed class PlcToolset
         if (connectionContext is not null && !connectionContext.IsEmpty)
         {
             sb.AppendLine("[接続設定]");
-            var gatewayPort = connectionContext.GatewayPort?.ToString(CultureInfo.InvariantCulture) ?? "-";
-            if (!string.IsNullOrWhiteSpace(connectionContext.GatewayHost))
+            var defaultGateway = BuildGatewayBaseUrl(connectionContext.GatewayHost, connectionContext.GatewayPort);
+            if (!string.IsNullOrWhiteSpace(defaultGateway))
             {
-                sb.AppendLine($"- デフォルトゲートウェイ: {connectionContext.GatewayHost}:{gatewayPort}");
+                sb.AppendLine($"- デフォルトゲートウェイ: {defaultGateway}");
             }
 
             foreach (var unit in connectionContext.Units)
@@ -246,13 +246,8 @@ public sealed class PlcToolset
 
     private static string FormatGateway(string? host, int? port)
     {
-        if (string.IsNullOrWhiteSpace(host))
-        {
-            return string.Empty;
-        }
-
-        var text = port is not null ? $"{host}:{port.Value.ToString(CultureInfo.InvariantCulture)}" : host;
-        return $" gw={text}";
+        var baseUrl = BuildGatewayBaseUrl(host, port);
+        return string.IsNullOrWhiteSpace(baseUrl) ? string.Empty : $" gw={baseUrl}";
     }
 
     private static string FormatTransport(string? transport)
@@ -265,7 +260,36 @@ public sealed class PlcToolset
         return transport.Trim().ToLowerInvariant();
     }
 
-    private (string? Ip, int? Port, string? Transport, string? PlcHost) ResolveConnection(string? ip, int? port)
+    private static string? BuildGatewayBaseUrl(string? host, int? port)
+    {
+        if (string.IsNullOrWhiteSpace(host))
+        {
+            return null;
+        }
+
+        var text = port is not null
+            ? $"{host}:{port.Value.ToString(CultureInfo.InvariantCulture)}"
+            : host;
+        return NormalizeBaseUrl(text);
+    }
+
+    private static string? NormalizeBaseUrl(string? baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return null;
+        }
+
+        var trimmed = baseUrl.Trim();
+        if (!trimmed.Contains("://", StringComparison.Ordinal))
+        {
+            return $"http://{trimmed}";
+        }
+
+        return trimmed;
+    }
+
+    private (string? Ip, int? Port, string? Transport, string? BaseUrl) ResolveConnection(string? ip, int? port, string? baseUrl)
     {
         var ctx = _context.Value;
         var connection = ctx?.ConnectionContext ?? _connectionContext;
@@ -273,8 +297,10 @@ public sealed class PlcToolset
         var resolvedIp = string.IsNullOrWhiteSpace(ip) ? unit?.IpAddress : ip;
         var resolvedPort = port is null || port.Value <= 0 ? unit?.Port : port;
         var resolvedTransport = unit is null ? null : FormatTransport(unit.Transport);
-        var resolvedHost = string.IsNullOrWhiteSpace(unit?.GatewayHost) ? connection?.GatewayHost : unit?.GatewayHost;
-        return (resolvedIp, resolvedPort, resolvedTransport, resolvedHost);
+        var gatewayHost = string.IsNullOrWhiteSpace(unit?.GatewayHost) ? connection?.GatewayHost : unit?.GatewayHost;
+        var gatewayPort = unit?.GatewayPort ?? connection?.GatewayPort;
+        var resolvedBaseUrl = !string.IsNullOrWhiteSpace(baseUrl) ? baseUrl : BuildGatewayBaseUrl(gatewayHost, gatewayPort);
+        return (resolvedIp, resolvedPort, resolvedTransport, resolvedBaseUrl);
     }
 
     /// <summary>
@@ -690,13 +716,14 @@ public sealed class PlcToolset
     {
         var address = NormalizeAddress(DeviceAddress.Parse(spec));
         var normalizedSpec = address.ToSpec();
-        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec = normalizedSpec, ip, port, timeoutSeconds, baseUrl }, _serializerOptions));
+        var normalizedBaseUrl = NormalizeBaseUrl(baseUrl);
+        var call = new ToolCall("read_plc_values", JsonSerializer.Serialize(new { spec = normalizedSpec, ip, port, timeoutSeconds, baseUrl = normalizedBaseUrl ?? baseUrl }, _serializerOptions));
         EmitRequested(call);
-        var connection = ResolveConnection(ip, port);
+        var connection = ResolveConnection(ip, port, normalizedBaseUrl);
         var resolvedIp = string.IsNullOrWhiteSpace(ip) ? connection.Ip : ip;
         var resolvedPort = port <= 0 ? connection.Port : port;
         var resolvedTransport = string.IsNullOrWhiteSpace(connection.Transport) ? null : connection.Transport;
-        var resolvedPlcHost = connection.PlcHost;
+        var resolvedBaseUrl = connection.BaseUrl ?? normalizedBaseUrl;
 
         try
         {
@@ -706,9 +733,8 @@ public sealed class PlcToolset
                     string.IsNullOrWhiteSpace(resolvedIp) ? null : resolvedIp,
                     resolvedPort,
                     resolvedTransport,
-                    resolvedPlcHost,
                     Timeout: TimeSpan.FromSeconds(timeoutSeconds > 0 ? timeoutSeconds : 10),
-                    BaseUrl: baseUrl),
+                    BaseUrl: resolvedBaseUrl),
                 cancellationToken);
 
             var payload = JsonSerializer.Serialize(result, _serializerOptions);
@@ -733,14 +759,16 @@ public sealed class PlcToolset
     private async Task<string> ReadMultipleValuesAsync(IEnumerable<string> specs, string? baseUrl, CancellationToken cancellationToken)
     {
         var normalizedSpecs = specs.Select(s => NormalizeAddress(DeviceAddress.Parse(s)).ToSpec()).ToList();
-        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs = normalizedSpecs, baseUrl }, _serializerOptions));
+        var normalizedBaseUrl = NormalizeBaseUrl(baseUrl);
+        var call = new ToolCall("read_multiple_plc_values", JsonSerializer.Serialize(new { specs = normalizedSpecs, baseUrl = normalizedBaseUrl ?? baseUrl }, _serializerOptions));
         EmitRequested(call);
-        var connection = ResolveConnection(null, null);
+        var connection = ResolveConnection(null, null, normalizedBaseUrl);
+        var resolvedBaseUrl = connection.BaseUrl ?? normalizedBaseUrl;
 
         try
         {
             var result = await _gateway.ReadBatchAsync(
-                new BatchReadRequest(normalizedSpecs, connection.Ip, connection.Port, connection.Transport, connection.PlcHost, BaseUrl: baseUrl),
+                new BatchReadRequest(normalizedSpecs, connection.Ip, connection.Port, connection.Transport, BaseUrl: resolvedBaseUrl),
                 cancellationToken);
             var payload = JsonSerializer.Serialize(result, _serializerOptions);
             EmitCompleted(call, payload, string.IsNullOrEmpty(result.Error));

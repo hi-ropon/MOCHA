@@ -111,7 +111,7 @@ public sealed class PlcAgentTool
     {
         try
         {
-            var baseUrl = options.BaseUrl ?? "http://localhost:8000";
+            var baseUrl = NormalizeBaseUrl(options.BaseUrl) ?? "http://localhost:8000";
             using var http = new HttpClient
             {
                 BaseAddress = new Uri(baseUrl),
@@ -129,8 +129,7 @@ public sealed class PlcAgentTool
                     devices = specs,
                     ip = options.Ip,
                     port = options.Port,
-                    transport = options.Transport,
-                    plc_host = options.PlcHost
+                    transport = options.Transport
                 };
 
                 _logger.LogInformation("PLC Gateway バッチ読み取りリクエスト: POST api/batch_read payload={Payload}", JsonSerializer.Serialize(payload));
@@ -154,11 +153,6 @@ public sealed class PlcAgentTool
             var address = DeviceAddress.Parse(options.Devices.First());
             var path = $"api/read/{address.Device}/{Uri.EscapeDataString(address.Address)}/{address.Length}";
             var query = new List<string>();
-            if (!string.IsNullOrWhiteSpace(options.PlcHost))
-            {
-                query.Add($"plc_host={Uri.EscapeDataString(options.PlcHost)}");
-            }
-
             if (!string.IsNullOrWhiteSpace(options.Transport))
             {
                 query.Add($"transport={Uri.EscapeDataString(options.Transport)}");
@@ -207,8 +201,6 @@ public sealed class PlcAgentTool
         public string? BaseUrl { get; init; }
         public string? Ip { get; init; }
         public int? Port { get; init; }
-        [JsonPropertyName("plc_host")]
-        public string? PlcHost { get; init; }
         [JsonPropertyName("transport")]
         public string? Transport { get; init; }
         [JsonPropertyName("timeout")]
@@ -230,4 +222,20 @@ public sealed class PlcAgentTool
         [property: JsonPropertyName("values")] IReadOnlyList<int>? Values,
         [property: JsonPropertyName("success")] bool? Success,
         [property: JsonPropertyName("error")] string? Error);
+
+    private static string? NormalizeBaseUrl(string? baseUrl)
+    {
+        if (string.IsNullOrWhiteSpace(baseUrl))
+        {
+            return null;
+        }
+
+        var trimmed = baseUrl.Trim();
+        if (!trimmed.Contains("://", StringComparison.Ordinal))
+        {
+            return $"http://{trimmed}";
+        }
+
+        return trimmed;
+    }
 }
