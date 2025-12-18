@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using MOCHA.Models.Auth;
 using MOCHA.Models.Architecture;
 
 namespace MOCHA.Services.Architecture;
@@ -14,16 +15,19 @@ namespace MOCHA.Services.Architecture;
 public sealed class UnitConfigurationService
 {
     private readonly IUnitConfigurationRepository _repository;
+    private readonly IUserRoleProvider _roleProvider;
     private readonly ILogger<UnitConfigurationService> _logger;
 
     /// <summary>
     /// 依存受け取りによる初期化
     /// </summary>
     /// <param name="repository">リポジトリ</param>
+    /// <param name="roleProvider">ロールプロバイダー</param>
     /// <param name="logger">ロガー</param>
-    public UnitConfigurationService(IUnitConfigurationRepository repository, ILogger<UnitConfigurationService> logger)
+    public UnitConfigurationService(IUnitConfigurationRepository repository, IUserRoleProvider roleProvider, ILogger<UnitConfigurationService> logger)
     {
         _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _roleProvider = roleProvider ?? throw new ArgumentNullException(nameof(roleProvider));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -36,12 +40,13 @@ public sealed class UnitConfigurationService
     /// <returns>ユニット一覧</returns>
     public Task<IReadOnlyList<UnitConfiguration>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        _ = userId;
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Task.FromResult<IReadOnlyList<UnitConfiguration>>(Array.Empty<UnitConfiguration>());
         }
 
-        return _repository.ListAsync(userId.Trim(), agentNumber.Trim(), cancellationToken);
+        return _repository.ListAsync(agentNumber.Trim(), cancellationToken);
     }
 
     /// <summary>
@@ -54,6 +59,11 @@ public sealed class UnitConfigurationService
     /// <returns>結果</returns>
     public async Task<UnitConfigurationResult> AddAsync(string userId, string agentNumber, UnitConfigurationDraft draft, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return UnitConfigurationResult.Fail("管理者または開発者のみ編集できます");
+        }
+
         var validation = Validate(userId, agentNumber, draft);
         if (!validation.IsValid)
         {
@@ -64,7 +74,7 @@ public sealed class UnitConfigurationService
         var normalizedAgentNumber = agentNumber.Trim();
         var unit = UnitConfiguration.Create(normalizedUserId, normalizedAgentNumber, draft);
 
-        var existing = await _repository.ListAsync(normalizedUserId, normalizedAgentNumber, cancellationToken);
+        var existing = await _repository.ListAsync(normalizedAgentNumber, cancellationToken);
         if (existing.Any(x => string.Equals(x.Name, unit.Name, StringComparison.OrdinalIgnoreCase)))
         {
             return UnitConfigurationResult.Fail("同じユニット名が既に登録されています");
@@ -86,6 +96,11 @@ public sealed class UnitConfigurationService
     /// <returns>結果</returns>
     public async Task<UnitConfigurationResult> UpdateAsync(string userId, string agentNumber, Guid unitId, UnitConfigurationDraft draft, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return UnitConfigurationResult.Fail("管理者または開発者のみ編集できます");
+        }
+
         var validation = Validate(userId, agentNumber, draft);
         if (!validation.IsValid)
         {
@@ -104,7 +119,7 @@ public sealed class UnitConfigurationService
         }
 
         var updated = existing.Update(draft);
-        var siblings = await _repository.ListAsync(userId.Trim(), agentNumber.Trim(), cancellationToken);
+        var siblings = await _repository.ListAsync(agentNumber.Trim(), cancellationToken);
         if (siblings.Any(x => x.Id != existing.Id && string.Equals(x.Name, updated.Name, StringComparison.OrdinalIgnoreCase)))
         {
             return UnitConfigurationResult.Fail("同じユニット名が既に登録されています");
@@ -125,6 +140,11 @@ public sealed class UnitConfigurationService
     /// <returns>削除可否</returns>
     public async Task<bool> DeleteAsync(string userId, string agentNumber, Guid unitId, CancellationToken cancellationToken = default)
     {
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
+        {
+            return false;
+        }
+
         var existing = await _repository.GetAsync(unitId, cancellationToken);
         if (existing is null)
         {
@@ -144,6 +164,25 @@ public sealed class UnitConfigurationService
         }
 
         return deleted;
+    }
+
+    private async Task<bool> HasEditPermissionAsync(string userId, CancellationToken cancellationToken)
+    {
+        var roles = new[]
+        {
+            UserRoleId.Predefined.Administrator.Value,
+            UserRoleId.Predefined.Developer.Value
+        };
+
+        foreach (var role in roles)
+        {
+            if (await _roleProvider.IsInRoleAsync(userId, role, cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static (bool IsValid, string? Error) Validate(string userId, string agentNumber, UnitConfigurationDraft draft)

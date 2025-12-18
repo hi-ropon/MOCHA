@@ -44,7 +44,7 @@ public sealed class PlcAgentContextProvider : IPlcAgentContextProvider
         try
         {
             var normalizedAgent = agentNumber.Trim();
-            var gateway = await _gatewaySettingRepository.GetAsync(userId, normalizedAgent, cancellationToken);
+            var gateway = await _gatewaySettingRepository.GetAsync(normalizedAgent, cancellationToken);
             var units = await _plcUnitRepository.ListAsync(normalizedAgent, cancellationToken);
             if (plcUnitId is not null)
             {

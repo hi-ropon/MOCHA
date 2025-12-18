@@ -124,21 +124,20 @@ internal sealed class PcSettingRepository : IPcSettingRepository
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<PcSetting>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<PcSetting>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         await EnsureTableIfMissingAsync(cancellationToken);
-        if (string.IsNullOrWhiteSpace(userId) || string.IsNullOrWhiteSpace(agentNumber))
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Array.Empty<PcSetting>();
         }
 
-        var normalizedUserId = userId.Trim();
         var normalizedAgent = agentNumber.Trim();
 
         try
         {
             var list = await _dbContext.PcSettings
-                .Where(x => x.UserId == normalizedUserId && x.AgentNumber == normalizedAgent)
+                .Where(x => x.AgentNumber == normalizedAgent)
                 .ToListAsync(cancellationToken);
 
             return list
@@ -217,6 +216,7 @@ internal sealed class PcSettingRepository : IPcSettingRepository
                 CreatedAt TEXT NOT NULL,
                 UpdatedAt TEXT NOT NULL
             );
+            CREATE INDEX IF NOT EXISTS IX_PcSettings_AgentNumber_CreatedAt ON PcSettings(AgentNumber, CreatedAt);
             CREATE INDEX IF NOT EXISTS IX_PcSettings_UserId_AgentNumber_CreatedAt ON PcSettings(UserId, AgentNumber, CreatedAt);
         """;
 

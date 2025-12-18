@@ -85,7 +85,7 @@ internal sealed class UserDrawingManualStore : IManualStore
         ManualSearchContext? context,
         CancellationToken cancellationToken)
     {
-        if (context is null || string.IsNullOrWhiteSpace(context.UserId) || string.IsNullOrWhiteSpace(context.AgentNumber))
+        if (context is null || string.IsNullOrWhiteSpace(context.AgentNumber))
         {
             return Array.Empty<ManualHit>();
         }
@@ -101,7 +101,7 @@ internal sealed class UserDrawingManualStore : IManualStore
         {
             using var scope = _scopeFactory.CreateScope();
             var repository = scope.ServiceProvider.GetRequiredService<IDrawingRepository>();
-            var drawings = await repository.ListAsync(context.UserId, context.AgentNumber, cancellationToken);
+            var drawings = await repository.ListAsync(context.AgentNumber, cancellationToken);
             var hits = new List<ManualHit>();
 
             foreach (var drawing in drawings)
@@ -137,7 +137,7 @@ internal sealed class UserDrawingManualStore : IManualStore
         int? maxBytes,
         CancellationToken cancellationToken)
     {
-        if (context is null || string.IsNullOrWhiteSpace(context.UserId) || string.IsNullOrWhiteSpace(context.AgentNumber))
+        if (context is null || string.IsNullOrWhiteSpace(context.AgentNumber))
         {
             return null;
         }
@@ -153,13 +153,12 @@ internal sealed class UserDrawingManualStore : IManualStore
         var reader = scope.ServiceProvider.GetRequiredService<DrawingContentReader>();
 
         var drawing = await repository.GetAsync(id, cancellationToken);
-        if (drawing is null || !string.Equals(drawing.UserId, context.UserId, StringComparison.Ordinal) ||
-            !string.Equals(drawing.AgentNumber, context.AgentNumber, StringComparison.Ordinal))
+        if (drawing is null || !string.Equals(drawing.AgentNumber, context.AgentNumber, StringComparison.Ordinal))
         {
             return null;
         }
 
-        var file = await catalog.FindAsync(context.UserId, context.AgentNumber, id, cancellationToken);
+        var file = await catalog.FindAsync(context.AgentNumber, id, cancellationToken);
 
         var builder = new StringBuilder();
         builder.AppendLine($"図面: {drawing.FileName}");

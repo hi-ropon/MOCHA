@@ -36,20 +36,10 @@ public sealed class DrawingCatalog
     /// <param name="drawingId">図面ID</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>図面ファイル参照</returns>
-    public async Task<DrawingFile?> FindAsync(string userId, string? agentNumber, Guid drawingId, CancellationToken cancellationToken = default)
+    public async Task<DrawingFile?> FindAsync(string? agentNumber, Guid drawingId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
-        {
-            return null;
-        }
-
         var document = await _repository.GetAsync(drawingId, cancellationToken);
         if (document is null)
-        {
-            return null;
-        }
-
-        if (!string.Equals(document.UserId, userId, StringComparison.Ordinal))
         {
             return null;
         }
@@ -69,14 +59,14 @@ public sealed class DrawingCatalog
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>図面ファイル参照一覧</returns>
-    public async Task<IReadOnlyList<DrawingFile>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<DrawingFile>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(userId))
+        if (string.IsNullOrWhiteSpace(agentNumber))
         {
             return Array.Empty<DrawingFile>();
         }
 
-        var documents = await _repository.ListAsync(userId, agentNumber, cancellationToken);
+        var documents = await _repository.ListAsync(agentNumber, cancellationToken);
         return documents
             .Select(BuildFile)
             .ToList();

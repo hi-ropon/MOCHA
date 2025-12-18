@@ -58,7 +58,7 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         try
         {
             var architecture = await BuildArchitectureAsync(userId, agentNumber, cancellationToken);
-            var drawings = await BuildDrawingsAsync(userId, agentNumber, cancellationToken);
+            var drawings = await BuildDrawingsAsync(agentNumber, cancellationToken);
             return new OrganizerContext(architecture, drawings);
         }
         catch (Exception ex)
@@ -72,7 +72,7 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     {
         var sb = new StringBuilder();
 
-        var pcSettings = await _pcSettingRepository.ListAsync(userId, agentNumber, cancellationToken);
+        var pcSettings = await _pcSettingRepository.ListAsync(agentNumber, cancellationToken);
         if (pcSettings.Count > 0)
         {
             var orderedPc = pcSettings
@@ -135,7 +135,7 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
             }
         }
 
-        var unitConfigurations = await _unitConfigurationRepository.ListAsync(userId, agentNumber, cancellationToken);
+        var unitConfigurations = await _unitConfigurationRepository.ListAsync(agentNumber, cancellationToken);
         foreach (var config in unitConfigurations)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -145,9 +145,9 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
         return sb.ToString().TrimEnd();
     }
 
-    private async Task<string> BuildDrawingsAsync(string userId, string agentNumber, CancellationToken cancellationToken)
+    private async Task<string> BuildDrawingsAsync(string agentNumber, CancellationToken cancellationToken)
     {
-        var files = await _drawingCatalog.ListAsync(userId, agentNumber, cancellationToken);
+        var files = await _drawingCatalog.ListAsync(agentNumber, cancellationToken);
         if (files.Count == 0)
         {
             return string.Empty;

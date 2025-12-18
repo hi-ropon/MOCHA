@@ -43,10 +43,10 @@ internal sealed class InMemoryPcSettingRepository : IPcSettingRepository
     }
 
     /// <inheritdoc />
-    public Task<IReadOnlyList<PcSetting>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<PcSetting>> ListAsync(string agentNumber, CancellationToken cancellationToken = default)
     {
         var result = _store.Values
-            .Where(x => x.UserId == userId && x.AgentNumber == agentNumber)
+            .Where(x => x.AgentNumber == agentNumber)
             .OrderBy(x => x.CreatedAt)
             .ToList();
 

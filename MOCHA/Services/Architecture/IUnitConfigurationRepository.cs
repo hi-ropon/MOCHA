@@ -46,9 +46,8 @@ public interface IUnitConfigurationRepository
     /// <summary>
     /// ユニット一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>ユニット一覧</returns>
-    Task<IReadOnlyList<UnitConfiguration>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<UnitConfiguration>> ListAsync(string agentNumber, CancellationToken cancellationToken = default);
 }

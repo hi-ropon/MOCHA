@@ -14,11 +14,10 @@ public interface IDrawingRepository
     /// <summary>
     /// 図面一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>図面一覧</returns>
-    Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default);
     /// <summary>
     /// 図面取得
     /// </summary>

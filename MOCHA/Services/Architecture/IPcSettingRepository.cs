@@ -44,11 +44,10 @@ public interface IPcSettingRepository
     Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// ユーザーとエージェントの設定一覧取得
+    /// エージェントの設定一覧取得
     /// </summary>
-    /// <param name="userId">ユーザーID</param>
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>設定一覧</returns>
-    Task<IReadOnlyList<PcSetting>> ListAsync(string userId, string agentNumber, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<PcSetting>> ListAsync(string agentNumber, CancellationToken cancellationToken = default);
 }

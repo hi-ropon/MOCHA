@@ -35,7 +35,7 @@ public class DrawingRepositoryTests
 
         await harness.Repository.AddAsync(document);
 
-        var list = await harness.Repository.ListAsync("user-1", "A-01");
+        var list = await harness.Repository.ListAsync("A-01");
 
         Assert.AreEqual(1, list.Count);
         Assert.AreEqual("layout.pdf", list[0].FileName);
@@ -86,7 +86,7 @@ public class DrawingRepositoryTests
         var deleted = await harness.Repository.DeleteAsync(saved.Id);
 
         Assert.IsTrue(deleted);
-        var list = await harness.Repository.ListAsync("user-3", "C-03");
+        var list = await harness.Repository.ListAsync("C-03");
         Assert.AreEqual(0, list.Count);
     }
 

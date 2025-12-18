@@ -46,10 +46,10 @@ internal sealed class InMemoryDrawingRepository : IDrawingRepository
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>図面一覧</returns>
-    public Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
     {
         var documents = _store.Values
-            .Where(x => x.UserId == userId && x.AgentNumber == agentNumber)
+            .Where(x => x.AgentNumber == agentNumber)
             .OrderByDescending(x => x.UpdatedAt)
             .ToList();
 

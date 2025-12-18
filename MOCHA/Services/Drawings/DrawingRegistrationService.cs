@@ -47,9 +47,14 @@ internal sealed class DrawingRegistrationService
     /// <param name="agentNumber">エージェント番号</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>図面一覧</returns>
-    public Task<IReadOnlyList<DrawingDocument>> ListAsync(string userId, string? agentNumber, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyList<DrawingDocument>> ListAsync(string? agentNumber, CancellationToken cancellationToken = default)
     {
-        return _repository.ListAsync(userId, agentNumber, cancellationToken);
+        if (string.IsNullOrWhiteSpace(agentNumber))
+        {
+            return Task.FromResult<IReadOnlyList<DrawingDocument>>(Array.Empty<DrawingDocument>());
+        }
+
+        return _repository.ListAsync(agentNumber, cancellationToken);
     }
 
     /// <summary>
@@ -96,9 +101,9 @@ internal sealed class DrawingRegistrationService
         IReadOnlyCollection<DrawingUpload> uploads,
         CancellationToken cancellationToken = default)
     {
-        if (!await IsAdminAsync(userId, cancellationToken))
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
         {
-            return DrawingBatchRegistrationResult.Fail("管理者のみ図面を登録できます");
+            return DrawingBatchRegistrationResult.Fail("管理者または開発者のみ図面を登録できます");
         }
 
         if (string.IsNullOrWhiteSpace(agentNumber))
@@ -170,9 +175,9 @@ internal sealed class DrawingRegistrationService
         string? description,
         CancellationToken cancellationToken = default)
     {
-        if (!await IsAdminAsync(userId, cancellationToken))
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
         {
-            return DrawingRegistrationResult.Fail("管理者のみ図面を編集できます");
+            return DrawingRegistrationResult.Fail("管理者または開発者のみ図面を編集できます");
         }
 
         var existing = await _repository.GetAsync(drawingId, cancellationToken);
@@ -193,9 +198,23 @@ internal sealed class DrawingRegistrationService
     /// <param name="userId">ユーザーID</param>
     /// <param name="cancellationToken">キャンセル通知</param>
     /// <returns>管理者なら true</returns>
-    private Task<bool> IsAdminAsync(string userId, CancellationToken cancellationToken)
+    private async Task<bool> HasEditPermissionAsync(string userId, CancellationToken cancellationToken)
     {
-        return _roleProvider.IsInRoleAsync(userId, UserRoleId.Predefined.Administrator.Value, cancellationToken);
+        var roles = new[]
+        {
+            UserRoleId.Predefined.Administrator.Value,
+            UserRoleId.Predefined.Developer.Value
+        };
+
+        foreach (var role in roles)
+        {
+            if (await _roleProvider.IsInRoleAsync(userId, role, cancellationToken).ConfigureAwait(false))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>
@@ -207,9 +226,9 @@ internal sealed class DrawingRegistrationService
     /// <returns>削除結果</returns>
     public async Task<DrawingDeletionResult> DeleteAsync(string userId, Guid drawingId, CancellationToken cancellationToken = default)
     {
-        if (!await IsAdminAsync(userId, cancellationToken))
+        if (!await HasEditPermissionAsync(userId, cancellationToken))
         {
-            return DrawingDeletionResult.Fail("管理者のみ図面を削除できます");
+            return DrawingDeletionResult.Fail("管理者または開発者のみ図面を削除できます");
         }
 
         var existing = await _repository.GetAsync(drawingId, cancellationToken);
