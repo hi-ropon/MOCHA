@@ -40,7 +40,7 @@ public sealed class PlcProgramAnalyzer
                 var block = program
                     .Skip(start)
                     .Take(end - start + 1)
-                    .Select(line => line.Raw);
+                    .Select(FormatProgramLine);
                 results.Add(string.Join(Environment.NewLine, block));
             }
         }
@@ -267,5 +267,21 @@ public sealed class PlcProgramAnalyzer
         }
 
         return line.Contains(token, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string FormatProgramLine(ProgramLine line)
+    {
+        var columns = line.Columns ?? Array.Empty<string>();
+        var normalized = columns
+            .Select(c => c?.Trim().Trim('"'))
+            .Where(c => !string.IsNullOrWhiteSpace(c))
+            .ToList();
+
+        if (normalized.Count == 0)
+        {
+            return line.Raw ?? string.Empty;
+        }
+
+        return string.Join(' ', normalized);
     }
 }
