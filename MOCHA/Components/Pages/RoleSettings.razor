@@ -2,6 +2,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject IUserRoleProvider RoleProvider
 @inject IDeviceAgentAccessService AgentAccessService
+@inject IUserLookupService UserLookup
 @using MOCHA.Services.Auth
 @using MOCHA.Services.Agents
 @using MOCHA.Models.Agents
@@ -38,6 +39,16 @@
                            class="input" />
                     <p class="hint">Azure AD の oid / ユーザープリンシパル名など、ロール付与のキーとなるID</p>
                 </div>
+                @if (!string.IsNullOrWhiteSpace(resolvedTargetDisplayName))
+                {
+                    <p class="hint">
+                        表示名: @resolvedTargetDisplayName
+                        @if (!string.IsNullOrWhiteSpace(resolvedTargetUserId))
+                        {
+                            <span class="muted">(@resolvedTargetUserId)</span>
+                        }
+                    </p>
+                }
                 <div class="actions">
                     <button class="btn ghost" @onclick="LoadRolesAsync" disabled="@isLoading">
                         @(isLoading ? "読み込み中…" : "現在のロールを読み込み")
@@ -151,6 +162,8 @@
 
     private string? currentUserId;
     private string targetUserId = string.Empty;
+    private string? resolvedTargetUserId;
+    private string? resolvedTargetDisplayName;
     private HashSet<string> selectedRoles = new(StringComparer.OrdinalIgnoreCase);
     private List<DeviceAgentProfile> agentCatalog = new();
     private HashSet<string> selectedAgentNumbers = new(StringComparer.OrdinalIgnoreCase);
@@ -190,25 +203,24 @@
         selectedRoles = new(StringComparer.OrdinalIgnoreCase);
         selectedAgentNumbers = new(StringComparer.OrdinalIgnoreCase);
 
-        var normalizedTarget = RoleSettingsService.NormalizeUserId(targetUserId);
-        if (normalizedTarget is null)
+        await LoadAgentCatalogAsync();
+
+        var user = await ResolveTargetUserAsync();
+        if (user is null)
         {
-            SetStatus("ユーザーIDを入力してください。", "warn");
             isLoading = false;
             return;
         }
 
-        await LoadAgentCatalogAsync();
-
-        var roles = await RoleProvider.GetRolesAsync(normalizedTarget);
+        var roles = await RoleProvider.GetRolesAsync(user.UserId);
         foreach (var role in roles)
         {
             selectedRoles.Add(role.Value);
         }
 
-        await LoadAgentAssignmentsAsync(normalizedTarget);
+        await LoadAgentAssignmentsAsync(user.UserId);
 
-        SetStatus("ロールを読み込みました。", "info");
+        SetStatus($"ユーザー {user.DisplayName} のロールを読み込みました。", "info");
         isLoading = false;
     }
 
@@ -223,10 +235,30 @@
         agentCatalog = catalog.OrderBy(a => a.Number).ToList();
     }
 
-    private async Task LoadAgentAssignmentsAsync(string normalizedUserId)
+    private async Task LoadAgentAssignmentsAsync(string userId)
     {
-        var assignments = await AgentAccessService.GetAssignmentsAsync(normalizedUserId);
+        var assignments = await AgentAccessService.GetAssignmentsAsync(userId);
         selectedAgentNumbers = new HashSet<string>(assignments, StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task<UserLookupResult?> ResolveTargetUserAsync()
+    {
+        if (string.IsNullOrWhiteSpace(targetUserId))
+        {
+            SetStatus("ユーザーIDを入力してください。", "warn");
+            return null;
+        }
+
+        var user = await UserLookup.FindByIdentifierAsync(targetUserId);
+        if (user is null)
+        {
+            SetStatus("ユーザーが見つかりません。", "warn");
+            return null;
+        }
+
+        resolvedTargetUserId = user.UserId;
+        resolvedTargetDisplayName = user.DisplayName;
+        return user;
     }
 
     private async Task SaveRolesAsync()
@@ -234,31 +266,30 @@
         ResetStatus();
         isSaving = true;
 
-        var normalizedTarget = RoleSettingsService.NormalizeUserId(targetUserId);
-        if (normalizedTarget is null)
+        var user = await ResolveTargetUserAsync();
+        if (user is null)
         {
-            SetStatus("ユーザーIDを入力してください。", "warn");
             isSaving = false;
             return;
         }
 
-        var current = await RoleProvider.GetRolesAsync(normalizedTarget);
+        var current = await RoleProvider.GetRolesAsync(user.UserId);
         var currentSet = new HashSet<string>(current.Select(r => r.Value), StringComparer.OrdinalIgnoreCase);
         var diff = RoleSettingsService.CalculateDiff(currentSet, selectedRoles);
 
         foreach (var roleId in diff.ToAssign)
         {
-            await RoleProvider.AssignAsync(normalizedTarget, UserRoleId.From(roleId));
+            await RoleProvider.AssignAsync(user.UserId, UserRoleId.From(roleId));
         }
 
         foreach (var roleId in diff.ToRemove)
         {
-            await RoleProvider.RemoveAsync(normalizedTarget, UserRoleId.From(roleId));
+            await RoleProvider.RemoveAsync(user.UserId, UserRoleId.From(roleId));
         }
 
-        await AgentAccessService.UpdateAssignmentsAsync(normalizedTarget, selectedAgentNumbers);
+        await AgentAccessService.UpdateAssignmentsAsync(user.UserId, selectedAgentNumbers);
 
-        SetStatus("保存しました。", "success");
+        SetStatus($"ユーザー {user.DisplayName} の変更を保存しました。", "success");
         isSaving = false;
     }
 
@@ -283,6 +314,8 @@
     {
         statusMessage = string.Empty;
         statusKind = "info";
+        resolvedTargetUserId = null;
+        resolvedTargetDisplayName = null;
     }
 
     private void SetStatus(string message, string kind)
