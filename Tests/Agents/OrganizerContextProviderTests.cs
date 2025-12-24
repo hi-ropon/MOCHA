@@ -201,7 +201,7 @@ public class OrganizerContextProviderTests
         var drawingCatalog = new DrawingCatalog(new FakeDrawingRepository(), Options.Create(new DrawingStorageOptions()));
         var provider = new OrganizerContextProvider(pcRepo, plcRepo, gatewayRepo, unitConfigRepo, drawingCatalog, NullLogger<OrganizerContextProvider>.Instance);
 
-        var longDescription = new string('x', PlcUnitDraft.ProgramDescriptionMaxLength + 20);
+        var longDescription = new string('x', PlcUnitDraft.programDescriptionMaxLength + 20);
         var unit = PlcUnit.Restore(
             Guid.NewGuid(),
             "user-10",
@@ -227,9 +227,9 @@ public class OrganizerContextProviderTests
 
         var context = await provider.BuildAsync("user-10", "Z-10", CancellationToken.None);
 
-        var expected = new string('x', PlcUnitDraft.ProgramDescriptionMaxLength);
+        var expected = new string('x', PlcUnitDraft.programDescriptionMaxLength);
         StringAssert.Contains(context.Architecture, expected);
-        Assert.IsFalse(context.Architecture.Contains(new string('x', PlcUnitDraft.ProgramDescriptionMaxLength + 1)));
+        Assert.IsFalse(context.Architecture.Contains(new string('x', PlcUnitDraft.programDescriptionMaxLength + 1)));
     }
 
     private sealed class FakeDrawingRepository : IDrawingRepository

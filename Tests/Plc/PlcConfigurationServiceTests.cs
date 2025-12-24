@@ -282,7 +282,7 @@ public class PlcConfigurationServiceTests
     public async Task プログラム構成説明が長すぎる場合_保存に失敗する()
     {
         var service = CreateService();
-        var tooLong = new string('a', PlcUnitDraft.ProgramDescriptionMaxLength + 1);
+        var tooLong = new string('a', PlcUnitDraft.programDescriptionMaxLength + 1);
 
         var result = await service.AddAsync(
             "user-11",
@@ -297,7 +297,7 @@ public class PlcConfigurationServiceTests
             });
 
         Assert.IsFalse(result.Succeeded);
-        StringAssert.Contains(result.Error!, "300文字以内");
+        StringAssert.Contains(result.Error!, "30000文字以内");
     }
 
     /// <summary>

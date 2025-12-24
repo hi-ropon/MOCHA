@@ -43,7 +43,7 @@ internal interface IDeviceAgentAccessService
 /// </summary>
 internal sealed class DeviceAgentAccessService : IDeviceAgentAccessService
 {
-    private static readonly HashSet<string> PrivilegedRoles = new(StringComparer.OrdinalIgnoreCase)
+    private static readonly HashSet<string> _privilegedRoles = new(StringComparer.OrdinalIgnoreCase)
     {
         UserRoleId.Predefined.Administrator.Value,
         UserRoleId.Predefined.Developer.Value
@@ -109,6 +109,6 @@ internal sealed class DeviceAgentAccessService : IDeviceAgentAccessService
     private async Task<bool> HasFullAccessAsync(string userId, CancellationToken cancellationToken)
     {
         var roles = await _roleProvider.GetRolesAsync(userId, cancellationToken);
-        return roles.Any(r => PrivilegedRoles.Contains(r.Value));
+        return roles.Any(r => _privilegedRoles.Contains(r.Value));
     }
 }

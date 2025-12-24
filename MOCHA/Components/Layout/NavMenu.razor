@@ -857,7 +857,7 @@
                         <label>メーカー<span class="required-mark" aria-label="必須">*</span></label>
                         <select class="agent-input" @bind="_plcManufacturer">
                             <option value="">選択してください</option>
-                            @foreach (var maker in PlcUnitDraft.SupportedManufacturers)
+                            @foreach (var maker in PlcUnitDraft.supportedManufacturers)
                             {
                                 <option value="@maker">@maker</option>
                             }
@@ -901,10 +901,10 @@
                     <label>プログラム構成説明</label>
                     <textarea class="agent-input drawing-description plc-program-description scrollable-description"
                               rows="3"
-                              maxlength="@PlcUnitDraft.ProgramDescriptionMaxLength"
+                              maxlength="@PlcUnitDraft.programDescriptionMaxLength"
                               placeholder="主要プログラムやサブルーチン、FB構成のメモ"
                               @bind="_plcProgramDescription"></textarea>
-                    <div class="drawing-subtitle">@($"{_plcProgramDescription?.Length ?? 0}/{PlcUnitDraft.ProgramDescriptionMaxLength}")</div>
+                    <div class="drawing-subtitle">@($"{_plcProgramDescription?.Length ?? 0}/{PlcUnitDraft.programDescriptionMaxLength}")</div>
                 </div>
 
                 <div class="plc-program-group">

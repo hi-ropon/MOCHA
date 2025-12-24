@@ -14,9 +14,9 @@ namespace MOCHA.Services.Chat;
 /// </summary>
 internal sealed class ChatAttachmentService : IChatAttachmentService
 {
-    private const long MaxSizeBytes = 10 * 1024 * 1024;
-    private const int ReadBufferSize = 81920;
-    private static readonly HashSet<string> AllowedTypes = new(StringComparer.OrdinalIgnoreCase)
+    private const long _maxSizeBytes = 10 * 1024 * 1024;
+    private const int _readBufferSize = 81920;
+    private static readonly HashSet<string> _allowedTypes = new(StringComparer.OrdinalIgnoreCase)
     {
         "image/png",
         "image/jpeg"
@@ -41,19 +41,19 @@ internal sealed class ChatAttachmentService : IChatAttachmentService
             throw new ArgumentNullException(nameof(file));
         }
 
-        if (!AllowedTypes.Contains(file.ContentType))
+        if (!_allowedTypes.Contains(file.ContentType))
         {
             throw new InvalidOperationException("対応していない形式の画像です");
         }
 
-        if (file.Size > MaxSizeBytes)
+        if (file.Size > _maxSizeBytes)
         {
             throw new InvalidOperationException("画像サイズが上限を超えています（最大10MB）");
         }
 
-        await using var stream = file.OpenReadStream(MaxSizeBytes, cancellationToken);
+        await using var stream = file.OpenReadStream(_maxSizeBytes, cancellationToken);
         using var memory = new MemoryStream();
-        await stream.CopyToAsync(memory, ReadBufferSize, cancellationToken);
+        await stream.CopyToAsync(memory, _readBufferSize, cancellationToken);
         var bytes = memory.ToArray();
         return await UploadAsync(file.Name, file.ContentType, bytes, cancellationToken);
     }
@@ -61,7 +61,7 @@ internal sealed class ChatAttachmentService : IChatAttachmentService
     /// <inheritdoc />
     public Task<ImageAttachment> UploadAsync(string fileName, string contentType, byte[] data, CancellationToken cancellationToken = default)
     {
-        if (!AllowedTypes.Contains(contentType))
+        if (!_allowedTypes.Contains(contentType))
         {
             throw new InvalidOperationException("対応していない形式の画像です");
         }
@@ -71,7 +71,7 @@ internal sealed class ChatAttachmentService : IChatAttachmentService
             throw new InvalidOperationException("画像が空です");
         }
 
-        if (data.LongLength > MaxSizeBytes)
+        if (data.LongLength > _maxSizeBytes)
         {
             throw new InvalidOperationException("画像サイズが上限を超えています（最大10MB）");
         }
