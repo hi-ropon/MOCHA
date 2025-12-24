@@ -11,9 +11,9 @@ namespace MOCHA.Models.Architecture;
 public sealed class PlcUnitDraft
 {
     /// <summary>サポートするメーカー一覧</summary>
-    public static readonly IReadOnlyList<string> SupportedManufacturers = new[] { "三菱電機", "KEYENCE" };
+    public static readonly IReadOnlyList<string> supportedManufacturers = new[] { "三菱電機", "KEYENCE" };
     /// <summary>サポートする通信方式</summary>
-    public static readonly IReadOnlyList<string> SupportedTransports = new[] { "tcp", "udp" };
+    public static readonly IReadOnlyList<string> supportedTransports = new[] { "tcp", "udp" };
     /// <summary>ユニット名</summary>
     public string Name { get; init; } = string.Empty;
     /// <summary>メーカー</summary>
@@ -41,7 +41,7 @@ public sealed class PlcUnitDraft
     /// <summary>プログラム構成説明</summary>
     public string? ProgramDescription { get; init; }
     /// <summary>説明文字数上限</summary>
-    public const int ProgramDescriptionMaxLength = 300;
+    public const int programDescriptionMaxLength = 30000;
 
     /// <summary>
     /// 入力値のバリデーション
@@ -60,7 +60,7 @@ public sealed class PlcUnitDraft
             return (false, "メーカーを選択してください");
         }
 
-        if (!SupportedManufacturers.Contains(Manufacturer.Trim(), StringComparer.Ordinal))
+        if (!supportedManufacturers.Contains(Manufacturer.Trim(), StringComparer.Ordinal))
         {
             return (false, "メーカーは「三菱電機」「KEYENCE」から選択してください");
         }
@@ -70,7 +70,7 @@ public sealed class PlcUnitDraft
             return (false, "ポート番号は1-65535で入力してください");
         }
 
-        if (!SupportedTransports.Contains(NormalizeTransport(Transport), StringComparer.OrdinalIgnoreCase))
+        if (!supportedTransports.Contains(NormalizeTransport(Transport), StringComparer.OrdinalIgnoreCase))
         {
             return (false, "通信方式は tcp または udp を選択してください");
         }
@@ -131,9 +131,9 @@ public sealed class PlcUnitDraft
             }
         }
 
-        if (!string.IsNullOrWhiteSpace(ProgramDescription) && ProgramDescription.Trim().Length > ProgramDescriptionMaxLength)
+        if (!string.IsNullOrWhiteSpace(ProgramDescription) && ProgramDescription.Trim().Length > programDescriptionMaxLength)
         {
-            return (false, $"プログラム構成の説明は{ProgramDescriptionMaxLength}文字以内で入力してください");
+            return (false, $"プログラム構成の説明は{programDescriptionMaxLength}文字以内で入力してください");
         }
 
         return (true, null);

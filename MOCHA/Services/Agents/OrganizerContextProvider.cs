@@ -255,12 +255,12 @@ public sealed class OrganizerContextProvider : IOrganizerContextProvider
     private static string TrimDescription(string? description)
     {
         var text = description?.Trim() ?? string.Empty;
-        if (text.Length <= PlcUnitDraft.ProgramDescriptionMaxLength)
+        if (text.Length <= PlcUnitDraft.programDescriptionMaxLength)
         {
             return text;
         }
 
-        return text.Substring(0, PlcUnitDraft.ProgramDescriptionMaxLength);
+        return text.Substring(0, PlcUnitDraft.programDescriptionMaxLength);
     }
 
     private static string FormatUnitConfiguration(UnitConfiguration config)

@@ -9,9 +9,9 @@ namespace MOCHA.Data;
 /// </summary>
 internal static class DatabaseErrorDetector
 {
-    private const string SqliteExceptionType = "Microsoft.Data.Sqlite.SqliteException";
-    private const string PostgresExceptionType = "Npgsql.PostgresException";
-    private const string PostgresUndefinedTableCode = "42P01";
+    private const string _sqliteExceptionType = "Microsoft.Data.Sqlite.SqliteException";
+    private const string _postgresExceptionType = "Npgsql.PostgresException";
+    private const string _postgresUndefinedTableCode = "42P01";
 
     /// <summary>
     /// 例外が対象テーブルの欠如に起因するかどうかを判定する
@@ -37,7 +37,7 @@ internal static class DatabaseErrorDetector
     private static bool IsMissingTable(DbException exception, string tableName)
     {
         var typeName = exception.GetType().FullName;
-        if (string.Equals(typeName, SqliteExceptionType, StringComparison.Ordinal))
+        if (string.Equals(typeName, _sqliteExceptionType, StringComparison.Ordinal))
         {
             var errorCode = GetIntProperty(exception, "SqliteErrorCode");
             if (errorCode == 1)
@@ -46,10 +46,10 @@ internal static class DatabaseErrorDetector
             }
         }
 
-        if (string.Equals(typeName, PostgresExceptionType, StringComparison.Ordinal))
+        if (string.Equals(typeName, _postgresExceptionType, StringComparison.Ordinal))
         {
             var sqlState = GetStringProperty(exception, "SqlState");
-            if (string.Equals(sqlState, PostgresUndefinedTableCode, StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(sqlState, _postgresUndefinedTableCode, StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

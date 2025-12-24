@@ -31,7 +31,7 @@ public class FunctionBlockServiceTests
             var unitDraft = new PlcUnitDraft
             {
                 Name = "ユニットA",
-                Manufacturer = PlcUnitDraft.SupportedManufacturers.First(),
+                Manufacturer = PlcUnitDraft.supportedManufacturers.First(),
                 GatewayHost = "127.0.0.1",
                 GatewayPort = 8000,
                 ProgramFiles = Array.Empty<PlcFileUpload>(),
